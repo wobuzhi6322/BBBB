@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 
@@ -300,8 +301,32 @@ function normalizeMediaFile(input: unknown): MediaFile {
   };
 }
 
-function mediaStoragePath(code: string, version: number, file: Pick<MediaFile, "kind" | "filename">): string {
-  return `${code}/v${version}/${file.kind}/${file.filename}`;
+function mediaStoragePath(code: string, version: number, file: Pick<MediaFile, "kind" | "filename" | "size" | "updatedAt">): string {
+  return `${code}/v${version}/${file.kind}/${safeStorageFilename(file)}`;
+}
+
+function safeStorageFilename(file: Pick<MediaFile, "kind" | "filename" | "size" | "updatedAt">): string {
+  const ext = safeExtension(path.extname(file.filename));
+  const base = path
+    .basename(file.filename, path.extname(file.filename))
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
+  const hash = createHash("sha256")
+    .update(`${file.kind}/${file.filename}/${file.size}/${file.updatedAt}`)
+    .digest("hex")
+    .slice(0, 16);
+  return `${base || "asset"}-${hash}${ext}`;
+}
+
+function safeExtension(ext: string): string {
+  const normalized = ext.toLowerCase().replace(/[^a-z0-9.]/g, "");
+  if (!normalized || normalized === ".") {
+    return "";
+  }
+  return normalized.slice(0, 16);
 }
 
 function normalizeCode(input: unknown): string {
