@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/shared-profile.ts": {
+      "maxDuration": 60
+    }
+  }
+}
