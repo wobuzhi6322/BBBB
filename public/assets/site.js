@@ -40,7 +40,16 @@ const els = {
   licenseLimits: document.getElementById("license-limits"),
   sharedCodeList: document.getElementById("shared-code-list"),
   deviceList: document.getElementById("device-list"),
-  downloadList: document.getElementById("download-list")
+  downloadList: document.getElementById("download-list"),
+  adminLicensePanel: document.getElementById("admin-license-panel"),
+  adminLicenseForm: document.getElementById("admin-license-form"),
+  adminLicenseEmail: document.getElementById("admin-license-email"),
+  adminLicensePlan: document.getElementById("admin-license-plan"),
+  adminLicenseStatus: document.getElementById("admin-license-status"),
+  adminLicenseExpires: document.getElementById("admin-license-expires"),
+  adminLicenseNotes: document.getElementById("admin-license-notes"),
+  adminLicenseMessage: document.getElementById("admin-license-message"),
+  adminLicenseResult: document.getElementById("admin-license-result")
 };
 
 init().catch((error) => {
@@ -56,6 +65,7 @@ async function init() {
   await loadRelease();
   setupDownload();
   setupLoginDialog();
+  setupAdminLicenseForm();
   setupAuth();
 }
 
@@ -227,6 +237,13 @@ function setupAuth() {
   els.logoutButton?.addEventListener("click", signOut);
 }
 
+function setupAdminLicenseForm() {
+  els.adminLicenseForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await createAdminLicense();
+  });
+}
+
 async function signIn() {
   setText(els.authMessage, "로그인 중입니다.");
   const { error } = await state.supabase.auth.signInWithPassword({
@@ -302,6 +319,7 @@ function renderAccount(account) {
   const profile = account.profile || {};
   const license = account.activeLicense;
   setText(els.accountRole, `역할: ${roleLabel(profile.role)}`);
+  els.adminLicensePanel?.classList.toggle("is-hidden", profile.role !== "admin");
 
   if (!license) {
     setText(els.licensePlan, "플랜 없음");
@@ -353,6 +371,49 @@ function clearAccountDashboard() {
   replaceRows(els.sharedCodeList, []);
   replaceRows(els.deviceList, []);
   replaceRows(els.downloadList, []);
+  els.adminLicensePanel?.classList.add("is-hidden");
+  setText(els.adminLicenseMessage, "");
+  replaceRows(els.adminLicenseResult, []);
+}
+
+async function createAdminLicense() {
+  const token = state.session?.access_token;
+  if (!token) {
+    setText(els.adminLicenseMessage, "관리자 로그인이 필요합니다.");
+    return;
+  }
+
+  const email = els.adminLicenseEmail?.value.trim();
+  if (!email) {
+    setText(els.adminLicenseMessage, "사용자 이메일을 입력해 주세요.");
+    return;
+  }
+
+  setText(els.adminLicenseMessage, "라이선스를 발급하는 중입니다.");
+  replaceRows(els.adminLicenseResult, []);
+
+  try {
+    const result = await postJsonWithAuth("/api/admin-license", token, {
+      email,
+      plan: els.adminLicensePlan?.value || "starter",
+      status: els.adminLicenseStatus?.value || "active",
+      expiresAt: els.adminLicenseExpires?.value || undefined,
+      notes: els.adminLicenseNotes?.value.trim() || undefined
+    });
+    const license = result.data.license;
+    setText(els.adminLicenseMessage, "라이선스가 발급되었습니다.");
+    replaceRows(els.adminLicenseResult, [
+      row("사용자", email),
+      row("요금제", planLabel(license.plan)),
+      row("상태", statusLabel(license.status)),
+      row("라이선스 코드", license.license_code)
+    ]);
+    if (state.session?.user?.email?.toLowerCase() === email.toLowerCase()) {
+      await loadAccount();
+    }
+  } catch (error) {
+    setText(els.adminLicenseMessage, error instanceof Error ? error.message : "라이선스 발급에 실패했습니다.");
+  }
 }
 
 async function logDownload(release) {
@@ -391,6 +452,23 @@ async function getJsonWithAuth(url, token) {
       accept: "application/json",
       authorization: `Bearer ${token}`
     }
+  });
+  const data = await response.json();
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+async function postJsonWithAuth(url, token, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
   });
   const data = await response.json();
   if (!response.ok || data.ok === false) {

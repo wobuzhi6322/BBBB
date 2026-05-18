@@ -335,6 +335,48 @@
             <div id="download-list" class="account-list"></div>
           </article>
         </div>
+        <section id="admin-license-panel" class="admin-panel is-hidden" aria-labelledby="admin-license-title">
+          <div class="section-heading compact">
+            <p class="eyebrow">Admin</p>
+            <h2 id="admin-license-title">라이선스 발급</h2>
+            <p>가입한 사용자 이메일을 입력하고 요금제를 선택하면 SQL 없이 라이선스를 발급합니다.</p>
+          </div>
+          <form id="admin-license-form" class="admin-license-form">
+            <label>
+              사용자 이메일
+              <input id="admin-license-email" type="email" autocomplete="off" placeholder="user@example.com" required />
+            </label>
+            <label>
+              요금제
+              <select id="admin-license-plan">
+                <option value="starter">Starter - 70,000원</option>
+                <option value="standard">Standard - 100,000원</option>
+                <option value="pro">Pro - 150,000원</option>
+              </select>
+            </label>
+            <label>
+              상태
+              <select id="admin-license-status">
+                <option value="active">활성</option>
+                <option value="pending">대기</option>
+                <option value="suspended">정지</option>
+              </select>
+            </label>
+            <label>
+              만료일
+              <input id="admin-license-expires" type="date" />
+            </label>
+            <label class="wide-field">
+              메모
+              <textarea id="admin-license-notes" rows="3" placeholder="구매 경로, 연락처, 특이사항"></textarea>
+            </label>
+            <div class="form-actions wide-field">
+              <button class="button primary" type="submit">라이선스 발급</button>
+            </div>
+            <p id="admin-license-message" class="form-message wide-field" aria-live="polite"></p>
+          </form>
+          <div id="admin-license-result" class="account-list admin-result"></div>
+        </section>
       </section>
     </main>
 

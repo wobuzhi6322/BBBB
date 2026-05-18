@@ -56,9 +56,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   try {
-    assertAdmin(req);
-    const body = await readJson(req);
     const supabase = serviceClient();
+    await assertAdmin(req, supabase);
+    const body = await readJson(req);
     const userId = await resolveUserId(body, supabase);
     const plan = normalizePlan(body.plan);
     const status = normalizeStatus(body.status);
@@ -146,13 +146,39 @@ function dateValue(value: unknown): string | null {
   return date.toISOString();
 }
 
-function assertAdmin(req: IncomingMessage): void {
+async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof serviceClient>): Promise<void> {
   const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
   const received = req.headers["x-bbbb-admin-token"];
   const token = Array.isArray(received) ? received[0] : received;
-  if (!expected || token !== expected) {
-    throw new Error("관리자 토큰이 올바르지 않습니다.");
+  if (expected && token === expected) {
+    return;
   }
+
+  const sessionToken = bearerToken(req);
+  if (!sessionToken) {
+    throw new Error("관리자 권한이 필요합니다.");
+  }
+
+  const userResult = await supabase.auth.getUser(sessionToken);
+  const user = userResult.data.user;
+  if (userResult.error || !user) {
+    throw new Error("로그인 세션을 확인할 수 없습니다.");
+  }
+
+  const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();
+  if (profile.error || profile.data?.role !== "admin") {
+    throw new Error("관리자 계정만 라이선스를 발급할 수 있습니다.");
+  }
+}
+
+function bearerToken(req: IncomingMessage): string | undefined {
+  const value = headerValue(req.headers.authorization);
+  const match = value?.match(/^Bearer\s+(.+)$/i);
+  return match?.[1];
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function serviceClient() {
@@ -190,7 +216,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "POST,OPTIONS",
-    "access-control-allow-headers": "content-type,x-bbbb-admin-token"
+    "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
 }
@@ -198,5 +224,5 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 function setCors(res: ServerResponse): void {
   res.setHeader("access-control-allow-origin", "*");
   res.setHeader("access-control-allow-methods", "POST,OPTIONS");
-  res.setHeader("access-control-allow-headers", "content-type,x-bbbb-admin-token");
+  res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }
