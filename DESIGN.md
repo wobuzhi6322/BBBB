@@ -87,6 +87,12 @@ components:
     textColor: "{colors.primary}"
     rounded: "{rounded.md}"
     padding: 7px 11px
+  brand-logo:
+    width: 148px
+    height: 50px
+  hero-banner:
+    width: 100%
+    height: 720px
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
@@ -96,7 +102,7 @@ components:
 
 ## Overview
 
-계이득 Broadcast Console should feel like a product operations site rather than a decorative landing page. The first screen must immediately explain the user-facing value: bank deposit notifications become OBS signatures, wallpapers, and media output. Internal infrastructure names should stay out of public copy. The Korean name 계이득 should be the first-viewport brand signal.
+계이득 Broadcast Console should feel like a high-energy broadcast product site rather than a decorative landing page. The first screen must use the supplied 계이득 hero banner as the primary visual asset. It should immediately explain the user-facing value: bank deposit notifications become OBS signatures, wallpapers, and media output. Internal infrastructure names should stay out of public copy.
 
 ## Colors
 
@@ -108,7 +114,7 @@ Typography is dense and legible. Headlines are strong but not oversized inside o
 
 ## Layout
 
-Sections use full-width bands with constrained inner content. Cards are used for repeated feature, setup, and dashboard items only. The hero is not a split marketing card; it is a full-width product signal with the 계이득 name and the download action in the same viewport.
+Sections use full-width bands with constrained inner content. Cards are used for repeated feature, setup, and dashboard items only. The hero is not a split marketing card; it is a full-width image banner using `/assets/gyeideuk-hero.png` with the download action in the same viewport. The header brand uses `/assets/gyeideuk-logo.png`.
 
 Legal pages use the same header, footer, theme toggle, and card rhythm as the main site. They should read as ordinary service footer pages and must not expose admin implementation details.
 
@@ -127,6 +133,7 @@ Primary buttons use the mode-specific blue token and should keep strong contrast
 ## Do's and Don'ts
 
 - Do keep the download path visually obvious.
+- Do use the supplied 계이득 logo and hero banner as real bitmap assets.
 - Do show version, file size, and latest-file status near the download button.
 - Do keep login and dashboard surfaces calm and compact.
 - Do explain the product as bank deposit notification to OBS signature output.

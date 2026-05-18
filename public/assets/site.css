@@ -127,21 +127,12 @@ input {
   font-weight: 900;
 }
 
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-tertiary);
-  color: var(--color-on-tertiary);
-  font-weight: 950;
-}
-
-.brand span:last-child {
-  font-size: 17px;
-  letter-spacing: 0;
+.brand-logo {
+  width: 148px;
+  height: 50px;
+  display: block;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .site-nav {
@@ -193,11 +184,11 @@ input {
 
 .hero {
   position: relative;
-  min-height: min(650px, calc(100vh - 120px));
-  display: grid;
-  align-items: center;
+  height: min(720px, calc(100vh - 120px), max(420px, 56.3vw));
+  min-height: 360px;
+  display: block;
   overflow: hidden;
-  padding: clamp(72px, 10vw, 118px) clamp(20px, 5vw, 72px);
+  padding: 0;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-hero-bg);
 }
@@ -207,36 +198,40 @@ input {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0.72;
-  filter: saturate(1.06) contrast(1.03);
-}
-
-.hero-brand-backdrop {
-  display: grid;
-  place-items: center;
-  object-fit: initial;
-  opacity: 0.52;
-}
-
-.hero-brand-backdrop span {
-  color: var(--color-hero-text);
-  font-size: 180px;
-  font-weight: 950;
-  line-height: 1;
+  object-fit: contain;
+  object-position: center;
+  opacity: 1;
+  filter: saturate(1.03) contrast(1.02);
 }
 
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: var(--color-hero-overlay);
+  background: rgb(5 7 12 / 8%);
 }
 
 .hero-inner {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  width: min(790px, 100%);
+  width: var(--content);
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: clamp(18px, 3vw, 34px) 0;
   color: var(--color-hero-text);
+  pointer-events: none;
+}
+
+.hero-inner h1,
+.hero-lead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .eyebrow,
@@ -269,14 +264,6 @@ h1 {
   letter-spacing: 0;
 }
 
-.hero-subtitle {
-  margin: -6px 0 18px;
-  color: var(--color-hero-text);
-  font-size: 30px;
-  font-weight: 850;
-  line-height: 1.15;
-}
-
 h2 {
   margin-bottom: 10px;
   font-size: 42px;
@@ -307,14 +294,16 @@ h3 {
   gap: 10px;
 }
 
-.hero-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 22px;
+.hero-actions {
+  width: fit-content;
+  padding: 10px;
+  border: 1px solid var(--color-hero-chip-border);
+  border-radius: var(--radius-lg);
+  background: rgb(5 7 12 / 58%);
+  box-shadow: var(--shadow-hero);
+  pointer-events: auto;
 }
 
-.hero-facts span,
 .status-strip span {
   min-height: 34px;
   display: inline-flex;
@@ -324,12 +313,6 @@ h3 {
   border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 900;
-}
-
-.hero-facts span {
-  border: 1px solid var(--color-hero-chip-border);
-  background: var(--color-hero-chip-bg);
-  color: var(--color-hero-text);
 }
 
 .button {
@@ -665,7 +648,8 @@ h3 {
   }
 
   .hero {
-    min-height: min(620px, calc(100vh - 110px));
+    height: min(620px, calc(100vh - 120px), max(400px, 56.3vw));
+    min-height: 340px;
   }
 
   h1 {
@@ -710,31 +694,28 @@ h3 {
     padding: 12px 14px;
   }
 
-  .brand img {
-    width: 74px;
-    height: 28px;
-  }
-
-  .brand-mark {
-    width: 32px;
-    height: 32px;
+  .brand-logo {
+    width: 118px;
+    height: 40px;
   }
 
   .hero {
-    min-height: 560px;
-    padding: 56px 18px;
+    height: min(520px, calc(100vh - 130px), max(360px, 80vw));
+    min-height: 320px;
+    padding: 0;
+  }
+
+  .hero-inner {
+    align-items: flex-end;
+    padding: 0 0 18px;
   }
 
   h1 {
     font-size: 40px;
   }
 
-  .hero-subtitle {
-    font-size: 21px;
-  }
-
-  .hero-brand-backdrop span {
-    font-size: 86px;
+  .hero-actions {
+    width: 100%;
   }
 
   h2 {
