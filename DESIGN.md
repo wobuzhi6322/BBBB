@@ -1,7 +1,7 @@
 ---
 version: alpha
-name: BBBB Broadcast Console
-description: Public download, account, and legal notice site for BBBB Donation Signature.
+name: 계이득 Broadcast Console
+description: Public download, account, and legal notice site for 계이득.
 defaultMode: dark
 colors:
   primary: "#F6F7F9"
@@ -96,11 +96,11 @@ components:
 
 ## Overview
 
-BBBB Broadcast Console should feel like a product operations site rather than a decorative landing page. The first screen must immediately explain the user-facing value: bank deposit notifications become OBS signatures, wallpapers, and media output. Internal infrastructure names should stay out of public copy. The actual BBBB visual asset remains the first-viewport brand signal.
+계이득 Broadcast Console should feel like a product operations site rather than a decorative landing page. The first screen must immediately explain the user-facing value: bank deposit notifications become OBS signatures, wallpapers, and media output. Internal infrastructure names should stay out of public copy. The Korean name 계이득 should be the first-viewport brand signal.
 
 ## Colors
 
-Dark mode is the default because the product is used around OBS and broadcast tooling, where a low-glare interface is more comfortable. The light palette is available for users who manage downloads and accounts in a normal browser context. Blue remains the primary action color for download and account tasks. Magenta is used sparingly as a brand signal that connects to the BBBB logo. Green is reserved for system-ready states.
+Dark mode is the default because the product is used around OBS and broadcast tooling, where a low-glare interface is more comfortable. The light palette is available for users who manage downloads and accounts in a normal browser context. Blue remains the primary action color for download and account tasks. Magenta is used sparingly as a brand signal. Green is reserved for system-ready states.
 
 ## Typography
 
@@ -108,7 +108,7 @@ Typography is dense and legible. Headlines are strong but not oversized inside o
 
 ## Layout
 
-Sections use full-width bands with constrained inner content. Cards are used for repeated feature, setup, and dashboard items only. The hero is not a split marketing card; it is a full-width product signal with the real BBBB image as the visual anchor and the download action in the same viewport.
+Sections use full-width bands with constrained inner content. Cards are used for repeated feature, setup, and dashboard items only. The hero is not a split marketing card; it is a full-width product signal with the 계이득 name and the download action in the same viewport.
 
 Legal pages use the same header, footer, theme toggle, and card rhythm as the main site. They should read as ordinary service footer pages and must not expose admin implementation details.
 
