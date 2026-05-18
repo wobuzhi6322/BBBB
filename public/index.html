@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="BBBB Donation Signature 다운로드, 로그인, 공유 코드 동기화를 관리하는 공식 웹사이트입니다."
+      content="BBBB Donation Signature 다운로드, 계정 로그인, 공유 코드 동기화를 관리하는 공식 사이트입니다."
     />
     <title>BBBB Donation Signature</title>
     <link rel="stylesheet" href="/assets/site.css" />
@@ -16,7 +16,7 @@
     <header class="site-header">
       <a class="brand" href="#top" aria-label="BBBB Donation Signature">
         <img src="/assets/brand-logo.png" alt="" />
-        <span>BBBB Donation Signature</span>
+        <span>BBBB</span>
       </a>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="#download">다운로드</a>
@@ -27,38 +27,47 @@
     </header>
 
     <main id="top">
-      <section class="hero">
+      <section class="hero" aria-labelledby="hero-title">
         <img class="hero-image" src="/assets/brand-logo.png" alt="BBBB Donation Signature 로고" />
-        <div class="hero-copy">
-          <p class="eyebrow">Phone Link + OBS 후원 시그니처 도구</p>
-          <h1>BBBB Donation Signature</h1>
-          <p>
-            후원 알림을 시그니처, 벽지, 미디어 출력으로 연결하고 공유 코드로 여러 PC가 같은 설정을
-            사용할 수 있게 관리합니다.
+        <div class="hero-overlay"></div>
+        <div class="hero-inner">
+          <p class="eyebrow">Broadcast donation signature manager</p>
+          <h1 id="hero-title">BBBB Donation Signature</h1>
+          <p class="hero-lead">
+            Phone Link 후원 알림을 OBS 시그니처, 벽지, 미디어 출력으로 연결하고 공유 코드로 여러 PC가
+            같은 설정을 사용할 수 있게 관리합니다.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#download">Windows 다운로드</a>
-            <a class="button secondary" href="#login">로그인</a>
+            <a class="button secondary" href="#login">계정 로그인</a>
+          </div>
+          <div class="hero-facts" aria-label="제품 요약">
+            <span>Windows x64</span>
+            <span>OBS Browser Source</span>
+            <span>Vercel/Supabase Sync</span>
           </div>
         </div>
       </section>
 
       <section class="status-strip" aria-live="polite">
-        <span id="site-status">사이트 설정을 확인하는 중입니다.</span>
-        <span id="release-status">GitHub Release를 확인하는 중입니다.</span>
+        <span id="site-status"><i></i>사이트 설정을 확인하는 중입니다.</span>
+        <span id="release-status"><i></i>GitHub Release를 확인하는 중입니다.</span>
       </section>
 
       <section class="section-grid" aria-label="주요 기능">
         <article class="info-card">
+          <span class="label">Sync</span>
           <strong>공유 코드 동기화</strong>
           <p>같은 코드를 입력한 PC가 동일한 시그니처, 미디어, 벽지 설정을 불러옵니다.</p>
         </article>
         <article class="info-card">
-          <strong>로컬 방송 안정성</strong>
+          <span class="label">Local</span>
+          <strong>방송 PC 안정성</strong>
           <p>Phone Link, OBS, 로컬 미디어 실행은 각 PC에서 유지하고 사이트는 배포와 계정 관리를 담당합니다.</p>
         </article>
         <article class="info-card">
-          <strong>GitHub Release 배포</strong>
+          <span class="label">Release</span>
+          <strong>GitHub 배포 관리</strong>
           <p>최신 ZIP 릴리스를 자동으로 찾아 다운로드 버튼에 연결합니다.</p>
         </article>
       </section>
@@ -66,11 +75,11 @@
       <section id="download" class="download-section">
         <div class="section-heading">
           <p class="eyebrow">Download</p>
-          <h2>프로그램 다운로드</h2>
-          <p>배포 파일은 GitHub Release에서 가져옵니다. ZIP은 압축 해제 후 폴더 전체를 유지해야 합니다.</p>
+          <h2>최신 프로그램 다운로드</h2>
+          <p>배포 파일은 GitHub Release에서 가져옵니다. ZIP 압축 해제 후 폴더 전체를 유지해야 합니다.</p>
         </div>
         <div class="release-panel">
-          <div>
+          <div class="release-copy">
             <span class="label">최신 버전</span>
             <h3 id="release-name">확인 중</h3>
             <p id="release-meta" class="muted">Release 정보를 불러오고 있습니다.</p>
@@ -92,7 +101,7 @@
           <article class="step-card">
             <span>1</span>
             <strong>ZIP 압축 해제</strong>
-            <p>다운로드한 ZIP을 풀고 <code>BBBB Donation Signature.exe</code>를 실행합니다.</p>
+            <p>다운로드한 ZIP을 풀고 <code>win-unpacked\BBBB Donation Signature.exe</code>를 실행합니다.</p>
           </article>
           <article class="step-card">
             <span>2</span>
@@ -110,8 +119,8 @@
       <section id="login" class="login-section">
         <div class="section-heading">
           <p class="eyebrow">Account</p>
-          <h2>로그인</h2>
-          <p>로그인 후 내 다운로드 상태와 공유 코드 운영 정보를 볼 수 있게 확장합니다.</p>
+          <h2>계정 로그인</h2>
+          <p>로그인 후 다운로드 기록, 공유 코드 멤버, 운영 권한 관리 기능을 단계적으로 확장합니다.</p>
         </div>
         <form id="login-form" class="login-form">
           <label>
@@ -150,7 +159,7 @@
           <article class="info-card">
             <span class="label">운영 관리</span>
             <strong>준비됨</strong>
-            <p>Supabase 테이블을 적용하면 다운로드 기록과 유저 권한 관리가 저장됩니다.</p>
+            <p>Supabase 테이블을 기준으로 다운로드 기록과 유저 권한 관리가 저장됩니다.</p>
           </article>
         </div>
       </section>
