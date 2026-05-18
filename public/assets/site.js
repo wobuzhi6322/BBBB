@@ -42,6 +42,10 @@ const els = {
   sharedCodeList: document.getElementById("shared-code-list"),
   deviceList: document.getElementById("device-list"),
   downloadList: document.getElementById("download-list"),
+  redeemCodeForm: document.getElementById("redeem-code-form"),
+  redeemCodeInput: document.getElementById("redeem-code-input"),
+  redeemCodeMessage: document.getElementById("redeem-code-message"),
+  redeemCodeResult: document.getElementById("redeem-code-result"),
   adminLicensePanel: document.getElementById("admin-license-panel"),
   adminLicenseForm: document.getElementById("admin-license-form"),
   adminLicenseEmail: document.getElementById("admin-license-email"),
@@ -52,7 +56,16 @@ const els = {
   adminLicenseMessage: document.getElementById("admin-license-message"),
   adminLicenseLookup: document.getElementById("admin-license-lookup"),
   adminLicenseUpdate: document.getElementById("admin-license-update"),
-  adminLicenseResult: document.getElementById("admin-license-result")
+  adminLicenseResult: document.getElementById("admin-license-result"),
+  adminCodeForm: document.getElementById("admin-code-form"),
+  adminCodePlan: document.getElementById("admin-code-plan"),
+  adminCodeDurationUnit: document.getElementById("admin-code-duration-unit"),
+  adminCodeDurationValue: document.getElementById("admin-code-duration-value"),
+  adminCodeMaxRedemptions: document.getElementById("admin-code-max-redemptions"),
+  adminCodeValidUntil: document.getElementById("admin-code-valid-until"),
+  adminCodeNotes: document.getElementById("admin-code-notes"),
+  adminCodeMessage: document.getElementById("admin-code-message"),
+  adminCodeResult: document.getElementById("admin-code-result")
 };
 
 init().catch((error) => {
@@ -68,7 +81,9 @@ async function init() {
   await loadRelease();
   setupDownload();
   setupLoginDialog();
+  setupRedeemCodeForm();
   setupAdminLicenseForm();
+  setupAdminCodeForm();
   setupAuth();
 }
 
@@ -249,6 +264,22 @@ function setupAdminLicenseForm() {
   els.adminLicenseUpdate?.addEventListener("click", updateAdminLicense);
 }
 
+function setupRedeemCodeForm() {
+  els.redeemCodeForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await redeemLicenseCode();
+  });
+}
+
+function setupAdminCodeForm() {
+  els.adminCodeForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await createAdminCode();
+  });
+  els.adminCodeDurationUnit?.addEventListener("change", syncAdminCodeDurationField);
+  syncAdminCodeDurationField();
+}
+
 async function signIn() {
   setText(els.authMessage, "로그인 중입니다.");
   const { error } = await state.supabase.auth.signInWithPassword({
@@ -333,7 +364,7 @@ function renderAccount(account) {
     replaceRows(els.licenseLimits, [row("상태", "구매 확인 대기")]);
   } else {
     setText(els.licensePlan, planLabel(license.plan));
-    setText(els.licenseStatus, `${statusLabel(license.status)} · ${license.expires_at ? `${formatDate(license.expires_at)}까지` : "만료일 없음"}`);
+    setText(els.licenseStatus, `${statusLabel(effectiveLicenseStatus(license))} · ${license.expires_at ? `${formatDateTime(license.expires_at)}까지` : "만료일 없음"}`);
     setText(els.licenseCode, license.license_code || "-");
     replaceRows(els.licenseLimits, [
       row("시그니처", `${license.max_signatures}개`),
@@ -379,7 +410,45 @@ function clearAccountDashboard() {
   els.adminLicensePanel?.classList.add("is-hidden");
   setText(els.adminLicenseMessage, "");
   replaceRows(els.adminLicenseResult, []);
+  setText(els.redeemCodeMessage, "");
+  replaceRows(els.redeemCodeResult, []);
+  setText(els.adminCodeMessage, "");
+  replaceRows(els.adminCodeResult, []);
   setAdminLicenseTarget(null);
+}
+
+async function redeemLicenseCode() {
+  const token = state.session?.access_token;
+  if (!token) {
+    setText(els.redeemCodeMessage, "로그인이 필요합니다.");
+    return;
+  }
+  const code = els.redeemCodeInput?.value.trim();
+  if (!code) {
+    setText(els.redeemCodeMessage, "등록할 코드를 입력해 주세요.");
+    return;
+  }
+
+  setText(els.redeemCodeMessage, "코드를 등록하는 중입니다.");
+  replaceRows(els.redeemCodeResult, []);
+
+  try {
+    const result = await postJsonWithAuth("/api/license-code", token, { code });
+    const license = result.data.license;
+    setText(els.redeemCodeMessage, "코드가 등록되었습니다.");
+    replaceRows(els.redeemCodeResult, [
+      row("요금제", planLabel(license.plan)),
+      row("상태", statusLabel(license.status)),
+      row("만료일", license.expires_at ? formatDateTime(license.expires_at) : "만료일 없음"),
+      row("라이선스 코드", license.license_code)
+    ]);
+    if (els.redeemCodeInput) {
+      els.redeemCodeInput.value = "";
+    }
+    await loadAccount();
+  } catch (error) {
+    setText(els.redeemCodeMessage, error instanceof Error ? error.message : "코드 등록에 실패했습니다.");
+  }
 }
 
 async function createAdminLicense() {
@@ -420,6 +489,38 @@ async function createAdminLicense() {
     }
   } catch (error) {
     setText(els.adminLicenseMessage, error instanceof Error ? error.message : "라이선스 발급에 실패했습니다.");
+  }
+}
+
+async function createAdminCode() {
+  const token = state.session?.access_token;
+  if (!token) {
+    setText(els.adminCodeMessage, "관리자 로그인이 필요합니다.");
+    return;
+  }
+
+  setText(els.adminCodeMessage, "이용권 코드를 발급하는 중입니다.");
+  replaceRows(els.adminCodeResult, []);
+
+  try {
+    const result = await postJsonWithAuth("/api/admin-license-code", token, {
+      plan: els.adminCodePlan?.value || "starter",
+      durationUnit: els.adminCodeDurationUnit?.value || "day",
+      durationValue: els.adminCodeDurationValue?.value || "1",
+      maxRedemptions: els.adminCodeMaxRedemptions?.value || "1",
+      validUntil: els.adminCodeValidUntil?.value || undefined,
+      notes: els.adminCodeNotes?.value.trim() || undefined
+    });
+    const codeInfo = result.data.codeInfo;
+    setText(els.adminCodeMessage, "이용권 코드가 발급되었습니다. 원본 코드는 지금만 표시됩니다.");
+    replaceRows(els.adminCodeResult, [
+      row("발급 코드", result.data.code),
+      row("요금제", planLabel(codeInfo.plan)),
+      row("기간", durationLabel(codeInfo.duration_hours)),
+      row("사용 가능 횟수", `${codeInfo.max_redemptions}회`)
+    ]);
+  } catch (error) {
+    setText(els.adminCodeMessage, error instanceof Error ? error.message : "이용권 코드 발급에 실패했습니다.");
   }
 }
 
@@ -527,6 +628,14 @@ function renderAdminLicenseLookup(profile, licenses) {
     rows.push(...licenses.slice(0, 5).map((license) => row(license.license_code, `${planLabel(license.plan)} · ${statusLabel(license.status)}`)));
   }
   replaceRows(els.adminLicenseResult, rows);
+}
+
+function syncAdminCodeDurationField() {
+  const isUnlimited = els.adminCodeDurationUnit?.value === "unlimited";
+  if (els.adminCodeDurationValue) {
+    els.adminCodeDurationValue.disabled = isUnlimited;
+    els.adminCodeDurationValue.required = !isUnlimited;
+  }
 }
 
 async function logDownload(release) {
@@ -685,6 +794,23 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatDateTime(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function effectiveLicenseStatus(license) {
+  if (license?.status === "active" && license.expires_at && new Date(license.expires_at).getTime() < Date.now()) {
+    return "expired";
+  }
+  return license?.status;
+}
+
 function dateInputValue(value) {
   if (!value) {
     return "";
@@ -694,6 +820,16 @@ function dateInputValue(value) {
     return "";
   }
   return date.toISOString().slice(0, 10);
+}
+
+function durationLabel(hours) {
+  if (hours === null || hours === undefined) {
+    return "무기한";
+  }
+  if (hours % 24 === 0) {
+    return `${hours / 24}일`;
+  }
+  return `${hours}시간`;
 }
 
 function formatBytes(size) {

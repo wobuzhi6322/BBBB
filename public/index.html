@@ -335,6 +335,19 @@
             <div id="download-list" class="account-list"></div>
           </article>
         </div>
+        <section id="redeem-code-panel" class="redeem-panel" aria-labelledby="redeem-code-title">
+          <div>
+            <span class="label">Code</span>
+            <h3 id="redeem-code-title">이용권 코드 등록</h3>
+            <p class="muted">관리자가 발급한 코드를 입력하면 라이선스가 자동으로 적용됩니다.</p>
+          </div>
+          <form id="redeem-code-form" class="redeem-code-form">
+            <input id="redeem-code-input" type="text" autocomplete="off" placeholder="GD-STA-ABCD-1234-EFGH" required />
+            <button class="button primary" type="submit">코드 등록</button>
+          </form>
+          <p id="redeem-code-message" class="form-message" aria-live="polite"></p>
+          <div id="redeem-code-result" class="account-list"></div>
+        </section>
         <section id="admin-license-panel" class="admin-panel is-hidden" aria-labelledby="admin-license-title">
           <div class="section-heading compact">
             <p class="eyebrow">Admin</p>
@@ -378,6 +391,52 @@
             <p id="admin-license-message" class="form-message wide-field" aria-live="polite"></p>
           </form>
           <div id="admin-license-result" class="account-list admin-result"></div>
+          <section class="admin-code-panel" aria-labelledby="admin-code-title">
+            <div class="section-heading compact">
+              <p class="eyebrow">Code</p>
+              <h2 id="admin-code-title">이용권 코드 발급</h2>
+              <p>시간/일/무기한 이용권 코드를 만들고 사용자에게 전달합니다. 원본 코드는 발급 직후에만 표시됩니다.</p>
+            </div>
+            <form id="admin-code-form" class="admin-license-form">
+              <label>
+                요금제
+                <select id="admin-code-plan">
+                  <option value="starter">Starter</option>
+                  <option value="standard">Standard</option>
+                  <option value="pro">Pro</option>
+                </select>
+              </label>
+              <label>
+                기간 단위
+                <select id="admin-code-duration-unit">
+                  <option value="hour">시간</option>
+                  <option value="day" selected>일</option>
+                  <option value="unlimited">무기한</option>
+                </select>
+              </label>
+              <label>
+                기간 값
+                <input id="admin-code-duration-value" type="number" min="1" max="3650" value="1" />
+              </label>
+              <label>
+                사용 가능 횟수
+                <input id="admin-code-max-redemptions" type="number" min="1" max="1000" value="1" />
+              </label>
+              <label>
+                코드 만료일
+                <input id="admin-code-valid-until" type="date" />
+              </label>
+              <label class="wide-field">
+                메모
+                <textarea id="admin-code-notes" rows="3" placeholder="예: 테스트 5시간권, 이벤트 30일권"></textarea>
+              </label>
+              <div class="form-actions wide-field">
+                <button class="button primary" type="submit">코드 발급</button>
+              </div>
+              <p id="admin-code-message" class="form-message wide-field" aria-live="polite"></p>
+            </form>
+            <div id="admin-code-result" class="account-list admin-result"></div>
+          </section>
         </section>
       </section>
     </main>

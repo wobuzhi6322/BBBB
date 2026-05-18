@@ -256,6 +256,7 @@ code {
 .site-nav a:focus-visible,
 .category-nav a:focus-visible,
 .login-form input:focus-visible,
+.redeem-code-form input:focus-visible,
 .admin-license-form input:focus-visible,
 .admin-license-form select:focus-visible,
 .admin-license-form textarea:focus-visible {
@@ -569,6 +570,7 @@ h3 {
 .feature-card,
 .release-panel,
 .login-form,
+.redeem-panel,
 .admin-panel,
 .login-window,
 .profile-card,
@@ -1051,9 +1053,46 @@ h3 {
   border-top: 1px solid var(--line);
 }
 
+.redeem-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 22px;
+}
+
+.redeem-panel h3 {
+  margin-bottom: 4px;
+}
+
+.redeem-panel p {
+  margin-bottom: 0;
+}
+
+.redeem-code-form {
+  display: flex;
+  gap: 10px;
+}
+
+.redeem-code-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--primary);
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
 .admin-panel {
   margin-top: 16px;
   padding: 22px;
+}
+
+.admin-code-panel {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
 }
 
 .admin-license-form {
@@ -1388,9 +1427,14 @@ h3 {
 
   .release-actions,
   .release-actions .button,
+  .redeem-code-form,
   .form-actions,
   .form-actions .button {
     width: 100%;
+  }
+
+  .redeem-code-form {
+    flex-direction: column;
   }
 
   .admin-license-form {
@@ -1457,6 +1501,7 @@ h3 {
   .option-panel,
   .release-panel,
   .login-form,
+  .redeem-panel,
   .admin-panel,
   .login-window,
   .profile-card,

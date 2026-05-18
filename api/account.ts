@@ -110,7 +110,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     assertNoError(downloadsResult.error);
 
     const licenses = (licensesResult.data || []) as LicenseRow[];
-    const activeLicense = licenses.find((license) => license.status === "active") || licenses[0] || null;
+    const activeLicense = licenses.find(isUsableLicense) || licenses[0] || null;
     const profile = profileResult.data as SiteProfileRow;
 
     sendJson(res, 200, {
@@ -127,6 +127,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   } catch (error) {
     sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "account-load-failed" });
   }
+}
+
+function isUsableLicense(license: LicenseRow): boolean {
+  return license.status === "active" && (!license.expires_at || new Date(license.expires_at).getTime() > Date.now());
 }
 
 async function ensureProfile(userId: string, email: string | null): Promise<void> {

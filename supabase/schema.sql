@@ -62,6 +62,31 @@ create table if not exists public.bbbb_account_devices (
   unique (license_id, device_fingerprint)
 );
 
+create table if not exists public.bbbb_license_codes (
+  id uuid primary key default gen_random_uuid(),
+  code_hash text not null unique,
+  code_prefix text not null,
+  plan text not null default 'starter' check (plan in ('starter', 'standard', 'pro')),
+  duration_hours integer check (duration_hours is null or duration_hours > 0),
+  max_redemptions integer not null default 1 check (max_redemptions > 0),
+  redeemed_count integer not null default 0 check (redeemed_count >= 0),
+  valid_until timestamptz,
+  is_active boolean not null default true,
+  notes text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.bbbb_license_code_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  code_id uuid not null references public.bbbb_license_codes(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  license_id uuid references public.bbbb_account_licenses(id) on delete set null,
+  redeemed_at timestamptz not null default now(),
+  unique (code_id, user_id)
+);
+
 create table if not exists public.bbbb_shared_code_members (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -101,6 +126,12 @@ create index if not exists bbbb_account_licenses_user_status_idx
 create index if not exists bbbb_account_devices_user_seen_idx
   on public.bbbb_account_devices(user_id, last_seen_at desc);
 
+create index if not exists bbbb_license_codes_created_idx
+  on public.bbbb_license_codes(created_at desc);
+
+create index if not exists bbbb_license_code_redemptions_user_idx
+  on public.bbbb_license_code_redemptions(user_id, redeemed_at desc);
+
 create index if not exists bbbb_shared_code_members_code_idx
   on public.bbbb_shared_code_members(code);
 
@@ -110,6 +141,8 @@ create index if not exists bbbb_download_events_user_created_idx
 alter table public.bbbb_site_profiles enable row level security;
 alter table public.bbbb_account_licenses enable row level security;
 alter table public.bbbb_account_devices enable row level security;
+alter table public.bbbb_license_codes enable row level security;
+alter table public.bbbb_license_code_redemptions enable row level security;
 alter table public.bbbb_shared_code_members enable row level security;
 alter table public.bbbb_app_releases enable row level security;
 alter table public.bbbb_download_events enable row level security;
@@ -191,6 +224,32 @@ create policy "bbbb account devices read own"
 drop policy if exists "bbbb account devices admin write" on public.bbbb_account_devices;
 create policy "bbbb account devices admin write"
   on public.bbbb_account_devices
+  for all
+  using (public.bbbb_is_admin())
+  with check (public.bbbb_is_admin());
+
+drop policy if exists "bbbb license codes admin read" on public.bbbb_license_codes;
+create policy "bbbb license codes admin read"
+  on public.bbbb_license_codes
+  for select
+  using (public.bbbb_is_admin());
+
+drop policy if exists "bbbb license codes admin write" on public.bbbb_license_codes;
+create policy "bbbb license codes admin write"
+  on public.bbbb_license_codes
+  for all
+  using (public.bbbb_is_admin())
+  with check (public.bbbb_is_admin());
+
+drop policy if exists "bbbb license redemptions read own" on public.bbbb_license_code_redemptions;
+create policy "bbbb license redemptions read own"
+  on public.bbbb_license_code_redemptions
+  for select
+  using (auth.uid() = user_id or public.bbbb_is_admin());
+
+drop policy if exists "bbbb license redemptions admin write" on public.bbbb_license_code_redemptions;
+create policy "bbbb license redemptions admin write"
+  on public.bbbb_license_code_redemptions
   for all
   using (public.bbbb_is_admin())
   with check (public.bbbb_is_admin());
