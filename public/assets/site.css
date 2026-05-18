@@ -420,9 +420,6 @@ h3 {
 }
 
 .feature-card,
-.flow-list li,
-.timeline article,
-.setup-grid article,
 .release-panel,
 .login-form,
 .dashboard-grid article,
@@ -435,7 +432,6 @@ h3 {
 }
 
 .feature-card,
-.setup-grid article,
 .dashboard-grid article {
   min-width: 0;
   display: grid;
@@ -454,20 +450,107 @@ h3 {
   font-weight: 950;
 }
 
-.flow-list {
+.flow-layout,
+.updates-layout,
+.setup-layout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(420px, 1.28fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: start;
+}
+
+.flow-layout .section-heading,
+.updates-layout .section-heading,
+.setup-layout .section-heading {
+  position: sticky;
+  top: 152px;
+  margin-bottom: 0;
+}
+
+.flow-list {
+  position: relative;
+  display: grid;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.flow-list::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  bottom: 15px;
+  left: 19px;
+  width: 1px;
+  background: var(--line);
+}
+
 .flow-list li {
+  position: relative;
   min-width: 0;
   display: grid;
-  gap: 10px;
-  padding: 24px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 18px;
+  padding: 0 0 34px;
+}
+
+.flow-list li:last-child {
+  padding-bottom: 0;
+}
+
+.flow-list li span {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--page);
+  color: var(--blue-2);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0;
+  z-index: 1;
+}
+
+.flow-list strong,
+.timeline strong,
+.setup-grid strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.flow-preview {
+  grid-column: 2;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.flow-preview div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.flow-preview div:first-child {
+  border-top: 0;
+}
+
+.flow-preview span {
+  color: var(--blue-2);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.flow-preview strong {
+  font-size: 16px;
 }
 
 .flow-list span,
@@ -481,15 +564,17 @@ h3 {
 
 .timeline {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 0;
+  border-top: 1px solid var(--line);
 }
 
 .timeline article {
   min-width: 0;
   display: grid;
-  gap: 8px;
-  padding: 22px;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .download-section {
@@ -522,8 +607,28 @@ h3 {
 
 .setup-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  counter-reset: setup-step;
+}
+
+.setup-grid article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 88px minmax(160px, 0.52fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: baseline;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.setup-grid article::before {
+  counter-increment: setup-step;
+  content: counter(setup-step, decimal-leading-zero);
+  color: var(--muted);
+  font-size: 28px;
+  font-weight: 950;
+  line-height: 1;
 }
 
 .login-section {
@@ -679,12 +784,31 @@ h3 {
 
   .status-strip,
   .feature-grid,
-  .flow-list,
-  .timeline,
-  .setup-grid,
   .login-section,
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .flow-layout,
+  .updates-layout,
+  .setup-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-layout .section-heading,
+  .updates-layout .section-heading,
+  .setup-layout .section-heading {
+    position: static;
+  }
+
+  .flow-preview {
+    grid-column: auto;
+  }
+
+  .timeline article,
+  .setup-grid article {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .release-panel,
@@ -736,13 +860,24 @@ h3 {
   }
 
   .feature-card,
-  .flow-list li,
-  .timeline article,
-  .setup-grid article,
   .release-panel,
   .login-form,
   .dashboard-grid article,
   .legal-card {
     padding: 18px;
+  }
+
+  .flow-list li {
+    gap: 14px;
+  }
+
+  .flow-preview div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .timeline article,
+  .setup-grid article {
+    padding: 18px 0;
   }
 }
