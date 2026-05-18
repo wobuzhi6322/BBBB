@@ -20,10 +20,17 @@
       </a>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="/#download">다운로드</a>
-        <a href="/#setup">설치</a>
         <a href="/#login">로그인</a>
       </nav>
-      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
+        </svg>
+      </button>
     </header>
 
     <main class="legal-main">

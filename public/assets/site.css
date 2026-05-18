@@ -123,8 +123,7 @@ code {
   gap: 8px;
 }
 
-.site-nav a,
-.category-nav a {
+.site-nav a {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
@@ -134,6 +133,19 @@ code {
   color: var(--secondary);
   text-decoration: none;
   font-size: 13px;
+  font-weight: 850;
+}
+
+.category-nav a {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  color: var(--secondary);
+  text-decoration: none;
+  font-size: 12px;
   font-weight: 850;
 }
 
@@ -154,6 +166,7 @@ code {
 }
 
 .theme-toggle,
+.header-account,
 .header-download,
 .button {
   min-height: 42px;
@@ -173,16 +186,40 @@ code {
 }
 
 .theme-toggle {
-  padding: 9px 12px;
-  font-size: 13px;
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle .icon-moon {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-moon {
+  display: block;
 }
 
 .theme-toggle::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--blue-2);
+  content: none;
 }
 
 .header-download,
@@ -192,11 +229,13 @@ code {
   color: var(--on-blue);
 }
 
+.header-account,
 .button.secondary {
   background: var(--surface-2);
 }
 
 .button:hover,
+.header-account:hover,
 .header-download:hover,
 .theme-toggle:hover {
   transform: translateY(-1px);
@@ -210,6 +249,7 @@ code {
 
 .button:focus-visible,
 .theme-toggle:focus-visible,
+.header-account:focus-visible,
 .header-download:focus-visible,
 .site-nav a:focus-visible,
 .category-nav a:focus-visible,
@@ -438,6 +478,7 @@ h3 {
 .pricing-section,
 .download-section,
 .login-section,
+.profile-section,
 .legal-main,
 .site-footer {
   width: var(--content);
@@ -479,8 +520,8 @@ h3 {
   z-index: 15;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 0;
+  gap: 6px;
+  padding: 6px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: var(--page);
@@ -496,7 +537,8 @@ h3 {
 .updates-section,
 .pricing-section,
 .download-section,
-.login-section {
+.login-section,
+.profile-section {
   padding: 68px 0;
 }
 
@@ -514,6 +556,8 @@ h3 {
 .feature-card,
 .release-panel,
 .login-form,
+.login-window,
+.profile-card,
 .dashboard-grid article,
 .release-notes,
 .legal-card {
@@ -760,6 +804,16 @@ h3 {
   border-top: 1px solid var(--line);
 }
 
+.account-heading h2 {
+  margin-bottom: 8px;
+  font-size: 28px;
+}
+
+.account-heading p:last-child {
+  margin-bottom: 0;
+  color: var(--secondary);
+}
+
 .pricing-section {
   border-top: 1px solid var(--line);
 }
@@ -969,11 +1023,112 @@ h3 {
   font-weight: 850;
 }
 
+.profile-section {
+  border-top: 1px solid var(--line);
+}
+
+.login-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(3 6 12 / 68%);
+  cursor: pointer;
+}
+
+.login-window {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  padding: 24px;
+}
+
+.login-window .login-form {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.login-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.has-modal {
+  overflow: hidden;
+}
+
+.profile-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+}
+
+.profile-avatar {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--blue-2) 52%, var(--border));
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--blue) 76%, #000 24%), color-mix(in srgb, var(--magenta) 62%, #000 38%));
+  color: var(--on-blue);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.profile-copy {
+  min-width: 0;
+}
+
+.profile-copy strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 1.24;
+}
+
+.profile-copy p {
+  margin-bottom: 0;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   grid-column: 1 / -1;
+}
+
+.account-dashboard {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-dashboard article {
+  padding: 18px;
 }
 
 .dashboard-grid article {
@@ -1209,7 +1364,14 @@ h3 {
   }
 
   .category-nav {
-    top: 183px;
+    top: 156px;
+    gap: 5px;
+    padding: 5px 0;
+  }
+
+  .category-nav a {
+    min-height: 26px;
+    padding: 4px 8px;
   }
 
   h1 {
@@ -1246,9 +1408,20 @@ h3 {
   .option-panel,
   .release-panel,
   .login-form,
+  .login-window,
+  .profile-card,
   .dashboard-grid article,
   .legal-card {
     padding: 18px;
+  }
+
+  .profile-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-card .button {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .flow-list li {

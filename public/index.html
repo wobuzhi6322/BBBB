@@ -29,10 +29,19 @@
         <a href="#screens">작동 화면</a>
         <a href="#pricing">요금</a>
         <a href="#download">다운로드</a>
-        <a href="#login">계정</a>
+        <a id="nav-account" href="#login">계정</a>
       </nav>
       <div class="header-actions">
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
+          <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
+          </svg>
+        </button>
+        <button id="header-account" class="header-account" type="button">로그인</button>
         <a class="header-download" href="#download">다운로드</a>
       </div>
     </header>
@@ -272,7 +281,7 @@
         <div class="section-heading">
           <p class="eyebrow">Download</p>
           <h2>최신 프로그램 다운로드</h2>
-          <p>Windows용 설치 파일을 내려받아 실행하고, 안내에 따라 설치 위치와 바탕화면 바로가기를 선택합니다.</p>
+          <p>Windows 설치 파일을 내려받아 실행하고, 안내에 따라 설치 위치와 바탕화면 바로가기를 선택합니다.</p>
         </div>
         <div class="release-panel">
           <div class="release-copy">
@@ -287,34 +296,22 @@
         <div id="release-notes" class="release-notes"></div>
       </section>
 
-      <section id="login" class="login-section">
+      <section id="profile" class="profile-section is-hidden" aria-labelledby="profile-title">
         <div class="section-heading">
-          <p class="eyebrow">Account</p>
-          <h2>계정 로그인</h2>
-          <p id="dashboard-message">로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.</p>
+          <p class="eyebrow">Profile</p>
+          <h2 id="profile-title">내 프로필</h2>
+          <p id="dashboard-message">계정의 라이선스, 사용 제한, 공유 코드, 등록 PC를 확인합니다.</p>
         </div>
-        <form id="login-form" class="login-form">
-          <label>
-            이메일
-            <input id="email" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            비밀번호
-            <input id="password" type="password" autocomplete="current-password" required minlength="6" />
-          </label>
-          <div class="form-actions">
-            <button id="login-button" class="button primary" type="submit">로그인</button>
-            <button id="signup-button" class="button secondary" type="button">회원가입</button>
-          </div>
-          <p id="auth-message" class="form-message" aria-live="polite"></p>
-        </form>
-        <div id="dashboard-content" class="dashboard-grid is-hidden">
-          <article>
-            <span class="label">계정</span>
+        <article id="profile-card" class="profile-card">
+          <div id="profile-initial" class="profile-avatar" aria-hidden="true">G</div>
+          <div class="profile-copy">
+            <span class="label">사용자 프로필</span>
             <strong id="user-email">-</strong>
             <p id="account-role" class="muted">권한 확인 중</p>
-            <button id="logout-button" class="button secondary" type="button">로그아웃</button>
-          </article>
+          </div>
+          <button id="logout-button" class="button secondary" type="button">로그아웃</button>
+        </article>
+        <div id="dashboard-content" class="dashboard-grid account-dashboard">
           <article>
             <span class="label">라이선스</span>
             <strong id="license-plan">확인 중</strong>
@@ -340,6 +337,33 @@
         </div>
       </section>
     </main>
+
+    <div id="login-dialog" class="login-dialog is-hidden" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="login-backdrop" type="button" aria-label="로그인 창 닫기" data-close-login></button>
+      <section id="login" class="login-window">
+        <button class="login-close" type="button" aria-label="로그인 창 닫기" data-close-login>×</button>
+        <div class="account-heading">
+          <p class="eyebrow">Account</p>
+          <h2 id="login-title">계정 로그인</h2>
+          <p>로그인하면 내 라이선스와 다운로드 기록을 확인할 수 있습니다.</p>
+        </div>
+        <form id="login-form" class="login-form">
+          <label>
+            이메일
+            <input id="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            비밀번호
+            <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+          </label>
+          <div class="form-actions">
+            <button id="login-button" class="button primary" type="submit">로그인</button>
+            <button id="signup-button" class="button secondary" type="button">회원가입</button>
+          </div>
+          <p id="auth-message" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
 
     <footer class="site-footer">
       <div>

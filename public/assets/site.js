@@ -24,8 +24,14 @@ const els = {
   email: document.getElementById("email"),
   password: document.getElementById("password"),
   themeToggle: document.getElementById("theme-toggle"),
+  headerAccount: document.getElementById("header-account"),
+  navAccount: document.getElementById("nav-account"),
+  loginDialog: document.getElementById("login-dialog"),
   dashboardMessage: document.getElementById("dashboard-message"),
+  profileSection: document.getElementById("profile"),
   dashboardContent: document.getElementById("dashboard-content"),
+  profileCard: document.getElementById("profile-card"),
+  profileInitial: document.getElementById("profile-initial"),
   userEmail: document.getElementById("user-email"),
   accountRole: document.getElementById("account-role"),
   licensePlan: document.getElementById("license-plan"),
@@ -49,6 +55,7 @@ async function init() {
   await loadConfig();
   await loadRelease();
   setupDownload();
+  setupLoginDialog();
   setupAuth();
 }
 
@@ -68,9 +75,9 @@ function applyTheme(theme) {
     return;
   }
   const isDark = state.theme === "dark";
-  setText(els.themeToggle, isDark ? "화이트 모드" : "다크 모드");
   els.themeToggle.setAttribute("aria-pressed", String(isDark));
   els.themeToggle.setAttribute("title", isDark ? "화이트 모드로 전환" : "다크 모드로 전환");
+  els.themeToggle.setAttribute("aria-label", isDark ? "화이트 모드로 전환" : "다크 모드로 전환");
 }
 
 async function loadConfig() {
@@ -139,6 +146,60 @@ function setupDownload() {
   });
 }
 
+function setupLoginDialog() {
+  els.headerAccount?.addEventListener("click", openAccountTarget);
+  els.navAccount?.addEventListener("click", (event) => {
+    if (state.session?.user) {
+      return;
+    }
+    event.preventDefault();
+    openLoginDialog();
+  });
+  document.querySelectorAll("[data-close-login]").forEach((button) => {
+    button.addEventListener("click", closeLoginDialog);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeLoginDialog();
+    }
+  });
+  window.addEventListener("hashchange", handleAccountHash);
+  handleAccountHash();
+}
+
+function openAccountTarget(event) {
+  event?.preventDefault();
+  if (state.session?.user) {
+    closeLoginDialog();
+    els.profileSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  openLoginDialog();
+}
+
+function openLoginDialog() {
+  els.loginDialog?.classList.remove("is-hidden");
+  document.body.classList.add("has-modal");
+  window.setTimeout(() => els.email?.focus(), 0);
+}
+
+function closeLoginDialog() {
+  els.loginDialog?.classList.add("is-hidden");
+  document.body.classList.remove("has-modal");
+}
+
+function handleAccountHash() {
+  if (window.location.hash !== "#login") {
+    return;
+  }
+  if (state.session?.user) {
+    closeLoginDialog();
+    window.setTimeout(() => els.profileSection?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    return;
+  }
+  openLoginDialog();
+}
+
 function setupAuth() {
   if (!els.loginForm || !els.authMessage) {
     return;
@@ -192,15 +253,33 @@ async function signOut() {
 function renderSession() {
   const user = state.session?.user;
   if (!user) {
-    els.dashboardContent?.classList.add("is-hidden");
+    els.profileSection?.classList.add("is-hidden");
+    els.profileCard?.classList.remove("is-hidden");
+    els.dashboardContent?.classList.remove("is-hidden");
+    setText(els.headerAccount, "로그인");
+    if (els.navAccount) {
+      els.navAccount.href = "#login";
+    }
     state.account = null;
-    setText(els.dashboardMessage, "로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.");
+    setText(els.dashboardMessage, "계정의 라이선스, 사용 제한, 공유 코드, 등록 PC를 확인합니다.");
     clearAccountDashboard();
     return;
   }
+  const wasDialogOpen = Boolean(els.loginDialog && !els.loginDialog.classList.contains("is-hidden"));
+  els.profileSection?.classList.remove("is-hidden");
+  els.profileCard?.classList.remove("is-hidden");
   els.dashboardContent?.classList.remove("is-hidden");
+  setText(els.headerAccount, "내 프로필");
+  if (els.navAccount) {
+    els.navAccount.href = "#profile";
+  }
   setText(els.dashboardMessage, "계정의 라이선스, 사용 제한, 공유 코드, 등록 PC를 확인합니다.");
   setText(els.userEmail, user.email || user.id);
+  setText(els.profileInitial, getProfileInitial(user.email || user.id));
+  closeLoginDialog();
+  if (wasDialogOpen) {
+    window.setTimeout(() => els.profileSection?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
   void loadAccount();
 }
 
@@ -264,6 +343,8 @@ function renderAccount(account) {
 }
 
 function clearAccountDashboard() {
+  setText(els.userEmail, "-");
+  setText(els.profileInitial, "G");
   setText(els.accountRole, "");
   setText(els.licensePlan, "-");
   setText(els.licenseStatus, "");
@@ -381,6 +462,11 @@ function sharedRoleLabel(value) {
     viewer: "보기"
   };
   return labels[value] || "보기";
+}
+
+function getProfileInitial(value) {
+  const trimmed = String(value || "G").trim();
+  return (trimmed.charAt(0) || "G").toUpperCase();
 }
 
 function formatDate(value) {
