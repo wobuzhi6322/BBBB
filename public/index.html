@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="BBBB Donation Signature 다운로드, 로그인, 공유 코드 동기화를 관리하는 공식 웹사이트입니다."
+    />
+    <title>BBBB Donation Signature</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="/assets/site.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="BBBB Donation Signature">
+        <img src="/assets/brand-logo.png" alt="" />
+        <span>BBBB Donation Signature</span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="#download">다운로드</a>
+        <a href="#setup">설치</a>
+        <a href="#login">로그인</a>
+        <a href="#dashboard">대시보드</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <img class="hero-image" src="/assets/brand-logo.png" alt="BBBB Donation Signature 로고" />
+        <div class="hero-copy">
+          <p class="eyebrow">Phone Link + OBS 후원 시그니처 도구</p>
+          <h1>BBBB Donation Signature</h1>
+          <p>
+            후원 알림을 시그니처, 벽지, 미디어 출력으로 연결하고 공유 코드로 여러 PC가 같은 설정을
+            사용할 수 있게 관리합니다.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#download">Windows 다운로드</a>
+            <a class="button secondary" href="#login">로그인</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-strip" aria-live="polite">
+        <span id="site-status">사이트 설정을 확인하는 중입니다.</span>
+        <span id="release-status">GitHub Release를 확인하는 중입니다.</span>
+      </section>
+
+      <section class="section-grid" aria-label="주요 기능">
+        <article class="info-card">
+          <strong>공유 코드 동기화</strong>
+          <p>같은 코드를 입력한 PC가 동일한 시그니처, 미디어, 벽지 설정을 불러옵니다.</p>
+        </article>
+        <article class="info-card">
+          <strong>로컬 방송 안정성</strong>
+          <p>Phone Link, OBS, 로컬 미디어 실행은 각 PC에서 유지하고 사이트는 배포와 계정 관리를 담당합니다.</p>
+        </article>
+        <article class="info-card">
+          <strong>GitHub Release 배포</strong>
+          <p>최신 ZIP 릴리스를 자동으로 찾아 다운로드 버튼에 연결합니다.</p>
+        </article>
+      </section>
+
+      <section id="download" class="download-section">
+        <div class="section-heading">
+          <p class="eyebrow">Download</p>
+          <h2>프로그램 다운로드</h2>
+          <p>배포 파일은 GitHub Release에서 가져옵니다. ZIP은 압축 해제 후 폴더 전체를 유지해야 합니다.</p>
+        </div>
+        <div class="release-panel">
+          <div>
+            <span class="label">최신 버전</span>
+            <h3 id="release-name">확인 중</h3>
+            <p id="release-meta" class="muted">Release 정보를 불러오고 있습니다.</p>
+          </div>
+          <div class="release-actions">
+            <button id="download-button" class="button primary" type="button" disabled>다운로드 준비 중</button>
+            <a id="release-link" class="button secondary" href="#" target="_blank" rel="noreferrer">Release 보기</a>
+          </div>
+        </div>
+        <div id="release-notes" class="release-notes"></div>
+      </section>
+
+      <section id="setup" class="setup-section">
+        <div class="section-heading">
+          <p class="eyebrow">Setup</p>
+          <h2>사용 시작 순서</h2>
+        </div>
+        <div class="step-list">
+          <article class="step-card">
+            <span>1</span>
+            <strong>ZIP 압축 해제</strong>
+            <p>다운로드한 ZIP을 풀고 <code>BBBB Donation Signature.exe</code>를 실행합니다.</p>
+          </article>
+          <article class="step-card">
+            <span>2</span>
+            <strong>공유 코드 입력</strong>
+            <p>관리자 화면의 설정 백업에서 공유 코드와 관리자 토큰을 입력합니다.</p>
+          </article>
+          <article class="step-card">
+            <span>3</span>
+            <strong>OBS 소스 연결</strong>
+            <p>오버레이와 벽지 OBS 주소를 복사해 브라우저 소스로 추가합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="login" class="login-section">
+        <div class="section-heading">
+          <p class="eyebrow">Account</p>
+          <h2>로그인</h2>
+          <p>로그인 후 내 다운로드 상태와 공유 코드 운영 정보를 볼 수 있게 확장합니다.</p>
+        </div>
+        <form id="login-form" class="login-form">
+          <label>
+            이메일
+            <input id="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            비밀번호
+            <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+          </label>
+          <div class="form-actions">
+            <button id="login-button" class="button primary" type="submit">로그인</button>
+            <button id="signup-button" class="button secondary" type="button">회원가입</button>
+          </div>
+          <p id="auth-message" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="dashboard" class="dashboard-section">
+        <div class="section-heading">
+          <p class="eyebrow">Dashboard</p>
+          <h2>내 대시보드</h2>
+          <p id="dashboard-message">로그인하면 계정별 다운로드와 공유 코드 상태를 여기에서 관리합니다.</p>
+        </div>
+        <div id="dashboard-content" class="dashboard-grid is-hidden">
+          <article class="info-card">
+            <span class="label">계정</span>
+            <strong id="user-email">-</strong>
+            <button id="logout-button" class="button secondary" type="button">로그아웃</button>
+          </article>
+          <article class="info-card">
+            <span class="label">공유 코드</span>
+            <strong>BBBB-001</strong>
+            <p>현재 Windows 앱에서 사용하는 공유 코드입니다. 이후 계정별 코드 발급/회수 기능을 붙일 수 있습니다.</p>
+          </article>
+          <article class="info-card">
+            <span class="label">운영 관리</span>
+            <strong>준비됨</strong>
+            <p>Supabase 테이블을 적용하면 다운로드 기록과 유저 권한 관리가 저장됩니다.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>BBBB Donation Signature</span>
+      <a href="https://github.com/wobuzhi6322/BBBB" target="_blank" rel="noreferrer">GitHub</a>
+    </footer>
+  </body>
+</html>

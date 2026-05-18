@@ -2,6 +2,12 @@
   "functions": {
     "api/shared-profile.ts": {
       "maxDuration": 60
+    },
+    "api/releases.ts": {
+      "maxDuration": 15
+    },
+    "api/download-events.ts": {
+      "maxDuration": 15
     }
   }
 }
