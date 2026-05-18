@@ -33,6 +33,35 @@ create table if not exists public.bbbb_site_profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.bbbb_account_licenses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  license_code text not null unique,
+  plan text not null default 'starter' check (plan in ('starter', 'standard', 'pro')),
+  status text not null default 'pending' check (status in ('pending', 'active', 'expired', 'suspended')),
+  max_signatures integer not null default 3 check (max_signatures >= 0),
+  max_media_mb integer not null default 50 check (max_media_mb >= 0),
+  max_devices integer not null default 1 check (max_devices >= 0),
+  shared_sync_enabled boolean not null default false,
+  notes text,
+  issued_at timestamptz not null default now(),
+  activated_at timestamptz,
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.bbbb_account_devices (
+  id uuid primary key default gen_random_uuid(),
+  license_id uuid not null references public.bbbb_account_licenses(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  device_fingerprint text not null,
+  device_name text,
+  app_version text,
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (license_id, device_fingerprint)
+);
+
 create table if not exists public.bbbb_shared_code_members (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -66,6 +95,12 @@ create table if not exists public.bbbb_download_events (
 create index if not exists bbbb_shared_code_members_user_idx
   on public.bbbb_shared_code_members(user_id);
 
+create index if not exists bbbb_account_licenses_user_status_idx
+  on public.bbbb_account_licenses(user_id, status);
+
+create index if not exists bbbb_account_devices_user_seen_idx
+  on public.bbbb_account_devices(user_id, last_seen_at desc);
+
 create index if not exists bbbb_shared_code_members_code_idx
   on public.bbbb_shared_code_members(code);
 
@@ -73,6 +108,8 @@ create index if not exists bbbb_download_events_user_created_idx
   on public.bbbb_download_events(user_id, created_at desc);
 
 alter table public.bbbb_site_profiles enable row level security;
+alter table public.bbbb_account_licenses enable row level security;
+alter table public.bbbb_account_devices enable row level security;
 alter table public.bbbb_shared_code_members enable row level security;
 alter table public.bbbb_app_releases enable row level security;
 alter table public.bbbb_download_events enable row level security;
@@ -131,6 +168,32 @@ create policy "bbbb profiles update own"
   for update
   using (auth.uid() = user_id or public.bbbb_is_admin())
   with check (auth.uid() = user_id or public.bbbb_is_admin());
+
+drop policy if exists "bbbb account licenses read own" on public.bbbb_account_licenses;
+create policy "bbbb account licenses read own"
+  on public.bbbb_account_licenses
+  for select
+  using (auth.uid() = user_id or public.bbbb_is_admin());
+
+drop policy if exists "bbbb account licenses admin write" on public.bbbb_account_licenses;
+create policy "bbbb account licenses admin write"
+  on public.bbbb_account_licenses
+  for all
+  using (public.bbbb_is_admin())
+  with check (public.bbbb_is_admin());
+
+drop policy if exists "bbbb account devices read own" on public.bbbb_account_devices;
+create policy "bbbb account devices read own"
+  on public.bbbb_account_devices
+  for select
+  using (auth.uid() = user_id or public.bbbb_is_admin());
+
+drop policy if exists "bbbb account devices admin write" on public.bbbb_account_devices;
+create policy "bbbb account devices admin write"
+  on public.bbbb_account_devices
+  for all
+  using (public.bbbb_is_admin())
+  with check (public.bbbb_is_admin());
 
 drop policy if exists "bbbb shared code members read" on public.bbbb_shared_code_members;
 create policy "bbbb shared code members read"

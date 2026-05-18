@@ -3,6 +3,7 @@ const state = {
   release: null,
   supabase: null,
   session: null,
+  account: null,
   theme: "dark"
 };
 
@@ -25,7 +26,15 @@ const els = {
   themeToggle: document.getElementById("theme-toggle"),
   dashboardMessage: document.getElementById("dashboard-message"),
   dashboardContent: document.getElementById("dashboard-content"),
-  userEmail: document.getElementById("user-email")
+  userEmail: document.getElementById("user-email"),
+  accountRole: document.getElementById("account-role"),
+  licensePlan: document.getElementById("license-plan"),
+  licenseStatus: document.getElementById("license-status"),
+  licenseCode: document.getElementById("license-code"),
+  licenseLimits: document.getElementById("license-limits"),
+  sharedCodeList: document.getElementById("shared-code-list"),
+  deviceList: document.getElementById("device-list"),
+  downloadList: document.getElementById("download-list")
 };
 
 init().catch((error) => {
@@ -184,12 +193,85 @@ function renderSession() {
   const user = state.session?.user;
   if (!user) {
     els.dashboardContent?.classList.add("is-hidden");
+    state.account = null;
     setText(els.dashboardMessage, "로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.");
+    clearAccountDashboard();
     return;
   }
   els.dashboardContent?.classList.remove("is-hidden");
-  setText(els.dashboardMessage, "로그인된 계정 기준으로 다운로드와 공유 코드 관리 기능을 제공합니다.");
+  setText(els.dashboardMessage, "계정의 라이선스, 사용 제한, 공유 코드, 등록 PC를 확인합니다.");
   setText(els.userEmail, user.email || user.id);
+  void loadAccount();
+}
+
+async function loadAccount() {
+  const token = state.session?.access_token;
+  if (!token) {
+    return;
+  }
+  try {
+    const result = await getJsonWithAuth("/api/account", token);
+    state.account = result.data;
+    renderAccount(result.data);
+  } catch (error) {
+    setText(els.licensePlan, "확인 실패");
+    setText(els.licenseStatus, error instanceof Error ? error.message : "계정 정보를 불러오지 못했습니다.");
+  }
+}
+
+function renderAccount(account) {
+  const profile = account.profile || {};
+  const license = account.activeLicense;
+  setText(els.accountRole, `역할: ${roleLabel(profile.role)}`);
+
+  if (!license) {
+    setText(els.licensePlan, "플랜 없음");
+    setText(els.licenseStatus, "관리자가 요금제를 부여하면 라이선스가 표시됩니다.");
+    setText(els.licenseCode, "발급 대기");
+    replaceRows(els.licenseLimits, [row("상태", "구매 확인 대기")]);
+  } else {
+    setText(els.licensePlan, planLabel(license.plan));
+    setText(els.licenseStatus, `${statusLabel(license.status)} · ${license.expires_at ? `${formatDate(license.expires_at)}까지` : "만료일 없음"}`);
+    setText(els.licenseCode, license.license_code || "-");
+    replaceRows(els.licenseLimits, [
+      row("시그니처", `${license.max_signatures}개`),
+      row("미디어", `${license.max_media_mb}MB`),
+      row("등록 PC", `${license.max_devices}대`),
+      row("공유 코드", license.shared_sync_enabled ? "사용 가능" : "미포함")
+    ]);
+  }
+
+  replaceRows(
+    els.sharedCodeList,
+    account.sharedCodes?.length
+      ? account.sharedCodes.map((item) => row(item.code, sharedRoleLabel(item.role)))
+      : [emptyRow("아직 연결된 공유 코드가 없습니다.")]
+  );
+
+  replaceRows(
+    els.deviceList,
+    account.devices?.length
+      ? account.devices.map((item) => row(item.device_name || "이름 없는 PC", item.app_version || formatDate(item.last_seen_at)))
+      : [emptyRow("아직 등록된 PC가 없습니다.")]
+  );
+
+  replaceRows(
+    els.downloadList,
+    account.downloads?.length
+      ? account.downloads.map((item) => row(item.release_tag, formatDate(item.created_at)))
+      : [emptyRow("다운로드 기록이 없습니다.")]
+  );
+}
+
+function clearAccountDashboard() {
+  setText(els.accountRole, "");
+  setText(els.licensePlan, "-");
+  setText(els.licenseStatus, "");
+  setText(els.licenseCode, "-");
+  replaceRows(els.licenseLimits, []);
+  replaceRows(els.sharedCodeList, []);
+  replaceRows(els.deviceList, []);
+  replaceRows(els.downloadList, []);
 }
 
 async function logDownload(release) {
@@ -222,10 +304,83 @@ async function getJson(url) {
   return data;
 }
 
+async function getJsonWithAuth(url, token) {
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
 function setText(element, value) {
   if (element) {
     element.textContent = value;
   }
+}
+
+function replaceRows(target, rows) {
+  if (!target) {
+    return;
+  }
+  target.replaceChildren(...rows);
+}
+
+function row(label, value) {
+  const item = document.createElement("li");
+  const labelEl = document.createElement("span");
+  const valueEl = document.createElement("strong");
+  labelEl.textContent = label;
+  valueEl.textContent = value;
+  item.append(labelEl, valueEl);
+  return item;
+}
+
+function emptyRow(value) {
+  const item = document.createElement("div");
+  item.className = "account-empty";
+  item.textContent = value;
+  return item;
+}
+
+function roleLabel(value) {
+  if (value === "admin") {
+    return "관리자";
+  }
+  return "사용자";
+}
+
+function planLabel(value) {
+  const labels = {
+    starter: "Starter",
+    standard: "Standard",
+    pro: "Pro"
+  };
+  return labels[value] || "알 수 없음";
+}
+
+function statusLabel(value) {
+  const labels = {
+    pending: "대기",
+    active: "활성",
+    expired: "만료",
+    suspended: "정지"
+  };
+  return labels[value] || "상태 확인 필요";
+}
+
+function sharedRoleLabel(value) {
+  const labels = {
+    owner: "소유자",
+    editor: "편집자",
+    viewer: "보기"
+  };
+  return labels[value] || "보기";
 }
 
 function formatDate(value) {
