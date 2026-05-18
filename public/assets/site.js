@@ -765,6 +765,7 @@ function planLabel(value) {
 function statusLabel(value) {
   const labels = {
     pending: "대기",
+    inactive: "비활성 · 결제전",
     active: "활성",
     expired: "만료",
     suspended: "정지"

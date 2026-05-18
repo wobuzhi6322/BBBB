@@ -38,7 +38,7 @@ create table if not exists public.bbbb_account_licenses (
   user_id uuid not null references auth.users(id) on delete cascade,
   license_code text not null unique,
   plan text not null default 'starter' check (plan in ('starter', 'standard', 'pro')),
-  status text not null default 'pending' check (status in ('pending', 'active', 'expired', 'suspended')),
+  status text not null default 'pending' check (status in ('pending', 'inactive', 'active', 'expired', 'suspended')),
   max_signatures integer not null default 3 check (max_signatures >= 0),
   max_media_mb integer not null default 50 check (max_media_mb >= 0),
   max_devices integer not null default 1 check (max_devices >= 0),
@@ -137,6 +137,13 @@ create index if not exists bbbb_shared_code_members_code_idx
 
 create index if not exists bbbb_download_events_user_created_idx
   on public.bbbb_download_events(user_id, created_at desc);
+
+alter table public.bbbb_account_licenses
+  drop constraint if exists bbbb_account_licenses_status_check;
+
+alter table public.bbbb_account_licenses
+  add constraint bbbb_account_licenses_status_check
+  check (status in ('pending', 'inactive', 'active', 'expired', 'suspended'));
 
 alter table public.bbbb_site_profiles enable row level security;
 alter table public.bbbb_account_licenses enable row level security;

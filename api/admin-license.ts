@@ -267,8 +267,8 @@ function normalizePlan(value: unknown): string {
 
 function normalizeStatus(value: unknown): string {
   const status = stringValue(value)?.toLowerCase() || "active";
-  if (!["pending", "active", "expired", "suspended"].includes(status)) {
-    throw new Error("status는 pending, active, expired, suspended 중 하나여야 합니다.");
+  if (!["pending", "inactive", "active", "expired", "suspended"].includes(status)) {
+    throw new Error("status는 pending, inactive, active, expired, suspended 중 하나여야 합니다.");
   }
   return status;
 }
