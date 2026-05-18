@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="BBBB Donation Signature 다운로드, 계정 로그인, 공유 코드 동기화를 관리하는 공식 사이트입니다."
+      content="BBBB Donation Signature는 계좌 입금 알림을 OBS 시그니처, 벽지, 미디어 출력으로 연결하는 방송용 Windows 프로그램입니다."
     />
     <title>BBBB Donation Signature</title>
     <script>
@@ -38,44 +38,44 @@
         <img class="hero-image" src="/assets/brand-logo.png" alt="BBBB Donation Signature 로고" />
         <div class="hero-overlay"></div>
         <div class="hero-inner">
-          <p class="eyebrow">Broadcast donation signature manager</p>
-          <h1 id="hero-title">BBBB Donation Signature</h1>
+          <p class="eyebrow">계좌 입금 알림 기반 OBS 시그니처</p>
+          <h1 id="hero-title">계좌 알림이 방송 시그니처가 됩니다</h1>
           <p class="hero-lead">
-            Phone Link 후원 알림을 OBS 시그니처, 벽지, 미디어 출력으로 연결하고 공유 코드로 여러 PC가
-            같은 설정을 사용할 수 있게 관리합니다.
+            은행 앱 입금 알림을 Windows Phone Link로 받아 후원자 이름과 금액을 정리하고, OBS 브라우저 소스에서
+            시그니처, 벽지, 이미지, 영상, 음악으로 출력합니다.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#download">Windows 다운로드</a>
-            <a class="button secondary" href="#login">계정 로그인</a>
+            <a class="button secondary" href="#setup">설치 순서 보기</a>
           </div>
           <div class="hero-facts" aria-label="제품 요약">
-            <span>Windows x64</span>
-            <span>OBS Browser Source</span>
-            <span>Vercel/Supabase Sync</span>
+            <span>계좌 입금 알림</span>
+            <span>OBS 브라우저 소스</span>
+            <span>공유 코드 설정</span>
           </div>
         </div>
       </section>
 
       <section class="status-strip" aria-live="polite">
-        <span id="site-status"><i></i>사이트 설정을 확인하는 중입니다.</span>
-        <span id="release-status"><i></i>GitHub Release를 확인하는 중입니다.</span>
+        <span id="site-status"><i></i>계정 기능을 확인하는 중입니다.</span>
+        <span id="release-status"><i></i>최신 버전을 확인하는 중입니다.</span>
       </section>
 
       <section class="section-grid" aria-label="주요 기능">
         <article class="info-card">
-          <span class="label">Sync</span>
-          <strong>공유 코드 동기화</strong>
-          <p>같은 코드를 입력한 PC가 동일한 시그니처, 미디어, 벽지 설정을 불러옵니다.</p>
+          <span class="label">Detect</span>
+          <strong>입금 알림 감지</strong>
+          <p>방송 PC에 도착한 은행 입금 알림을 읽어 후원자 이름과 금액을 방송용 이벤트로 정리합니다.</p>
         </article>
         <article class="info-card">
-          <span class="label">Local</span>
-          <strong>방송 PC 안정성</strong>
-          <p>Phone Link, OBS, 로컬 미디어 실행은 각 PC에서 유지하고 사이트는 배포와 계정 관리를 담당합니다.</p>
+          <span class="label">Signature</span>
+          <strong>시그니처 자동 선택</strong>
+          <p>이름, 금액, 누적 후원, 랭킹 조건에 맞는 시그니처를 자동으로 선택합니다.</p>
         </article>
         <article class="info-card">
-          <span class="label">Release</span>
-          <strong>GitHub 배포 관리</strong>
-          <p>최신 ZIP 릴리스를 자동으로 찾아 다운로드 버튼에 연결합니다.</p>
+          <span class="label">OBS</span>
+          <strong>방송 화면 출력</strong>
+          <p>오버레이와 벽지 소스에서 이미지, 영상, 음악을 방송 화면에 맞춰 출력합니다.</p>
         </article>
       </section>
 
@@ -83,17 +83,16 @@
         <div class="section-heading">
           <p class="eyebrow">Download</p>
           <h2>최신 프로그램 다운로드</h2>
-          <p>배포 파일은 GitHub Release에서 가져옵니다. ZIP 압축 해제 후 폴더 전체를 유지해야 합니다.</p>
+          <p>Windows용 ZIP 파일을 내려받아 압축을 풀고 폴더 전체를 유지한 상태로 실행합니다.</p>
         </div>
         <div class="release-panel">
           <div class="release-copy">
             <span class="label">최신 버전</span>
             <h3 id="release-name">확인 중</h3>
-            <p id="release-meta" class="muted">Release 정보를 불러오고 있습니다.</p>
+            <p id="release-meta" class="muted">최신 파일 정보를 불러오고 있습니다.</p>
           </div>
           <div class="release-actions">
             <button id="download-button" class="button primary" type="button" disabled>다운로드 준비 중</button>
-            <a id="release-link" class="button secondary" href="#" target="_blank" rel="noreferrer">Release 보기</a>
           </div>
         </div>
         <div id="release-notes" class="release-notes"></div>
@@ -112,13 +111,13 @@
           </article>
           <article class="step-card">
             <span>2</span>
-            <strong>공유 코드 입력</strong>
-            <p>관리자 화면의 설정 백업에서 공유 코드와 관리자 토큰을 입력합니다.</p>
+            <strong>Phone Link 준비</strong>
+            <p>Windows Phone Link와 은행 앱 입금 알림을 켜서 방송 PC가 알림을 받을 수 있게 합니다.</p>
           </article>
           <article class="step-card">
             <span>3</span>
             <strong>OBS 소스 연결</strong>
-            <p>오버레이와 벽지 OBS 주소를 복사해 브라우저 소스로 추가합니다.</p>
+            <p>관리자 화면에서 오버레이와 벽지 주소를 복사해 OBS 브라우저 소스로 추가합니다.</p>
           </article>
         </div>
       </section>
@@ -127,7 +126,7 @@
         <div class="section-heading">
           <p class="eyebrow">Account</p>
           <h2>계정 로그인</h2>
-          <p>로그인 후 다운로드 기록, 공유 코드 멤버, 운영 권한 관리 기능을 단계적으로 확장합니다.</p>
+          <p>로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.</p>
         </div>
         <form id="login-form" class="login-form">
           <label>
@@ -161,12 +160,12 @@
           <article class="info-card">
             <span class="label">공유 코드</span>
             <strong>BBBB-001</strong>
-            <p>현재 Windows 앱에서 사용하는 공유 코드입니다. 이후 계정별 코드 발급/회수 기능을 붙일 수 있습니다.</p>
+            <p>같은 공유 코드를 입력한 PC는 동일한 시그니처와 미디어 설정을 사용할 수 있습니다.</p>
           </article>
           <article class="info-card">
-            <span class="label">운영 관리</span>
-            <strong>준비됨</strong>
-            <p>Supabase 테이블을 기준으로 다운로드 기록과 유저 권한 관리가 저장됩니다.</p>
+            <span class="label">다운로드</span>
+            <strong>최신 버전 제공</strong>
+            <p>계정 기반 다운로드 기록과 버전 안내 기능을 준비 중입니다.</p>
           </article>
         </div>
       </section>
@@ -174,7 +173,11 @@
 
     <footer class="site-footer">
       <span>BBBB Donation Signature</span>
-      <a href="https://github.com/wobuzhi6322/BBBB" target="_blank" rel="noreferrer">GitHub</a>
+      <nav class="footer-links" aria-label="법적 고지">
+        <a href="/privacy.html">개인정보처리방침</a>
+        <a href="/terms.html">이용약관</a>
+        <a href="/ads.html">광고 및 쿠키 안내</a>
+      </nav>
     </footer>
   </body>
 </html>

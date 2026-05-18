@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>광고 및 쿠키 안내 | BBBB Donation Signature</title>
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("bbbb-site-theme");
+        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/site.css" />
+    <script type="module" src="/assets/site.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="BBBB Donation Signature">
+        <img src="/assets/brand-logo.png" alt="" />
+        <span>BBBB</span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/#download">다운로드</a>
+        <a href="/#setup">설치</a>
+        <a href="/#login">로그인</a>
+      </nav>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
+    </header>
+
+    <main class="legal-main">
+      <section class="legal-hero">
+        <p class="eyebrow">Ads & Cookies</p>
+        <h1>광고 및 쿠키 안내</h1>
+        <p>최종 업데이트: 2026년 5월 18일</p>
+      </section>
+
+      <section class="legal-section">
+        <article class="legal-card">
+          <h2>쿠키와 로컬 저장소</h2>
+          <p>
+            이 사이트는 테마 선택, 로그인 유지, 다운로드 기록 처리 등 기본 기능을 위해 쿠키 또는 로컬 저장소를 사용할 수 있습니다.
+          </p>
+        </article>
+
+        <article class="legal-card">
+          <h2>광고 제공</h2>
+          <p>
+            광고가 게재되는 경우 Google을 포함한 제3자 광고 사업자가 쿠키, 웹 비콘, IP 주소 또는 기타 식별자를 사용해
+            광고를 제공하거나 광고 성과를 측정할 수 있습니다.
+          </p>
+          <p>
+            사용자는 <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer">Google 광고 설정</a>
+            또는 <a href="https://www.aboutads.info/" target="_blank" rel="noreferrer">aboutads.info</a>를 통해 맞춤 광고
+            관련 선택을 관리할 수 있습니다.
+          </p>
+        </article>
+
+        <article class="legal-card">
+          <h2>동의와 철회</h2>
+          <p>
+            법적으로 필요한 지역의 사용자에게는 쿠키 또는 광고 개인화와 관련한 동의를 요청할 수 있습니다. 동의가 필요한 광고
+            기능을 사용하는 경우 사용자는 제공되는 동의 화면에서 선택을 변경하거나 철회할 수 있습니다.
+          </p>
+        </article>
+
+        <article class="legal-card">
+          <h2>광고 배치 원칙</h2>
+          <ul>
+            <li>다운로드 버튼이나 프로그램 사용 안내를 광고처럼 오인하게 배치하지 않습니다.</li>
+            <li>광고 클릭을 유도하거나 보상 조건으로 광고 클릭을 요구하지 않습니다.</li>
+            <li>광고보다 프로그램 설명, 설치 안내, 개인정보 고지를 우선합니다.</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>BBBB Donation Signature</span>
+      <nav class="footer-links" aria-label="법적 고지">
+        <a href="/privacy.html">개인정보처리방침</a>
+        <a href="/terms.html">이용약관</a>
+        <a href="/ads.html">광고 및 쿠키 안내</a>
+      </nav>
+    </footer>
+  </body>
+</html>

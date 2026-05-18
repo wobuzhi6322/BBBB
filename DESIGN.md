@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: BBBB Broadcast Console
-description: Public download and account site for BBBB Donation Signature.
+description: Public download, account, and legal notice site for BBBB Donation Signature.
 defaultMode: dark
 colors:
   primary: "#F6F7F9"
@@ -96,7 +96,7 @@ components:
 
 ## Overview
 
-BBBB Broadcast Console should feel like a product operations site rather than a decorative landing page. The first screen must immediately show the product name and the actual BBBB visual asset, while the surrounding interface should stay clear, structured, and trustworthy for streamers who need to download and run a Windows tool.
+BBBB Broadcast Console should feel like a product operations site rather than a decorative landing page. The first screen must immediately explain the user-facing value: bank deposit notifications become OBS signatures, wallpapers, and media output. Internal infrastructure names should stay out of public copy. The actual BBBB visual asset remains the first-viewport brand signal.
 
 ## Colors
 
@@ -109,6 +109,8 @@ Typography is dense and legible. Headlines are strong but not oversized inside o
 ## Layout
 
 Sections use full-width bands with constrained inner content. Cards are used for repeated feature, setup, and dashboard items only. The hero is not a split marketing card; it is a full-width product signal with the real BBBB image as the visual anchor and the download action in the same viewport.
+
+Legal pages use the same header, footer, theme toggle, and card rhythm as the main site. They should read as ordinary service footer pages and must not expose admin implementation details.
 
 ## Elevation & Depth
 
@@ -125,8 +127,11 @@ Primary buttons use the mode-specific blue token and should keep strong contrast
 ## Do's and Don'ts
 
 - Do keep the download path visually obvious.
-- Do show version, file size, and Release status near the download button.
+- Do show version, file size, and latest-file status near the download button.
 - Do keep login and dashboard surfaces calm and compact.
+- Do explain the product as bank deposit notification to OBS signature output.
+- Do keep privacy, terms, and advertising/cookie notices in the footer.
+- Do keep internal hosting, database, and deployment vendor names out of public copy.
 - Do not use decorative gradient blobs or abstract SVG backgrounds.
 - Do not hide the product name behind only small navigation text.
 - Do not create nested cards.

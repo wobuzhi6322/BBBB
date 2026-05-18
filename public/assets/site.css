@@ -556,6 +556,76 @@ h3 {
   color: var(--color-secondary);
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.footer-links a {
+  color: var(--color-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.footer-links a:hover {
+  color: var(--color-primary);
+}
+
+.legal-main {
+  width: var(--content);
+  margin: 0 auto;
+  padding: 58px 0 72px;
+}
+
+.legal-hero {
+  max-width: 860px;
+  margin-bottom: 24px;
+}
+
+.legal-hero p {
+  color: var(--color-secondary);
+}
+
+.legal-section {
+  display: grid;
+  gap: 18px;
+  max-width: 920px;
+}
+
+.legal-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.legal-card h2 {
+  font-size: 24px;
+}
+
+.legal-card p,
+.legal-card li {
+  color: var(--color-secondary);
+}
+
+.legal-card a {
+  color: var(--color-tertiary);
+  font-weight: 850;
+}
+
+.legal-card ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.legal-card li + li {
+  margin-top: 8px;
+}
+
 @media (max-width: 920px) {
   .site-header,
   .release-panel,
@@ -594,6 +664,10 @@ h3 {
   .form-actions,
   .form-actions .button {
     width: 100%;
+  }
+
+  .footer-links {
+    justify-content: flex-start;
   }
 }
 

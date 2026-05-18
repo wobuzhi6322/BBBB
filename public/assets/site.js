@@ -34,6 +34,9 @@ init().catch((error) => {
 
 async function init() {
   setupTheme();
+  if (!els.downloadButton || !els.releaseStatus) {
+    return;
+  }
   await loadConfig();
   await loadRelease();
   setupDownload();
@@ -64,9 +67,9 @@ async function loadConfig() {
   const result = await getJson("/api/site-config");
   state.config = result.data;
   if (state.config.supabase.enabled) {
-    setText(els.siteStatus, "Supabase 로그인이 연결되어 있습니다.");
+    setText(els.siteStatus, "계정 로그인 기능이 준비되어 있습니다.");
   } else {
-    setText(els.siteStatus, "Supabase 공개 키 환경변수 추가가 필요합니다.");
+    setText(els.siteStatus, "계정 로그인 기능을 준비 중입니다.");
   }
 }
 
@@ -74,15 +77,17 @@ async function loadRelease() {
   try {
     const result = await getJson("/api/releases");
     state.release = result.data.release;
-    const releasesUrl = result.data.releasesUrl || state.config?.github?.releasesUrl || "#";
-    els.releaseLink.href = releasesUrl;
+    const releasesUrl = result.data.releasesUrl || "#";
+    if (els.releaseLink) {
+      els.releaseLink.href = releasesUrl;
+    }
 
     if (!state.release) {
-      setText(els.releaseStatus, result.data.message || "아직 등록된 Release가 없습니다.");
-      setText(els.releaseName, "Release 없음");
-      setText(els.releaseMeta, "GitHub Release에 ZIP 파일을 올리면 다운로드 버튼이 활성화됩니다.");
+      setText(els.releaseStatus, "아직 등록된 최신 버전이 없습니다.");
+      setText(els.releaseName, "버전 없음");
+      setText(els.releaseMeta, "배포 파일이 등록되면 다운로드 버튼이 활성화됩니다.");
       els.downloadButton.disabled = false;
-      setText(els.downloadButton, "GitHub Release 열기");
+      setText(els.downloadButton, "버전 정보 열기");
       return;
     }
 
@@ -94,27 +99,29 @@ async function loadRelease() {
       els.releaseMeta,
       asset
         ? `${published} · ${asset.name} · ${formatBytes(asset.size)}`
-        : `${published} · ZIP 소스 다운로드로 연결`
+        : `${published} · ZIP 다운로드로 연결`
     );
-    els.releaseLink.href = state.release.htmlUrl;
+    if (els.releaseLink) {
+      els.releaseLink.href = state.release.htmlUrl;
+    }
     els.downloadButton.disabled = false;
     setText(els.downloadButton, "Windows용 다운로드");
 
-    if (state.release.body) {
-      els.releaseNotes.classList.add("is-visible");
-      setText(els.releaseNotes, state.release.body);
+    if (els.releaseNotes) {
+      els.releaseNotes.classList.remove("is-visible");
+      setText(els.releaseNotes, "");
     }
   } catch (error) {
-    setText(els.releaseStatus, `Release 확인 실패: ${error.message}`);
+    setText(els.releaseStatus, "최신 버전 확인에 실패했습니다.");
     setText(els.releaseName, "확인 실패");
-    setText(els.releaseMeta, "GitHub 저장소 또는 네트워크 상태를 확인해야 합니다.");
+    setText(els.releaseMeta, "잠시 후 다시 확인해 주세요.");
   }
 }
 
 function setupDownload() {
-  els.downloadButton.addEventListener("click", async () => {
+  els.downloadButton.addEventListener("click", () => {
     const release = state.release;
-    const url = release?.downloadUrl || state.config?.github?.releasesUrl || "https://github.com/wobuzhi6322/BBBB/releases";
+    const url = release?.downloadUrl || state.config?.github?.releasesUrl || "#";
     if (release) {
       void logDownload(release);
     }
@@ -123,8 +130,11 @@ function setupDownload() {
 }
 
 function setupAuth() {
+  if (!els.loginForm || !els.authMessage) {
+    return;
+  }
   if (!state.config?.supabase?.enabled || !window.supabase?.createClient) {
-    setText(els.authMessage, "Vercel 환경변수에 SUPABASE_ANON_KEY를 추가하면 로그인 기능이 켜집니다.");
+    setText(els.authMessage, "현재 계정 로그인 기능을 준비 중입니다.");
     return;
   }
 
@@ -142,8 +152,8 @@ function setupAuth() {
     event.preventDefault();
     await signIn();
   });
-  els.signupButton.addEventListener("click", signUp);
-  els.logoutButton.addEventListener("click", signOut);
+  els.signupButton?.addEventListener("click", signUp);
+  els.logoutButton?.addEventListener("click", signOut);
 }
 
 async function signIn() {
@@ -172,12 +182,12 @@ async function signOut() {
 function renderSession() {
   const user = state.session?.user;
   if (!user) {
-    els.dashboardContent.classList.add("is-hidden");
+    els.dashboardContent?.classList.add("is-hidden");
     setText(els.dashboardMessage, "로그인하면 계정별 다운로드와 공유 코드 상태를 여기에서 관리합니다.");
     return;
   }
-  els.dashboardContent.classList.remove("is-hidden");
-  setText(els.dashboardMessage, "로그인된 계정 기준으로 다운로드와 공유 코드 관리 기능을 확장할 수 있습니다.");
+  els.dashboardContent?.classList.remove("is-hidden");
+  setText(els.dashboardMessage, "로그인된 계정 기준으로 다운로드와 공유 코드 관리 기능을 제공합니다.");
   setText(els.userEmail, user.email || user.id);
 }
 
