@@ -5,6 +5,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 type AdminLicenseBody = {
   email?: unknown;
   userId?: unknown;
+  licenseId?: unknown;
+  licenseCode?: unknown;
   plan?: unknown;
   status?: unknown;
   expiresAt?: unknown;
@@ -18,8 +20,33 @@ type PlanLimits = {
   sharedSyncEnabled: boolean;
 };
 
+type SiteProfileRow = {
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  role: string;
+};
+
+type LicenseRow = {
+  id: string;
+  user_id: string;
+  license_code: string;
+  plan: string;
+  status: string;
+  max_signatures: number;
+  max_media_mb: number;
+  max_devices: number;
+  shared_sync_enabled: boolean;
+  issued_at: string;
+  activated_at: string | null;
+  expires_at: string | null;
+  notes: string | null;
+};
+
 const profilesTable = "bbbb_site_profiles";
 const licensesTable = "bbbb_account_licenses";
+const licenseSelect =
+  "id,user_id,license_code,plan,status,max_signatures,max_media_mb,max_devices,shared_sync_enabled,issued_at,activated_at,expires_at,notes";
 
 const planLimits: Record<string, PlanLimits> = {
   starter: {
@@ -50,7 +77,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  if (req.method !== "POST") {
+  if (!["GET", "POST", "PATCH"].includes(req.method || "")) {
     sendJson(res, 405, { ok: false, error: "method-not-allowed" });
     return;
   }
@@ -58,47 +85,164 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const supabase = serviceClient();
     await assertAdmin(req, supabase);
-    const body = await readJson(req);
-    const userId = await resolveUserId(body, supabase);
-    const plan = normalizePlan(body.plan);
-    const status = normalizeStatus(body.status);
-    const limits = planLimits[plan];
-    const now = new Date().toISOString();
-    const licenseCode = createLicenseCode();
 
-    const insert = await supabase
-      .from(licensesTable)
-      .insert({
-        user_id: userId,
-        license_code: licenseCode,
-        plan,
-        status,
-        max_signatures: limits.maxSignatures,
-        max_media_mb: limits.maxMediaMb,
-        max_devices: limits.maxDevices,
-        shared_sync_enabled: limits.sharedSyncEnabled,
-        notes: stringValue(body.notes)?.slice(0, 1000) || null,
-        activated_at: status === "active" ? now : null,
-        expires_at: dateValue(body.expiresAt),
-        updated_at: now
-      })
-      .select("id,user_id,license_code,plan,status,max_signatures,max_media_mb,max_devices,shared_sync_enabled,issued_at,activated_at,expires_at")
-      .single();
-
-    if (insert.error) {
-      throw new Error(insert.error.message);
+    if (req.method === "GET") {
+      await handleLookup(req, res, supabase);
+      return;
     }
 
-    sendJson(res, 200, { ok: true, data: { license: insert.data } });
+    const body = await readJson(req);
+
+    if (req.method === "PATCH") {
+      await handleUpdate(res, body, supabase);
+      return;
+    }
+
+    await handleCreate(res, body, supabase);
   } catch (error) {
-    sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "license-create-failed" });
+    sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "license-request-failed" });
   }
 }
 
-async function resolveUserId(body: AdminLicenseBody, supabase: ReturnType<typeof serviceClient>): Promise<string> {
+async function handleLookup(req: IncomingMessage, res: ServerResponse, supabase: ReturnType<typeof serviceClient>): Promise<void> {
+  const url = new URL(req.url || "/api/admin-license", "https://bbbb.local");
+  const email = url.searchParams.get("email") || undefined;
+  const userId = url.searchParams.get("userId") || undefined;
+  const profile = await resolveProfile({ email, userId }, supabase);
+  const licenses = await getLicensesForUser(profile.user_id, supabase);
+  sendJson(res, 200, {
+    ok: true,
+    data: {
+      profile,
+      activeLicense: licenses.find((license) => license.status === "active") || licenses[0] || null,
+      licenses
+    }
+  });
+}
+
+async function handleCreate(res: ServerResponse, body: AdminLicenseBody, supabase: ReturnType<typeof serviceClient>): Promise<void> {
+  const profile = await resolveProfile(body, supabase);
+  const existingActive = await supabase
+    .from(licensesTable)
+    .select(licenseSelect)
+    .eq("user_id", profile.user_id)
+    .eq("status", "active")
+    .order("issued_at", { ascending: false })
+    .limit(1);
+
+  if (existingActive.error) {
+    throw new Error(existingActive.error.message);
+  }
+  if (existingActive.data?.[0]) {
+    throw new Error("이미 활성 라이선스가 있습니다. 기존 라이선스 조회 후 수정해 주세요.");
+  }
+
+  const plan = normalizePlan(body.plan);
+  const status = normalizeStatus(body.status);
+  const limits = planLimits[plan];
+  const now = new Date().toISOString();
+  const licenseCode = createLicenseCode();
+
+  const insert = await supabase
+    .from(licensesTable)
+    .insert({
+      user_id: profile.user_id,
+      license_code: licenseCode,
+      plan,
+      status,
+      max_signatures: limits.maxSignatures,
+      max_media_mb: limits.maxMediaMb,
+      max_devices: limits.maxDevices,
+      shared_sync_enabled: limits.sharedSyncEnabled,
+      notes: stringValue(body.notes)?.slice(0, 1000) || null,
+      activated_at: status === "active" ? now : null,
+      expires_at: dateValue(body.expiresAt),
+      updated_at: now
+    })
+    .select(licenseSelect)
+    .single();
+
+  if (insert.error) {
+    throw new Error(insert.error.message);
+  }
+
+  sendJson(res, 200, { ok: true, data: { license: insert.data } });
+}
+
+async function handleUpdate(res: ServerResponse, body: AdminLicenseBody, supabase: ReturnType<typeof serviceClient>): Promise<void> {
+  const target = await resolveLicense(body, supabase);
+  const plan = normalizePlan(body.plan || target.plan);
+  const status = normalizeStatus(body.status || target.status);
+  const limits = planLimits[plan];
+  const now = new Date().toISOString();
+
+  const update = await supabase
+    .from(licensesTable)
+    .update({
+      plan,
+      status,
+      max_signatures: limits.maxSignatures,
+      max_media_mb: limits.maxMediaMb,
+      max_devices: limits.maxDevices,
+      shared_sync_enabled: limits.sharedSyncEnabled,
+      notes: stringValue(body.notes)?.slice(0, 1000) || null,
+      activated_at: status === "active" ? target.activated_at || now : target.activated_at,
+      expires_at: dateValue(body.expiresAt),
+      updated_at: now
+    })
+    .eq("id", target.id)
+    .select(licenseSelect)
+    .single();
+
+  if (update.error) {
+    throw new Error(update.error.message);
+  }
+
+  sendJson(res, 200, { ok: true, data: { license: update.data } });
+}
+
+async function resolveLicense(body: AdminLicenseBody, supabase: ReturnType<typeof serviceClient>): Promise<LicenseRow> {
+  const licenseId = stringValue(body.licenseId);
+  const licenseCode = stringValue(body.licenseCode);
+  let query = supabase.from(licensesTable).select(licenseSelect);
+
+  if (licenseId) {
+    query = query.eq("id", licenseId);
+  } else if (licenseCode) {
+    query = query.eq("license_code", licenseCode);
+  } else {
+    const profile = await resolveProfile(body, supabase);
+    const licenses = await getLicensesForUser(profile.user_id, supabase);
+    const target = licenses.find((license) => license.status === "active") || licenses[0];
+    if (!target) {
+      throw new Error("수정할 라이선스가 없습니다.");
+    }
+    return target;
+  }
+
+  const result = await query.single();
+  if (result.error || !result.data) {
+    throw new Error("수정할 라이선스를 찾을 수 없습니다.");
+  }
+  return result.data as LicenseRow;
+}
+
+async function getLicensesForUser(userId: string, supabase: ReturnType<typeof serviceClient>): Promise<LicenseRow[]> {
+  const result = await supabase.from(licensesTable).select(licenseSelect).eq("user_id", userId).order("issued_at", { ascending: false });
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  return (result.data || []) as LicenseRow[];
+}
+
+async function resolveProfile(body: Pick<AdminLicenseBody, "email" | "userId">, supabase: ReturnType<typeof serviceClient>): Promise<SiteProfileRow> {
   const userId = stringValue(body.userId);
   if (userId) {
-    return userId;
+    const profile = await supabase.from(profilesTable).select("user_id,email,display_name,role").eq("user_id", userId).single();
+    if (profile.error || !profile.data?.user_id) {
+      throw new Error("해당 사용자 계정을 찾을 수 없습니다.");
+    }
+    return profile.data as SiteProfileRow;
   }
 
   const email = stringValue(body.email)?.toLowerCase();
@@ -106,11 +250,11 @@ async function resolveUserId(body: AdminLicenseBody, supabase: ReturnType<typeof
     throw new Error("email 또는 userId가 필요합니다.");
   }
 
-  const profile = await supabase.from(profilesTable).select("user_id").eq("email", email).single();
+  const profile = await supabase.from(profilesTable).select("user_id,email,display_name,role").ilike("email", email).single();
   if (profile.error || !profile.data?.user_id) {
     throw new Error("해당 이메일의 가입 계정을 찾을 수 없습니다. 사용자가 먼저 회원가입해야 합니다.");
   }
-  return String(profile.data.user_id);
+  return profile.data as SiteProfileRow;
 }
 
 function normalizePlan(value: unknown): string {
@@ -215,7 +359,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
-    "access-control-allow-methods": "POST,OPTIONS",
+    "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
     "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
@@ -223,6 +367,6 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 
 function setCors(res: ServerResponse): void {
   res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "POST,OPTIONS");
+  res.setHeader("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
   res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

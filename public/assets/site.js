@@ -4,6 +4,7 @@ const state = {
   supabase: null,
   session: null,
   account: null,
+  adminLicenseTarget: null,
   theme: "dark"
 };
 
@@ -49,6 +50,8 @@ const els = {
   adminLicenseExpires: document.getElementById("admin-license-expires"),
   adminLicenseNotes: document.getElementById("admin-license-notes"),
   adminLicenseMessage: document.getElementById("admin-license-message"),
+  adminLicenseLookup: document.getElementById("admin-license-lookup"),
+  adminLicenseUpdate: document.getElementById("admin-license-update"),
   adminLicenseResult: document.getElementById("admin-license-result")
 };
 
@@ -242,6 +245,8 @@ function setupAdminLicenseForm() {
     event.preventDefault();
     await createAdminLicense();
   });
+  els.adminLicenseLookup?.addEventListener("click", lookupAdminLicenses);
+  els.adminLicenseUpdate?.addEventListener("click", updateAdminLicense);
 }
 
 async function signIn() {
@@ -374,6 +379,7 @@ function clearAccountDashboard() {
   els.adminLicensePanel?.classList.add("is-hidden");
   setText(els.adminLicenseMessage, "");
   replaceRows(els.adminLicenseResult, []);
+  setAdminLicenseTarget(null);
 }
 
 async function createAdminLicense() {
@@ -402,6 +408,7 @@ async function createAdminLicense() {
     });
     const license = result.data.license;
     setText(els.adminLicenseMessage, "라이선스가 발급되었습니다.");
+    setAdminLicenseTarget(license);
     replaceRows(els.adminLicenseResult, [
       row("사용자", email),
       row("요금제", planLabel(license.plan)),
@@ -414,6 +421,112 @@ async function createAdminLicense() {
   } catch (error) {
     setText(els.adminLicenseMessage, error instanceof Error ? error.message : "라이선스 발급에 실패했습니다.");
   }
+}
+
+async function lookupAdminLicenses() {
+  const token = state.session?.access_token;
+  if (!token) {
+    setText(els.adminLicenseMessage, "관리자 로그인이 필요합니다.");
+    return;
+  }
+
+  const email = els.adminLicenseEmail?.value.trim();
+  if (!email) {
+    setText(els.adminLicenseMessage, "조회할 사용자 이메일을 입력해 주세요.");
+    return;
+  }
+
+  setText(els.adminLicenseMessage, "사용자 라이선스를 조회하는 중입니다.");
+  replaceRows(els.adminLicenseResult, []);
+  setAdminLicenseTarget(null);
+
+  try {
+    const result = await getJsonWithAuth(`/api/admin-license?email=${encodeURIComponent(email)}`, token);
+    const { profile, licenses, activeLicense } = result.data;
+    const target = activeLicense || licenses?.[0] || null;
+    setAdminLicenseTarget(target);
+    if (target) {
+      fillAdminLicenseForm(target);
+    }
+    setText(els.adminLicenseMessage, target ? "라이선스를 조회했습니다. 값을 바꾼 뒤 수정할 수 있습니다." : "가입 계정은 있지만 라이선스가 없습니다.");
+    renderAdminLicenseLookup(profile, licenses || []);
+  } catch (error) {
+    setText(els.adminLicenseMessage, error instanceof Error ? error.message : "사용자 조회에 실패했습니다.");
+  }
+}
+
+async function updateAdminLicense() {
+  const token = state.session?.access_token;
+  const target = state.adminLicenseTarget;
+  if (!token) {
+    setText(els.adminLicenseMessage, "관리자 로그인이 필요합니다.");
+    return;
+  }
+  if (!target) {
+    setText(els.adminLicenseMessage, "먼저 사용자 조회로 수정할 라이선스를 선택해 주세요.");
+    return;
+  }
+
+  setText(els.adminLicenseMessage, "기존 라이선스를 수정하는 중입니다.");
+  try {
+    const result = await patchJsonWithAuth("/api/admin-license", token, {
+      licenseId: target.id,
+      plan: els.adminLicensePlan?.value || target.plan,
+      status: els.adminLicenseStatus?.value || target.status,
+      expiresAt: els.adminLicenseExpires?.value || undefined,
+      notes: els.adminLicenseNotes?.value.trim() || undefined
+    });
+    const license = result.data.license;
+    setAdminLicenseTarget(license);
+    setText(els.adminLicenseMessage, "기존 라이선스가 수정되었습니다.");
+    replaceRows(els.adminLicenseResult, [
+      row("라이선스 코드", license.license_code),
+      row("요금제", planLabel(license.plan)),
+      row("상태", statusLabel(license.status)),
+      row("제한", `${license.max_signatures}개 / ${license.max_media_mb}MB / ${license.max_devices}대`)
+    ]);
+    if (state.session?.user?.id === license.user_id) {
+      await loadAccount();
+    }
+  } catch (error) {
+    setText(els.adminLicenseMessage, error instanceof Error ? error.message : "라이선스 수정에 실패했습니다.");
+  }
+}
+
+function setAdminLicenseTarget(license) {
+  state.adminLicenseTarget = license;
+  if (els.adminLicenseUpdate) {
+    els.adminLicenseUpdate.disabled = !license;
+  }
+}
+
+function fillAdminLicenseForm(license) {
+  if (els.adminLicensePlan) {
+    els.adminLicensePlan.value = license.plan || "starter";
+  }
+  if (els.adminLicenseStatus) {
+    els.adminLicenseStatus.value = license.status || "active";
+  }
+  if (els.adminLicenseExpires) {
+    els.adminLicenseExpires.value = dateInputValue(license.expires_at);
+  }
+  if (els.adminLicenseNotes) {
+    els.adminLicenseNotes.value = license.notes || "";
+  }
+}
+
+function renderAdminLicenseLookup(profile, licenses) {
+  const rows = [
+    row("사용자", profile.email || profile.user_id),
+    row("권한", roleLabel(profile.role)),
+    row("라이선스 수", `${licenses.length}개`)
+  ];
+  if (!licenses.length) {
+    rows.push(emptyRow("발급된 라이선스가 없습니다. 새 라이선스 발급을 사용할 수 있습니다."));
+  } else {
+    rows.push(...licenses.slice(0, 5).map((license) => row(license.license_code, `${planLabel(license.plan)} · ${statusLabel(license.status)}`)));
+  }
+  replaceRows(els.adminLicenseResult, rows);
 }
 
 async function logDownload(release) {
@@ -463,6 +576,23 @@ async function getJsonWithAuth(url, token) {
 async function postJsonWithAuth(url, token, body) {
   const response = await fetch(url, {
     method: "POST",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+async function patchJsonWithAuth(url, token, body) {
+  const response = await fetch(url, {
+    method: "PATCH",
     headers: {
       accept: "application/json",
       authorization: `Bearer ${token}`,
@@ -553,6 +683,17 @@ function formatDate(value) {
     month: "short",
     day: "numeric"
   }).format(new Date(value));
+}
+
+function dateInputValue(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().slice(0, 10);
 }
 
 function formatBytes(size) {

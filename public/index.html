@@ -371,7 +371,9 @@
               <textarea id="admin-license-notes" rows="3" placeholder="구매 경로, 연락처, 특이사항"></textarea>
             </label>
             <div class="form-actions wide-field">
-              <button class="button primary" type="submit">라이선스 발급</button>
+              <button id="admin-license-lookup" class="button secondary" type="button">사용자 조회</button>
+              <button id="admin-license-update" class="button secondary" type="button" disabled>기존 라이선스 수정</button>
+              <button class="button primary" type="submit">새 라이선스 발급</button>
             </div>
             <p id="admin-license-message" class="form-message wide-field" aria-live="polite"></p>
           </form>
