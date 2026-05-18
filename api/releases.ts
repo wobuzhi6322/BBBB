@@ -117,11 +117,19 @@ function normalizeAssets(input: unknown): ReleaseAsset[] {
 }
 
 function pickInstallerAsset(assets: ReleaseAsset[]): ReleaseAsset | undefined {
+  const setupExeAssets = assets.filter((asset) => /\.exe$/i.test(asset.name) && /setup|installer|install/i.test(asset.name));
+  const exeAssets = assets.filter((asset) => /\.exe$/i.test(asset.name));
+  const msiAssets = assets.filter((asset) => /\.msi$/i.test(asset.name));
   const zipAssets = assets.filter((asset) => /\.zip$/i.test(asset.name));
   return (
-    zipAssets.find((asset) => /bbbb|donation|signature|windows|win/i.test(asset.name)) ||
+    setupExeAssets.find((asset) => /gyeideuk|bbbb|donation|signature|windows|win/i.test(asset.name)) ||
+    setupExeAssets[0] ||
+    msiAssets.find((asset) => /gyeideuk|bbbb|donation|signature|windows|win/i.test(asset.name)) ||
+    msiAssets[0] ||
+    exeAssets.find((asset) => /gyeideuk|bbbb|donation|signature|windows|win/i.test(asset.name)) ||
+    exeAssets[0] ||
+    zipAssets.find((asset) => /gyeideuk|bbbb|donation|signature|windows|win/i.test(asset.name)) ||
     zipAssets[0] ||
-    assets.find((asset) => /\.(exe|msi)$/i.test(asset.name)) ||
     assets[0]
   );
 }
