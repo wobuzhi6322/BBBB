@@ -343,6 +343,7 @@ h3 {
 .feature-section,
 .flow-section,
 .updates-section,
+.pricing-section,
 .download-section,
 .setup-section,
 .login-section,
@@ -402,6 +403,7 @@ h3 {
 .feature-section,
 .flow-section,
 .updates-section,
+.pricing-section,
 .download-section,
 .setup-section,
 .login-section {
@@ -579,6 +581,149 @@ h3 {
 
 .download-section {
   border-top: 1px solid var(--line);
+}
+
+.pricing-section {
+  border-top: 1px solid var(--line);
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pricing-card,
+.option-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.pricing-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 24px;
+}
+
+.pricing-card.is-featured {
+  border-color: color-mix(in srgb, var(--blue-2) 60%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 78%, var(--blue) 22%), var(--surface));
+}
+
+.plan-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--blue-2) 56%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--blue) 20%, var(--surface));
+  color: var(--blue-2);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.plan-head {
+  display: grid;
+  gap: 7px;
+}
+
+.plan-head span {
+  color: var(--blue-2);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.plan-head strong {
+  font-size: 34px;
+  font-weight: 950;
+  line-height: 1.08;
+}
+
+.plan-head p,
+.pricing-note {
+  margin: 0;
+  color: var(--secondary);
+}
+
+.pricing-card ul,
+.option-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pricing-card li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--secondary);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.pricing-card li::before {
+  content: "";
+  position: absolute;
+  top: 0.74em;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-2);
+}
+
+.option-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.34fr) minmax(0, 0.66fr);
+  gap: 24px;
+  margin-top: 14px;
+  padding: 24px;
+}
+
+.option-panel h3 {
+  margin-bottom: 0;
+}
+
+.option-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--secondary);
+}
+
+.option-list li:first-child {
+  padding-top: 0;
+}
+
+.option-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.option-list strong {
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-weight: 950;
+}
+
+.pricing-note {
+  max-width: 920px;
+  margin-top: 14px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
 }
 
 .release-panel {
@@ -784,6 +929,7 @@ h3 {
 
   .status-strip,
   .feature-grid,
+  .pricing-grid,
   .login-section,
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -812,7 +958,9 @@ h3 {
   }
 
   .release-panel,
+  .option-panel,
   .site-footer {
+    display: flex;
     align-items: flex-start;
     flex-direction: column;
   }
@@ -860,6 +1008,8 @@ h3 {
   }
 
   .feature-card,
+  .pricing-card,
+  .option-panel,
   .release-panel,
   .login-form,
   .dashboard-grid article,
