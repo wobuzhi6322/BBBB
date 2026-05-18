@@ -2,20 +2,34 @@
 version: alpha
 name: BBBB Broadcast Console
 description: Public download and account site for BBBB Donation Signature.
+defaultMode: dark
 colors:
-  primary: "#10141F"
-  secondary: "#586174"
-  tertiary: "#1C7DF2"
+  primary: "#F6F7F9"
+  secondary: "#A8B3C7"
+  tertiary: "#65D7FF"
   accent: "#FF4FD8"
-  success: "#0A7A4B"
-  warning: "#B7791F"
-  danger: "#C2415D"
-  neutral: "#F6F7F9"
-  surface: "#FFFFFF"
-  surface-muted: "#EEF2F6"
-  border: "#D8DEE8"
-  on-primary: "#FFFFFF"
-  on-tertiary: "#FFFFFF"
+  success: "#25C281"
+  warning: "#F5C451"
+  danger: "#FF6F91"
+  neutral: "#080A10"
+  surface: "#111722"
+  surface-muted: "#192131"
+  border: "#2A3446"
+  on-primary: "#080A10"
+  on-tertiary: "#071018"
+  light-primary: "#10141F"
+  light-secondary: "#586174"
+  light-tertiary: "#1C7DF2"
+  light-accent: "#D92BB8"
+  light-success: "#0A7A4B"
+  light-warning: "#B7791F"
+  light-danger: "#C2415D"
+  light-neutral: "#F6F7F9"
+  light-surface: "#FFFFFF"
+  light-surface-muted: "#EEF2F6"
+  light-border: "#D8DEE8"
+  light-on-primary: "#FFFFFF"
+  light-on-tertiary: "#FFFFFF"
 typography:
   h1:
     fontFamily: Inter
@@ -68,6 +82,11 @@ components:
     textColor: "{colors.primary}"
     rounded: "{rounded.md}"
     padding: 12px 18px
+  theme-toggle:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    rounded: "{rounded.md}"
+    padding: 7px 11px
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
@@ -81,7 +100,7 @@ BBBB Broadcast Console should feel like a product operations site rather than a 
 
 ## Colors
 
-The palette uses a light operational foundation with dark ink text and two controlled signal colors. Blue is the primary action color for download and account tasks. Magenta is used sparingly as a brand signal that connects to the BBBB logo. Green is reserved for system-ready states.
+Dark mode is the default because the product is used around OBS and broadcast tooling, where a low-glare interface is more comfortable. The light palette is available for users who manage downloads and accounts in a normal browser context. Blue remains the primary action color for download and account tasks. Magenta is used sparingly as a brand signal that connects to the BBBB logo. Green is reserved for system-ready states.
 
 ## Typography
 
@@ -101,7 +120,7 @@ Corners stay at 8px by default. Larger rounding is limited to the hero media fra
 
 ## Components
 
-Primary buttons use blue with white text. Secondary buttons use white surfaces with ink text. Status pills use neutral backgrounds with small colored dots.
+Primary buttons use the mode-specific blue token and should keep strong contrast in both themes. Secondary buttons use the current surface token. Status pills use current surface backgrounds with small green dots. The theme toggle is a compact header control and must persist the user's selected mode.
 
 ## Do's and Don'ts
 

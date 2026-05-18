@@ -2,8 +2,11 @@ const state = {
   config: null,
   release: null,
   supabase: null,
-  session: null
+  session: null,
+  theme: "dark"
 };
+
+const themeStorageKey = "bbbb-site-theme";
 
 const els = {
   siteStatus: document.getElementById("site-status"),
@@ -19,6 +22,7 @@ const els = {
   authMessage: document.getElementById("auth-message"),
   email: document.getElementById("email"),
   password: document.getElementById("password"),
+  themeToggle: document.getElementById("theme-toggle"),
   dashboardMessage: document.getElementById("dashboard-message"),
   dashboardContent: document.getElementById("dashboard-content"),
   userEmail: document.getElementById("user-email")
@@ -29,10 +33,31 @@ init().catch((error) => {
 });
 
 async function init() {
+  setupTheme();
   await loadConfig();
   await loadRelease();
   setupDownload();
   setupAuth();
+}
+
+function setupTheme() {
+  const savedTheme = localStorage.getItem(themeStorageKey);
+  applyTheme(savedTheme === "light" ? "light" : "dark");
+  els.themeToggle?.addEventListener("click", () => {
+    applyTheme(state.theme === "dark" ? "light" : "dark");
+  });
+}
+
+function applyTheme(theme) {
+  state.theme = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = state.theme;
+  localStorage.setItem(themeStorageKey, state.theme);
+  if (els.themeToggle) {
+    const isDark = state.theme === "dark";
+    setText(els.themeToggle, isDark ? "화이트 모드" : "다크 모드");
+    els.themeToggle.setAttribute("aria-pressed", String(isDark));
+    els.themeToggle.setAttribute("title", isDark ? "화이트 모드로 전환" : "다크 모드로 전환");
+  }
 }
 
 async function loadConfig() {

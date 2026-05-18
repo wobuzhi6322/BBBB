@@ -8,6 +8,12 @@
       content="BBBB Donation Signature 다운로드, 계정 로그인, 공유 코드 동기화를 관리하는 공식 사이트입니다."
     />
     <title>BBBB Donation Signature</title>
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("bbbb-site-theme");
+        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+      })();
+    </script>
     <link rel="stylesheet" href="/assets/site.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="/assets/site.js"></script>
@@ -24,6 +30,7 @@
         <a href="#login">로그인</a>
         <a href="#dashboard">대시보드</a>
       </nav>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
     </header>
 
     <main id="top">
