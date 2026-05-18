@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="계이득은 계좌 입금 알림을 OBS 시그니처, 벽지, 미디어 출력으로 연결하는 방송용 Windows 프로그램입니다."
+      content="계이득은 계좌 입금 알림을 방송용 OBS 시그니처, 벽지, 이미지, 영상, 음악 출력으로 연결하는 Windows 프로그램입니다."
     />
-    <title>계이득</title>
+    <title>계이득 - 계좌 후원 시그니처 프로그램</title>
     <script>
       (() => {
         const savedTheme = localStorage.getItem("bbbb-site-theme");
@@ -20,29 +20,52 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="계이득">
+      <a class="brand" href="#top" aria-label="계이득 홈">
         <img class="brand-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
       </a>
       <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="#features">기능</a>
+        <a href="#flow">작동 방식</a>
+        <a href="#updates">업데이트</a>
         <a href="#download">다운로드</a>
-        <a href="#setup">설치</a>
-        <a href="#login">로그인</a>
-        <a href="#dashboard">대시보드</a>
+        <a href="#login">계정</a>
       </nav>
-      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true">화이트 모드</button>
+        <a class="header-download" href="#download">다운로드</a>
+      </div>
     </header>
 
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
-        <img class="hero-image" src="/assets/gyeideuk-hero.png" alt="계이득 - 수수료는 ZERO, 리액션은 그대로" />
-        <div class="hero-overlay"></div>
-        <div class="hero-inner">
-          <h1 id="hero-title">계이득</h1>
-          <p class="hero-lead">계좌 입금 알림을 OBS 시그니처, 벽지, 이미지, 영상, 음악으로 출력합니다.</p>
+        <div class="hero-copy">
+          <p class="eyebrow">Account alert to broadcast signature</p>
+          <h1 id="hero-title">계좌 입금 알림이 방송 리액션이 됩니다</h1>
+          <p class="hero-lead">
+            중간 플랫폼 없이 입금 알림을 방송 PC에서 감지하고, OBS 화면에 시그니처, 벽지, 이미지, 영상, 음악으로
+            즉시 출력합니다.
+          </p>
           <div class="hero-actions">
             <a class="button primary" href="#download">Windows 다운로드</a>
-            <a class="button secondary" href="#setup">설치 순서 보기</a>
+            <a class="button secondary" href="#flow">작동 방식 보기</a>
           </div>
+          <dl class="hero-metrics" aria-label="제품 요약">
+            <div>
+              <dt>수수료</dt>
+              <dd>ZERO</dd>
+            </div>
+            <div>
+              <dt>출력</dt>
+              <dd>OBS</dd>
+            </div>
+            <div>
+              <dt>공유</dt>
+              <dd>코드 기반</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <img src="/assets/gyeideuk-product-visual.png" alt="" />
         </div>
       </section>
 
@@ -51,22 +74,101 @@
         <span id="release-status"><i></i>최신 버전을 확인하는 중입니다.</span>
       </section>
 
-      <section class="section-grid" aria-label="주요 기능">
-        <article class="info-card">
-          <span class="label">Detect</span>
-          <strong>입금 알림 감지</strong>
-          <p>방송 PC에 도착한 은행 입금 알림을 읽어 후원자 이름과 금액을 방송용 이벤트로 정리합니다.</p>
-        </article>
-        <article class="info-card">
-          <span class="label">Signature</span>
-          <strong>시그니처 자동 선택</strong>
-          <p>이름, 금액, 누적 후원, 랭킹 조건에 맞는 시그니처를 자동으로 선택합니다.</p>
-        </article>
-        <article class="info-card">
-          <span class="label">OBS</span>
-          <strong>방송 화면 출력</strong>
-          <p>오버레이와 벽지 소스에서 이미지, 영상, 음악을 방송 화면에 맞춰 출력합니다.</p>
-        </article>
+      <section class="category-nav" aria-label="기능 카테고리">
+        <a href="#features">시그니처</a>
+        <a href="#features">미디어</a>
+        <a href="#features">벽지</a>
+        <a href="#features">랭킹</a>
+        <a href="#features">공유 코드</a>
+        <a href="#setup">OBS 연결</a>
+      </section>
+
+      <section id="features" class="feature-section">
+        <div class="section-heading">
+          <p class="eyebrow">Features</p>
+          <h2>방송 화면에 바로 쓰는 후원 기능</h2>
+          <p>크리에이터가 자주 쓰는 후원 기능을 시그니처, 미디어, 벽지, 랭킹, 공유 설정으로 나눠 관리합니다.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon">S</span>
+            <strong>시그니처 출력</strong>
+            <p>이름, 금액, 랭킹, 누적 조건에 맞는 시그니처를 자동 선택합니다.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">M</span>
+            <strong>미디어 리액션</strong>
+            <p>이미지, GIF, 영상, 음악을 후원 조건에 맞춰 순서대로 재생합니다.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">W</span>
+            <strong>벽지 화면</strong>
+            <p>방송 배경용 벽지를 생성하고 OBS 브라우저 소스로 연결합니다.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">R</span>
+            <strong>후원자 랭킹</strong>
+            <p>오늘, 이번 달, 전체 누적 기준으로 후원자 상태를 관리합니다.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">C</span>
+            <strong>공유 코드 설정</strong>
+            <p>같은 코드를 입력한 PC는 동일한 시그니처와 미디어 설정을 사용할 수 있습니다.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">O</span>
+            <strong>OBS 브라우저 소스</strong>
+            <p>오버레이와 벽지 URL을 OBS에 추가해 방송 화면으로 출력합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="flow" class="flow-section">
+        <div class="section-heading">
+          <p class="eyebrow">How it works</p>
+          <h2>입금 알림부터 방송 출력까지</h2>
+        </div>
+        <ol class="flow-list">
+          <li>
+            <span>01</span>
+            <strong>알림 감지</strong>
+            <p>방송 PC가 은행 앱 입금 알림을 받고 이름과 금액을 정리합니다.</p>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>조건 매칭</strong>
+            <p>금액, 이름, 랭킹, 누적 후원 조건을 기준으로 사용할 리액션을 결정합니다.</p>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>OBS 출력</strong>
+            <p>시그니처, 벽지, 미디어를 OBS 브라우저 소스로 보여줍니다.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="updates" class="updates-section">
+        <div class="section-heading">
+          <p class="eyebrow">Roadmap</p>
+          <h2>계이득 업데이트 방향</h2>
+        </div>
+        <div class="timeline">
+          <article>
+            <time>2026</time>
+            <strong>계좌 알림 시그니처</strong>
+            <p>Phone Link 기반 입금 감지와 OBS 오버레이 출력.</p>
+          </article>
+          <article>
+            <time>2026</time>
+            <strong>공유 코드 동기화</strong>
+            <p>동일 코드 사용자가 같은 시그니처와 미디어 설정 사용.</p>
+          </article>
+          <article>
+            <time>준비 중</time>
+            <strong>계정 기반 관리</strong>
+            <p>다운로드 기록, 공유 코드, 사용자 권한을 단계적으로 제공.</p>
+          </article>
+        </div>
       </section>
 
       <section id="download" class="download-section">
@@ -93,21 +195,26 @@
           <p class="eyebrow">Setup</p>
           <h2>사용 시작 순서</h2>
         </div>
-        <div class="step-list">
-          <article class="step-card">
-            <span>1</span>
+        <div class="setup-grid">
+          <article>
+            <span>STEP 1</span>
             <strong>ZIP 압축 해제</strong>
-            <p>다운로드한 ZIP을 풀고 <code>win-unpacked\BBBB Donation Signature.exe</code>를 실행합니다.</p>
+            <p>다운로드한 ZIP을 풀고 실행 파일을 폴더 안에서 실행합니다.</p>
           </article>
-          <article class="step-card">
-            <span>2</span>
-            <strong>Phone Link 준비</strong>
-            <p>Windows Phone Link와 은행 앱 입금 알림을 켜서 방송 PC가 알림을 받을 수 있게 합니다.</p>
+          <article>
+            <span>STEP 2</span>
+            <strong>휴대폰 알림 준비</strong>
+            <p>은행 앱 입금 알림과 Windows Phone Link를 켭니다.</p>
           </article>
-          <article class="step-card">
-            <span>3</span>
+          <article>
+            <span>STEP 3</span>
             <strong>OBS 소스 연결</strong>
-            <p>관리자 화면에서 오버레이와 벽지 주소를 복사해 OBS 브라우저 소스로 추가합니다.</p>
+            <p>관리자 화면의 오버레이와 벽지 주소를 OBS 브라우저 소스로 추가합니다.</p>
+          </article>
+          <article>
+            <span>STEP 4</span>
+            <strong>시그니처 설정</strong>
+            <p>금액, 이름, 랭킹 조건별 출력 규칙과 미디어를 저장합니다.</p>
           </article>
         </div>
       </section>
@@ -116,7 +223,7 @@
         <div class="section-heading">
           <p class="eyebrow">Account</p>
           <h2>계정 로그인</h2>
-          <p>로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.</p>
+          <p id="dashboard-message">로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.</p>
         </div>
         <form id="login-form" class="login-form">
           <label>
@@ -133,36 +240,26 @@
           </div>
           <p id="auth-message" class="form-message" aria-live="polite"></p>
         </form>
-      </section>
-
-      <section id="dashboard" class="dashboard-section">
-        <div class="section-heading">
-          <p class="eyebrow">Dashboard</p>
-          <h2>내 대시보드</h2>
-          <p id="dashboard-message">로그인하면 계정별 다운로드와 공유 코드 상태를 여기에서 관리합니다.</p>
-        </div>
         <div id="dashboard-content" class="dashboard-grid is-hidden">
-          <article class="info-card">
+          <article>
             <span class="label">계정</span>
             <strong id="user-email">-</strong>
             <button id="logout-button" class="button secondary" type="button">로그아웃</button>
           </article>
-          <article class="info-card">
+          <article>
             <span class="label">공유 코드</span>
             <strong>BBBB-001</strong>
-            <p>같은 공유 코드를 입력한 PC는 동일한 시그니처와 미디어 설정을 사용할 수 있습니다.</p>
-          </article>
-          <article class="info-card">
-            <span class="label">다운로드</span>
-            <strong>최신 버전 제공</strong>
-            <p>계정 기반 다운로드 기록과 버전 안내 기능을 준비 중입니다.</p>
+            <p>같은 코드를 입력한 PC는 동일한 시그니처와 미디어 설정을 사용할 수 있습니다.</p>
           </article>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <span>계이득</span>
+      <div>
+        <img class="footer-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+        <p>계좌 후원 알림을 방송 리액션으로 바꾸는 Windows 프로그램.</p>
+      </div>
       <nav class="footer-links" aria-label="법적 고지">
         <a href="/privacy.html">개인정보처리방침</a>
         <a href="/terms.html">이용약관</a>

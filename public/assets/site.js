@@ -55,12 +55,13 @@ function applyTheme(theme) {
   state.theme = theme === "light" ? "light" : "dark";
   document.documentElement.dataset.theme = state.theme;
   localStorage.setItem(themeStorageKey, state.theme);
-  if (els.themeToggle) {
-    const isDark = state.theme === "dark";
-    setText(els.themeToggle, isDark ? "화이트 모드" : "다크 모드");
-    els.themeToggle.setAttribute("aria-pressed", String(isDark));
-    els.themeToggle.setAttribute("title", isDark ? "화이트 모드로 전환" : "다크 모드로 전환");
+  if (!els.themeToggle) {
+    return;
   }
+  const isDark = state.theme === "dark";
+  setText(els.themeToggle, isDark ? "화이트 모드" : "다크 모드");
+  els.themeToggle.setAttribute("aria-pressed", String(isDark));
+  els.themeToggle.setAttribute("title", isDark ? "화이트 모드로 전환" : "다크 모드로 전환");
 }
 
 async function loadConfig() {
@@ -69,7 +70,7 @@ async function loadConfig() {
   if (state.config.supabase.enabled) {
     setText(els.siteStatus, "계정 로그인 기능이 준비되어 있습니다.");
   } else {
-    setText(els.siteStatus, "계정 로그인 기능을 준비 중입니다.");
+    setText(els.siteStatus, "계정 로그인 기능은 준비 중입니다.");
   }
 }
 
@@ -87,7 +88,7 @@ async function loadRelease() {
       setText(els.releaseName, "버전 없음");
       setText(els.releaseMeta, "배포 파일이 등록되면 다운로드 버튼이 활성화됩니다.");
       els.downloadButton.disabled = false;
-      setText(els.downloadButton, "버전 정보 열기");
+      setText(els.downloadButton, "릴리즈 페이지 열기");
       return;
     }
 
@@ -111,7 +112,7 @@ async function loadRelease() {
       els.releaseNotes.classList.remove("is-visible");
       setText(els.releaseNotes, "");
     }
-  } catch (error) {
+  } catch {
     setText(els.releaseStatus, "최신 버전 확인에 실패했습니다.");
     setText(els.releaseName, "확인 실패");
     setText(els.releaseMeta, "잠시 후 다시 확인해 주세요.");
@@ -134,7 +135,7 @@ function setupAuth() {
     return;
   }
   if (!state.config?.supabase?.enabled || !window.supabase?.createClient) {
-    setText(els.authMessage, "현재 계정 로그인 기능을 준비 중입니다.");
+    setText(els.authMessage, "현재 계정 로그인 기능은 준비 중입니다.");
     return;
   }
 
@@ -183,7 +184,7 @@ function renderSession() {
   const user = state.session?.user;
   if (!user) {
     els.dashboardContent?.classList.add("is-hidden");
-    setText(els.dashboardMessage, "로그인하면 계정별 다운로드와 공유 코드 상태를 여기에서 관리합니다.");
+    setText(els.dashboardMessage, "로그인 후 다운로드 기록, 공유 코드, 사용자 권한 관리 기능을 단계적으로 제공합니다.");
     return;
   }
   els.dashboardContent?.classList.remove("is-hidden");
