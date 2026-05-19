@@ -68,6 +68,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const assets = normalizeAssets(release.assets);
     const installerAsset = pickInstallerAsset(assets);
     const tagName = stringValue(release.tag_name) || "latest";
+    const releaseName = stringValue(release.name) || tagName;
+    const displayVersion = preferredDisplayVersion(installerAsset?.name, tagName, releaseName);
+    const displayTagName = displayVersion ? `v${displayVersion}` : tagName;
     const sourceZipUrl = stringValue(release.zipball_url) || `https://github.com/${repo}/archive/refs/tags/${encodeURIComponent(tagName)}.zip`;
 
     sendJson(res, 200, {
@@ -75,8 +78,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       data: {
         repo,
         release: {
-          tagName,
-          name: stringValue(release.name) || tagName,
+          tagName: displayTagName,
+          githubTagName: tagName,
+          name: displayVersion && displayTagName !== tagName ? `BBBB Donation Signature ${displayTagName}` : releaseName,
           body: stringValue(release.body) || "",
           htmlUrl: stringValue(release.html_url) || `https://github.com/${repo}/releases/latest`,
           publishedAt: stringValue(release.published_at) || "",
@@ -142,6 +146,23 @@ function versionParts(value: string | undefined): number[] {
     parts.push(0);
   }
   return parts.some((part) => !Number.isFinite(part)) ? [] : parts;
+}
+
+function versionText(value: string | undefined): string | undefined {
+  const match = value?.match(/v?(\d+(?:\.\d+){0,3})/i);
+  return match?.[1];
+}
+
+function preferredDisplayVersion(assetName: string | undefined, tagName: string, releaseName: string): string | undefined {
+  const assetVersion = versionText(assetName);
+  const releaseVersion = versionText(tagName) || versionText(releaseName);
+  if (!assetVersion) {
+    return releaseVersion;
+  }
+  if (!releaseVersion || compareVersionParts(versionParts(assetVersion), versionParts(releaseVersion)) > 0) {
+    return assetVersion;
+  }
+  return releaseVersion;
 }
 
 function compareVersionParts(left: number[], right: number[]): number {
