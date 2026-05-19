@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 
+import { isOwnerEmail } from "./_owner.js";
+
 type MediaFile = {
   kind: string;
   filename: string;
@@ -19,6 +21,19 @@ type ApiBody = {
   mediaFiles?: unknown[];
 };
 
+type LicenseRow = {
+  id: string;
+  status: string;
+  expires_at: string | null;
+};
+
+type SharedMemberRow = {
+  role: "owner" | "editor" | "viewer";
+};
+
+const siteProfilesTable = "bbbb_site_profiles";
+const licensesTable = "bbbb_account_licenses";
+const membersTable = "bbbb_shared_code_members";
 const profilesTable = "bbbb_shared_profiles";
 const versionsTable = "bbbb_shared_profile_versions";
 const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || "bbbb-shared-media";
@@ -40,13 +55,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (req.method === "POST") {
       const body = await readJson(req);
       if (body.action === "prepareUpload") {
-        assertAdmin(req);
-        await handlePrepareUpload(body, res);
+        const code = normalizeCode(body.code);
+        await assertCanWrite(req, code);
+        await handlePrepareUpload({ ...body, code }, res);
         return;
       }
       if (body.action === "finalizeUpload") {
-        assertAdmin(req);
-        await handleFinalizeUpload(body, res);
+        const code = normalizeCode(body.code);
+        await assertCanWrite(req, code);
+        await handleFinalizeUpload({ ...body, code }, res);
         return;
       }
     }
@@ -145,6 +162,7 @@ async function handleGet(req: IncomingMessage, res: ServerResponse): Promise<voi
   const code = normalizeCode(url.searchParams.get("code"));
   const versionParam = url.searchParams.get("version");
   const supabase = client();
+  await assertCanRead(req, code);
   let query = supabase
     .from(versionsTable)
     .select("code, version, bundle, media_files")
@@ -229,13 +247,112 @@ function client() {
   });
 }
 
-function assertAdmin(req: IncomingMessage): void {
+async function assertCanRead(req: IncomingMessage, code: string): Promise<void> {
+  if (!bearerToken(req)) {
+    return;
+  }
+  const supabase = client();
+  const user = await requireUser(req, supabase);
+  await ensureSiteProfile(user.id, user.email || null, supabase);
+  if (isOwnerEmail(user.email || null)) {
+    return;
+  }
+  await getActiveLicense(user.id, supabase);
+  await getMembership(user.id, code, supabase);
+}
+
+async function assertCanWrite(req: IncomingMessage, code: string): Promise<void> {
+  if (hasAdminToken(req)) {
+    return;
+  }
+  const supabase = client();
+  const user = await requireUser(req, supabase);
+  await ensureSiteProfile(user.id, user.email || null, supabase);
+  if (isOwnerEmail(user.email || null)) {
+    return;
+  }
+  await getActiveLicense(user.id, supabase);
+  const membership = await getMembership(user.id, code, supabase);
+  if (membership.role !== "owner" && membership.role !== "editor") {
+    throw new Error("팀 설정을 업로드할 권한이 없습니다.");
+  }
+}
+
+function hasAdminToken(req: IncomingMessage): boolean {
   const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
   const received = req.headers["x-bbbb-admin-token"];
   const token = Array.isArray(received) ? received[0] : received;
-  if (!expected || token !== expected) {
-    throw new Error("관리자 토큰이 올바르지 않습니다.");
+  return Boolean(expected && token === expected);
+}
+
+async function requireUser(req: IncomingMessage, supabase: ReturnType<typeof client>) {
+  const token = bearerToken(req);
+  if (!token) {
+    throw new Error("로그인이 필요합니다.");
   }
+  const result = await supabase.auth.getUser(token);
+  if (result.error || !result.data.user) {
+    throw new Error("로그인 세션을 확인할 수 없습니다.");
+  }
+  return result.data.user;
+}
+
+async function ensureSiteProfile(userId: string, email: string | null, supabase: ReturnType<typeof client>): Promise<void> {
+  const result = await supabase.from(siteProfilesTable).upsert(
+    {
+      user_id: userId,
+      email,
+      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "user_id" }
+  );
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+}
+
+async function getActiveLicense(userId: string, supabase: ReturnType<typeof client>): Promise<LicenseRow> {
+  const result = await supabase
+    .from(licensesTable)
+    .select("id,status,expires_at")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("issued_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  if (!result.data) {
+    throw new Error("활성 이용권이 없습니다. 이용권 코드를 먼저 등록하세요.");
+  }
+  const license = result.data as LicenseRow;
+  if (license.expires_at && new Date(license.expires_at).getTime() < Date.now()) {
+    throw new Error("이용권이 만료되었습니다.");
+  }
+  return license;
+}
+
+async function getMembership(userId: string, code: string, supabase: ReturnType<typeof client>): Promise<SharedMemberRow> {
+  const result = await supabase.from(membersTable).select("role").eq("user_id", userId).eq("code", code).maybeSingle();
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  if (!result.data) {
+    throw new Error("먼저 팀 코드를 연결하세요.");
+  }
+  return result.data as SharedMemberRow;
+}
+
+function bearerToken(req: IncomingMessage): string | undefined {
+  const value = headerValue(req.headers.authorization);
+  const match = value?.match(/^Bearer\s+(.+)$/i);
+  return match?.[1];
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 async function readJson(req: IncomingMessage): Promise<ApiBody> {
@@ -364,7 +481,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,OPTIONS",
-    "access-control-allow-headers": "content-type,x-bbbb-admin-token"
+    "access-control-allow-headers": "content-type,authorization,x-bbbb-admin-token"
   });
   res.end(JSON.stringify(body));
 }
@@ -372,7 +489,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 function setCors(res: ServerResponse): void {
   res.setHeader("access-control-allow-origin", "*");
   res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
-  res.setHeader("access-control-allow-headers", "content-type,x-bbbb-admin-token");
+  res.setHeader("access-control-allow-headers", "content-type,authorization,x-bbbb-admin-token");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

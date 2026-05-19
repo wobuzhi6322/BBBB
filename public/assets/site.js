@@ -920,6 +920,7 @@ function roleLabel(value) {
 
 function planLabel(value) {
   const labels = {
+    owner: "관리자",
     starter: "Starter",
     standard: "Standard",
     pro: "Pro"

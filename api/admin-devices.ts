@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { isOwnerEmail } from "./_owner.js";
+
 type AdminDeviceBody = {
   deviceId?: unknown;
   licenseId?: unknown;
@@ -166,6 +168,9 @@ async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof ser
   const user = userResult.data.user;
   if (userResult.error || !user) {
     throw new Error("로그인 세션을 확인할 수 없습니다.");
+  }
+  if (isOwnerEmail(user.email || null)) {
+    return;
   }
 
   const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();

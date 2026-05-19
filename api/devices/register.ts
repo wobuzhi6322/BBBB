@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { isOwnerEmail, ownerLicense } from "../_owner.js";
+
 type RegisterDeviceBody = {
   deviceFingerprint?: unknown;
   deviceName?: unknown;
@@ -56,10 +58,32 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const deviceFingerprint = normalizeFingerprint(body.deviceFingerprint);
     const deviceName = stringValue(body.deviceName)?.slice(0, 120) || null;
     const appVersion = stringValue(body.appVersion)?.slice(0, 40) || null;
+    const now = new Date().toISOString();
+    if (isOwnerEmail(user.email || null)) {
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          registered: true,
+          reason: "관리자 계정은 PC 등록 제한을 받지 않습니다.",
+          license: ownerLicense(user.id) as LicenseRow,
+          device: {
+            id: `owner-${deviceFingerprint}`,
+            license_id: `owner-${user.id}`,
+            user_id: user.id,
+            device_fingerprint: deviceFingerprint,
+            device_name: deviceName,
+            app_version: appVersion,
+            last_seen_at: now,
+            created_at: now
+          } as DeviceRow
+        }
+      });
+      return;
+    }
+
     const license = await getActiveLicense(user.id, supabase);
     const devices = await getLicenseDevices(license.id, supabase);
     const existing = devices.find((device) => device.device_fingerprint === deviceFingerprint);
-    const now = new Date().toISOString();
 
     if (existing) {
       const update = await supabase
@@ -178,6 +202,7 @@ async function ensureProfile(userId: string, email: string | null, supabase: Ret
     {
       user_id: userId,
       email,
+      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }

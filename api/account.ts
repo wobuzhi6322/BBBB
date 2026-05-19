@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { isOwnerEmail, ownerLicense } from "./_owner.js";
+
 type SiteProfileRow = {
   user_id: string;
   email: string | null;
@@ -110,15 +112,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     assertNoError(downloadsResult.error);
 
     const licenses = (licensesResult.data || []) as LicenseRow[];
-    const activeLicense = licenses.find(isUsableLicense) || licenses[0] || null;
     const profile = profileResult.data as SiteProfileRow;
+    const ownerAccount = isOwnerEmail(user.email || profile.email);
+    const ownerActiveLicense = ownerAccount ? (ownerLicense(user.id) as LicenseRow) : null;
+    const activeLicense = ownerActiveLicense || licenses.find(isUsableLicense) || licenses[0] || null;
 
     sendJson(res, 200, {
       ok: true,
       data: {
-        profile,
+        profile: ownerAccount ? { ...profile, role: "admin" } : profile,
         activeLicense,
-        licenses,
+        licenses: ownerActiveLicense ? [ownerActiveLicense, ...licenses] : licenses,
         devices: (devicesResult.data || []) as DeviceRow[],
         sharedCodes: (sharedCodesResult.data || []) as SharedCodeRow[],
         downloads: (downloadsResult.data || []) as DownloadEventRow[]
@@ -138,6 +142,7 @@ async function ensureProfile(userId: string, email: string | null): Promise<void
     {
       user_id: userId,
       email,
+      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }
