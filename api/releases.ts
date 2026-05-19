@@ -160,7 +160,7 @@ async function fetchR2Release(manifestUrl: string): Promise<Record<string, unkno
   const name = stringValue(manifest.name) || (version ? `Gyeideuk ${version}` : "Gyeideuk latest");
   const publishedAt = stringValue(manifest.publishedAt) || new Date().toISOString();
   const assetName = fileName || downloadUrl.split("/").pop() || "Gyeideuk-Setup.exe";
-  const assetSize = numberValue(manifest.size) || numberValue(manifest.fileSize) || 0;
+  const assetSize = numberValue(manifest.size) || numberValue(manifest.fileSize) || (await fetchContentLength(downloadUrl)) || 0;
   const asset = {
     name: assetName,
     size: assetSize,
@@ -182,6 +182,16 @@ async function fetchR2Release(manifestUrl: string): Promise<Record<string, unkno
     sourceZipUrl: downloadUrl,
     hasInstallerAsset: /\.exe$/i.test(assetName)
   };
+}
+
+async function fetchContentLength(url: string): Promise<number | undefined> {
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    const size = Number.parseInt(response.headers.get("content-length") || "", 10);
+    return response.ok && Number.isFinite(size) ? size : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function sendNoRelease(res: ServerResponse, repo: string): void {
