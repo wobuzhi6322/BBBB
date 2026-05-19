@@ -28,6 +28,18 @@ type ReleaseAsset = {
   updatedAt: string;
 };
 
+type R2ReleaseManifest = {
+  version?: unknown;
+  tagName?: unknown;
+  name?: unknown;
+  fileName?: unknown;
+  downloadUrl?: unknown;
+  publishedAt?: unknown;
+  notes?: unknown;
+  size?: unknown;
+  fileSize?: unknown;
+};
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {});
@@ -40,6 +52,26 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   const repo = process.env.GITHUB_REPO || "wobuzhi6322/BBBB";
+  const r2ManifestUrl = process.env.R2_RELEASE_MANIFEST_URL || "https://download.gaeideuk.com/releases/latest.json";
+
+  try {
+    const r2Release = await fetchR2Release(r2ManifestUrl);
+    if (r2Release) {
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          source: "r2",
+          repo,
+          release: r2Release,
+          releasesUrl: r2Release.htmlUrl
+        }
+      });
+      return;
+    }
+  } catch {
+    // R2 may not be connected yet. Keep the current GitHub release path working as a fallback.
+  }
+
   const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=30`;
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
@@ -99,6 +131,57 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       error: error instanceof Error ? error.message : "release lookup failed"
     });
   }
+}
+
+async function fetchR2Release(manifestUrl: string): Promise<Record<string, unknown> | null> {
+  if (!manifestUrl) {
+    return null;
+  }
+
+  const response = await fetch(manifestUrl, {
+    headers: {
+      accept: "application/json",
+      "user-agent": "bbbb-download-site"
+    }
+  });
+  if (!response.ok) {
+    return null;
+  }
+
+  const manifest = (await response.json()) as R2ReleaseManifest;
+  const fileName = stringValue(manifest.fileName);
+  const downloadUrl = stringValue(manifest.downloadUrl) || (fileName ? new URL(fileName, manifestUrl).toString() : undefined);
+  if (!downloadUrl) {
+    return null;
+  }
+
+  const version = stringValue(manifest.version) || versionText(fileName) || versionText(downloadUrl);
+  const tagName = stringValue(manifest.tagName) || (version ? `v${version}` : "latest");
+  const name = stringValue(manifest.name) || (version ? `Gyeideuk ${version}` : "Gyeideuk latest");
+  const publishedAt = stringValue(manifest.publishedAt) || new Date().toISOString();
+  const assetName = fileName || downloadUrl.split("/").pop() || "Gyeideuk-Setup.exe";
+  const assetSize = numberValue(manifest.size) || numberValue(manifest.fileSize) || 0;
+  const asset = {
+    name: assetName,
+    size: assetSize,
+    downloadUrl,
+    downloadCount: 0,
+    updatedAt: publishedAt
+  };
+
+  return {
+    tagName,
+    githubTagName: tagName,
+    name,
+    body: stringValue(manifest.notes) || "",
+    htmlUrl: downloadUrl,
+    publishedAt,
+    assets: [asset],
+    downloadAsset: asset,
+    downloadUrl,
+    sourceZipUrl: downloadUrl,
+    hasInstallerAsset: /\.exe$/i.test(assetName)
+  };
 }
 
 function sendNoRelease(res: ServerResponse, repo: string): void {
