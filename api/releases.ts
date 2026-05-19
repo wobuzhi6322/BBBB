@@ -16,6 +16,8 @@ type GithubRelease = {
   published_at?: unknown;
   zipball_url?: unknown;
   assets?: unknown;
+  draft?: unknown;
+  prerelease?: unknown;
 };
 
 type ReleaseAsset = {
@@ -38,7 +40,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   const repo = process.env.GITHUB_REPO || "wobuzhi6322/BBBB";
-  const apiUrl = `https://api.github.com/repos/${repo}/releases/latest`;
+  const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=30`;
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
     "user-agent": "bbbb-download-site"
@@ -50,22 +52,19 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const response = await fetch(apiUrl, { headers });
     if (response.status === 404) {
-      sendJson(res, 200, {
-        ok: true,
-        data: {
-          repo,
-          release: null,
-          releasesUrl: `https://github.com/${repo}/releases`,
-          message: "아직 GitHub Release가 없습니다."
-        }
-      });
+      sendNoRelease(res, repo);
       return;
     }
     if (!response.ok) {
       throw new Error(`GitHub release lookup failed: ${response.status}`);
     }
 
-    const release = (await response.json()) as GithubRelease;
+    const releases = (await response.json()) as GithubRelease[];
+    const release = pickLatestRelease(releases);
+    if (!release) {
+      sendNoRelease(res, repo);
+      return;
+    }
     const assets = normalizeAssets(release.assets);
     const installerAsset = pickInstallerAsset(assets);
     const tagName = stringValue(release.tag_name) || "latest";
@@ -96,6 +95,77 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       error: error instanceof Error ? error.message : "release lookup failed"
     });
   }
+}
+
+function sendNoRelease(res: ServerResponse, repo: string): void {
+  sendJson(res, 200, {
+    ok: true,
+    data: {
+      repo,
+      release: null,
+      releasesUrl: `https://github.com/${repo}/releases`,
+      message: "아직 GitHub Release가 없습니다."
+    }
+  });
+}
+
+function pickLatestRelease(input: GithubRelease[]): GithubRelease | undefined {
+  if (!Array.isArray(input)) {
+    return undefined;
+  }
+
+  const releases = input.filter((release) => release.draft !== true && release.prerelease !== true);
+  const sorted = releases.sort(compareReleasesDesc);
+  return sorted.find((release) => pickInstallerAsset(normalizeAssets(release.assets))) || sorted[0];
+}
+
+function compareReleasesDesc(left: GithubRelease, right: GithubRelease): number {
+  const leftVersion = versionParts(stringValue(left.tag_name) || stringValue(left.name));
+  const rightVersion = versionParts(stringValue(right.tag_name) || stringValue(right.name));
+  const versionCompare = compareVersionParts(leftVersion, rightVersion);
+  if (versionCompare !== 0) {
+    return -versionCompare;
+  }
+
+  const leftTime = dateMs(left.published_at);
+  const rightTime = dateMs(right.published_at);
+  return rightTime - leftTime;
+}
+
+function versionParts(value: string | undefined): number[] {
+  const match = value?.match(/v?(\d+(?:\.\d+){0,3})/i);
+  if (!match) {
+    return [];
+  }
+  const parts = match[1].split(".").slice(0, 3).map((part) => Number.parseInt(part, 10));
+  while (parts.length < 3) {
+    parts.push(0);
+  }
+  return parts.some((part) => !Number.isFinite(part)) ? [] : parts;
+}
+
+function compareVersionParts(left: number[], right: number[]): number {
+  if (!left.length && !right.length) {
+    return 0;
+  }
+  if (!left.length) {
+    return -1;
+  }
+  if (!right.length) {
+    return 1;
+  }
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] || 0) - (right[index] || 0);
+    if (difference !== 0) {
+      return difference > 0 ? 1 : -1;
+    }
+  }
+  return 0;
+}
+
+function dateMs(value: unknown): number {
+  const time = typeof value === "string" ? new Date(value).getTime() : Number.NaN;
+  return Number.isFinite(time) ? time : 0;
 }
 
 function normalizeAssets(input: unknown): ReleaseAsset[] {
@@ -145,7 +215,7 @@ function numberValue(value: unknown): number | undefined {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": status === 200 ? "s-maxage=300, stale-while-revalidate=900" : "no-store",
+    "cache-control": "no-store, max-age=0",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,OPTIONS",
     "access-control-allow-headers": "content-type"

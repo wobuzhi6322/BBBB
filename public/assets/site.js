@@ -808,7 +808,10 @@ async function logDownload(release) {
 }
 
 async function getJson(url) {
-  const response = await fetch(url, { headers: { accept: "application/json" } });
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: { accept: "application/json" }
+  });
   const data = await response.json();
   if (!response.ok || data.ok === false) {
     throw new Error(data.error || `HTTP ${response.status}`);
