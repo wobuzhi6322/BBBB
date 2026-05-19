@@ -5,6 +5,7 @@ const state = {
   session: null,
   account: null,
   adminLicenseTarget: null,
+  adminDeviceTargetEmail: null,
   theme: "dark"
 };
 
@@ -57,6 +58,10 @@ const els = {
   adminLicenseLookup: document.getElementById("admin-license-lookup"),
   adminLicenseUpdate: document.getElementById("admin-license-update"),
   adminLicenseResult: document.getElementById("admin-license-result"),
+  adminDeviceLookup: document.getElementById("admin-device-lookup"),
+  adminDeviceClearAll: document.getElementById("admin-device-clear-all"),
+  adminDeviceMessage: document.getElementById("admin-device-message"),
+  adminDeviceResult: document.getElementById("admin-device-result"),
   adminCodeForm: document.getElementById("admin-code-form"),
   adminCodePlan: document.getElementById("admin-code-plan"),
   adminCodeDurationUnit: document.getElementById("admin-code-duration-unit"),
@@ -83,6 +88,7 @@ async function init() {
   setupLoginDialog();
   setupRedeemCodeForm();
   setupAdminLicenseForm();
+  setupAdminDevicePanel();
   setupAdminCodeForm();
   setupAuth();
 }
@@ -264,6 +270,18 @@ function setupAdminLicenseForm() {
   els.adminLicenseUpdate?.addEventListener("click", updateAdminLicense);
 }
 
+function setupAdminDevicePanel() {
+  els.adminDeviceLookup?.addEventListener("click", () => lookupAdminDevices());
+  els.adminDeviceClearAll?.addEventListener("click", clearAllAdminDevices);
+  els.adminDeviceResult?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-admin-device-delete]") : null;
+    if (!button) {
+      return;
+    }
+    void deleteAdminDevice(button.dataset.adminDeviceDelete);
+  });
+}
+
 function setupRedeemCodeForm() {
   els.redeemCodeForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -410,6 +428,12 @@ function clearAccountDashboard() {
   els.adminLicensePanel?.classList.add("is-hidden");
   setText(els.adminLicenseMessage, "");
   replaceRows(els.adminLicenseResult, []);
+  state.adminDeviceTargetEmail = null;
+  setText(els.adminDeviceMessage, "");
+  replaceRows(els.adminDeviceResult, []);
+  if (els.adminDeviceClearAll) {
+    els.adminDeviceClearAll.disabled = true;
+  }
   setText(els.redeemCodeMessage, "");
   replaceRows(els.redeemCodeResult, []);
   setText(els.adminCodeMessage, "");
@@ -551,6 +575,7 @@ async function lookupAdminLicenses() {
     }
     setText(els.adminLicenseMessage, target ? "라이선스를 조회했습니다. 값을 바꾼 뒤 수정할 수 있습니다." : "가입 계정은 있지만 라이선스가 없습니다.");
     renderAdminLicenseLookup(profile, licenses || []);
+    await lookupAdminDevices({ quiet: true });
   } catch (error) {
     setText(els.adminLicenseMessage, error instanceof Error ? error.message : "사용자 조회에 실패했습니다.");
   }
@@ -630,6 +655,129 @@ function renderAdminLicenseLookup(profile, licenses) {
   replaceRows(els.adminLicenseResult, rows);
 }
 
+async function lookupAdminDevices(options = {}) {
+  const token = state.session?.access_token;
+  if (!token) {
+    setText(els.adminDeviceMessage, "관리자 로그인이 필요합니다.");
+    return;
+  }
+
+  const email = els.adminLicenseEmail?.value.trim();
+  if (!email) {
+    setText(els.adminDeviceMessage, "조회할 사용자 이메일을 입력해 주세요.");
+    return;
+  }
+
+  if (!options.quiet) {
+    setText(els.adminDeviceMessage, "등록 PC를 조회하는 중입니다.");
+  }
+  replaceRows(els.adminDeviceResult, []);
+  if (els.adminDeviceClearAll) {
+    els.adminDeviceClearAll.disabled = true;
+  }
+
+  try {
+    const result = await getJsonWithAuth(`/api/admin-devices?email=${encodeURIComponent(email)}`, token);
+    state.adminDeviceTargetEmail = email;
+    renderAdminDevices(result.data);
+    setText(
+      els.adminDeviceMessage,
+      result.data.devices?.length ? `등록 PC ${result.data.devices.length}대를 조회했습니다.` : "등록된 PC가 없습니다."
+    );
+  } catch (error) {
+    setText(els.adminDeviceMessage, error instanceof Error ? error.message : "등록 PC 조회에 실패했습니다.");
+  }
+}
+
+async function deleteAdminDevice(deviceId) {
+  const token = state.session?.access_token;
+  if (!token || !deviceId) {
+    setText(els.adminDeviceMessage, "삭제할 PC를 선택해 주세요.");
+    return;
+  }
+  if (!window.confirm("선택한 PC 등록을 해제할까요?")) {
+    return;
+  }
+
+  setText(els.adminDeviceMessage, "PC 등록을 해제하는 중입니다.");
+  try {
+    await deleteJsonWithAuth("/api/admin-devices", token, { deviceId });
+    setText(els.adminDeviceMessage, "PC 등록을 해제했습니다.");
+    await lookupAdminDevices({ quiet: true });
+    if (state.session?.user?.email?.toLowerCase() === state.adminDeviceTargetEmail?.toLowerCase()) {
+      await loadAccount();
+    }
+  } catch (error) {
+    setText(els.adminDeviceMessage, error instanceof Error ? error.message : "PC 등록 해제에 실패했습니다.");
+  }
+}
+
+async function clearAllAdminDevices() {
+  const token = state.session?.access_token;
+  const email = state.adminDeviceTargetEmail || els.adminLicenseEmail?.value.trim();
+  if (!token || !email) {
+    setText(els.adminDeviceMessage, "먼저 사용자 이메일로 등록 PC를 조회해 주세요.");
+    return;
+  }
+  if (!window.confirm(`${email} 계정의 등록 PC를 모두 해제할까요?`)) {
+    return;
+  }
+
+  setText(els.adminDeviceMessage, "전체 PC 등록을 해제하는 중입니다.");
+  try {
+    const result = await deleteJsonWithAuth("/api/admin-devices", token, { email, all: true });
+    setText(els.adminDeviceMessage, `PC 등록 ${result.data.deletedCount}개를 해제했습니다.`);
+    await lookupAdminDevices({ quiet: true });
+    if (state.session?.user?.email?.toLowerCase() === email.toLowerCase()) {
+      await loadAccount();
+    }
+  } catch (error) {
+    setText(els.adminDeviceMessage, error instanceof Error ? error.message : "전체 PC 해제에 실패했습니다.");
+  }
+}
+
+function renderAdminDevices(data) {
+  const devices = data.devices || [];
+  if (els.adminDeviceClearAll) {
+    els.adminDeviceClearAll.disabled = devices.length === 0;
+  }
+  if (!devices.length) {
+    replaceRows(els.adminDeviceResult, [emptyRow("등록된 PC가 없습니다.")]);
+    return;
+  }
+  replaceRows(
+    els.adminDeviceResult,
+    devices.map((device) => adminDeviceRow(device))
+  );
+}
+
+function adminDeviceRow(device) {
+  const item = document.createElement("li");
+  item.className = "admin-device-row";
+
+  const copy = document.createElement("span");
+  const name = document.createElement("strong");
+  const detail = document.createElement("small");
+  name.textContent = device.deviceName || "이름 없는 PC";
+  detail.textContent = [
+    device.license ? `${planLabel(device.license.plan)} · ${statusLabel(device.license.status)}` : "라이선스 정보 없음",
+    device.appVersion ? `앱 ${device.appVersion}` : "",
+    device.lastSeenAt ? `마지막 접속 ${formatDateTime(device.lastSeenAt)}` : "",
+    device.fingerprintSuffix ? `ID ${device.fingerprintSuffix}` : ""
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  copy.append(name, detail);
+
+  const button = document.createElement("button");
+  button.className = "button secondary compact-button";
+  button.type = "button";
+  button.dataset.adminDeviceDelete = device.id;
+  button.textContent = "PC 해제";
+  item.append(copy, button);
+  return item;
+}
+
 function syncAdminCodeDurationField() {
   const isUnlimited = els.adminCodeDurationUnit?.value === "unlimited";
   if (els.adminCodeDurationValue) {
@@ -702,6 +850,23 @@ async function postJsonWithAuth(url, token, body) {
 async function patchJsonWithAuth(url, token, body) {
   const response = await fetch(url, {
     method: "PATCH",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+async function deleteJsonWithAuth(url, token, body) {
+  const response = await fetch(url, {
+    method: "DELETE",
     headers: {
       accept: "application/json",
       authorization: `Bearer ${token}`,

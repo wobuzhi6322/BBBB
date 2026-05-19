@@ -1246,6 +1246,29 @@ h3 {
   border-bottom: 1px solid var(--line);
 }
 
+.admin-device-row {
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-device-row > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-device-row small {
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .account-list li:last-child,
 .account-list div:last-child {
   border-bottom: 0;
