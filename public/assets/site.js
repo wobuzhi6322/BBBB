@@ -4,6 +4,7 @@ const state = {
   supabase: null,
   session: null,
   account: null,
+  passwordRecovery: false,
   adminLicenseTarget: null,
   adminDeviceTargetEmail: null,
   theme: "dark"
@@ -20,7 +21,10 @@ const els = {
   releaseLink: document.getElementById("release-link"),
   downloadButton: document.getElementById("download-button"),
   loginForm: document.getElementById("login-form"),
+  loginButton: document.getElementById("login-button"),
   signupButton: document.getElementById("signup-button"),
+  resetPasswordButton: document.getElementById("reset-password-button"),
+  savePasswordButton: document.getElementById("save-password-button"),
   logoutButton: document.getElementById("logout-button"),
   authMessage: document.getElementById("auth-message"),
   email: document.getElementById("email"),
@@ -244,20 +248,35 @@ function setupAuth() {
   }
 
   state.supabase = window.supabase.createClient(state.config.supabase.url, state.config.supabase.anonKey);
+  if (isPasswordRecoveryUrl()) {
+    setPasswordRecoveryMode(true);
+  }
   state.supabase.auth.getSession().then(({ data }) => {
     state.session = data.session;
+    if (state.passwordRecovery && data.session) {
+      setPasswordRecoveryMode(true);
+    }
     renderSession();
   });
-  state.supabase.auth.onAuthStateChange((_event, session) => {
+  state.supabase.auth.onAuthStateChange((event, session) => {
     state.session = session;
+    if (event === "PASSWORD_RECOVERY") {
+      setPasswordRecoveryMode(true);
+    }
     renderSession();
   });
 
   els.loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (state.passwordRecovery) {
+      await updatePassword();
+      return;
+    }
     await signIn();
   });
   els.signupButton?.addEventListener("click", signUp);
+  els.resetPasswordButton?.addEventListener("click", sendPasswordResetEmail);
+  els.savePasswordButton?.addEventListener("click", updatePassword);
   els.logoutButton?.addEventListener("click", signOut);
 }
 
@@ -316,6 +335,42 @@ async function signUp() {
   setText(els.authMessage, error ? error.message : "회원가입 요청이 완료되었습니다. 메일 인증이 필요할 수 있습니다.");
 }
 
+async function sendPasswordResetEmail() {
+  const email = els.email?.value.trim();
+  if (!email) {
+    setText(els.authMessage, "비밀번호를 재설정할 이메일을 입력해 주세요.");
+    els.email?.focus();
+    return;
+  }
+
+  setText(els.authMessage, "비밀번호 재설정 메일을 보내는 중입니다.");
+  const { error } = await state.supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  setText(els.authMessage, error ? error.message : "비밀번호 재설정 메일을 보냈습니다. 메일함의 링크를 열어 새 비밀번호를 저장하세요.");
+}
+
+async function updatePassword() {
+  const password = els.password?.value || "";
+  if (password.length < 6) {
+    setText(els.authMessage, "새 비밀번호는 6자 이상이어야 합니다.");
+    els.password?.focus();
+    return;
+  }
+
+  setText(els.authMessage, "새 비밀번호를 저장하는 중입니다.");
+  const { error } = await state.supabase.auth.updateUser({ password });
+  if (error) {
+    setText(els.authMessage, error.message);
+    return;
+  }
+
+  setPasswordRecoveryMode(false);
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  setText(els.authMessage, "비밀번호가 변경되었습니다.");
+  renderSession();
+}
+
 async function signOut() {
   await state.supabase.auth.signOut();
   setText(els.authMessage, "로그아웃되었습니다.");
@@ -323,6 +378,15 @@ async function signOut() {
 
 function renderSession() {
   const user = state.session?.user;
+  if (state.passwordRecovery) {
+    els.profileSection?.classList.add("is-hidden");
+    setText(els.headerAccount, "비밀번호 재설정");
+    if (els.navAccount) {
+      els.navAccount.href = "#login";
+    }
+    openLoginDialog();
+    return;
+  }
   if (!user) {
     els.profileSection?.classList.add("is-hidden");
     els.profileCard?.classList.remove("is-hidden");
@@ -352,6 +416,30 @@ function renderSession() {
     window.setTimeout(() => els.profileSection?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
   void loadAccount();
+}
+
+function isPasswordRecoveryUrl() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const searchParams = new URLSearchParams(window.location.search);
+  return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
+}
+
+function setPasswordRecoveryMode(enabled) {
+  state.passwordRecovery = enabled;
+  els.loginButton?.classList.toggle("is-hidden", enabled);
+  els.signupButton?.classList.toggle("is-hidden", enabled);
+  els.resetPasswordButton?.classList.toggle("is-hidden", enabled);
+  els.savePasswordButton?.classList.toggle("is-hidden", !enabled);
+  if (els.password) {
+    els.password.value = "";
+    els.password.autocomplete = enabled ? "new-password" : "current-password";
+    els.password.placeholder = enabled ? "새 비밀번호" : "";
+  }
+  if (enabled) {
+    openLoginDialog();
+    els.password?.focus();
+    setText(els.authMessage, "새 비밀번호를 입력하고 저장하세요.");
+  }
 }
 
 async function loadAccount() {
