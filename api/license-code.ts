@@ -85,6 +85,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const licenseCode = await getRedeemableCode(code, supabase);
+    if (isGuestLicenseCode(licenseCode)) {
+      throw new Error("비회원용 코드는 프로그램 로그인 화면의 비회원 코드로 등록하세요.");
+    }
     const previousRedemption = await supabase
       .from(redemptionsTable)
       .select("id")
@@ -159,6 +162,10 @@ async function getRedeemableCode(code: string, supabase: ReturnType<typeof servi
     throw new Error("코드 플랜 정보가 올바르지 않습니다.");
   }
   return licenseCode;
+}
+
+function isGuestLicenseCode(code: LicenseCodeRow): boolean {
+  return code.code_prefix.toUpperCase().startsWith("GD-GST");
 }
 
 async function applyLicenseCode(userId: string, code: LicenseCodeRow, supabase: ReturnType<typeof serviceClient>): Promise<LicenseRow> {

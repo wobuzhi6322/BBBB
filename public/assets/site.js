@@ -67,6 +67,7 @@ const els = {
   adminDeviceMessage: document.getElementById("admin-device-message"),
   adminDeviceResult: document.getElementById("admin-device-result"),
   adminCodeForm: document.getElementById("admin-code-form"),
+  adminCodeMode: document.getElementById("admin-code-mode"),
   adminCodePlan: document.getElementById("admin-code-plan"),
   adminCodeDurationUnit: document.getElementById("admin-code-duration-unit"),
   adminCodeDurationValue: document.getElementById("admin-code-duration-value"),
@@ -616,6 +617,7 @@ async function createAdminCode() {
 
   try {
     const result = await postJsonWithAuth("/api/admin-license-code", token, {
+      mode: els.adminCodeMode?.value || "account",
       plan: els.adminCodePlan?.value || "starter",
       durationUnit: els.adminCodeDurationUnit?.value || "day",
       durationValue: els.adminCodeDurationValue?.value || "1",

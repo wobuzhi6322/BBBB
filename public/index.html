@@ -342,7 +342,7 @@
             <p class="muted">관리자가 발급한 코드를 입력하면 라이선스가 자동으로 적용됩니다.</p>
           </div>
           <form id="redeem-code-form" class="redeem-code-form">
-            <input id="redeem-code-input" type="text" autocomplete="off" placeholder="GD-STA-ABCD-1234-EFGH" required />
+            <input id="redeem-code-input" type="text" autocomplete="off" placeholder="GD-ACC-STA-ABCD-1234-EFGH" required />
             <button class="button primary" type="submit">코드 등록</button>
           </form>
           <p id="redeem-code-message" class="form-message" aria-live="polite"></p>
@@ -412,6 +412,13 @@
               <p>시간/일/무기한 이용권 코드를 만들고 사용자에게 전달합니다. 원본 코드는 발급 직후에만 표시됩니다.</p>
             </div>
             <form id="admin-code-form" class="admin-license-form">
+              <label>
+                코드 사용 방식
+                <select id="admin-code-mode">
+                  <option value="account">로그인 후 코드</option>
+                  <option value="guest">비회원 코드</option>
+                </select>
+              </label>
               <label>
                 요금제
                 <select id="admin-code-plan">

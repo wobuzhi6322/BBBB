@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { isOwnerEmail } from "./_owner.js";
 
 type AdminCodeBody = {
+  mode?: unknown;
   plan?: unknown;
   durationUnit?: unknown;
   durationValue?: unknown;
@@ -12,6 +13,8 @@ type AdminCodeBody = {
   validUntil?: unknown;
   notes?: unknown;
 };
+
+type CodeMode = "account" | "guest";
 
 type PlanLimits = {
   maxSignatures: number;
@@ -98,13 +101,15 @@ async function createCode(
   supabase: ReturnType<typeof serviceClient>
 ): Promise<void> {
   const plan = normalizePlan(body.plan);
+  const mode = normalizeMode(body.mode);
   const durationHours = normalizeDuration(body.durationUnit, body.durationValue);
   const maxRedemptions = integerValue(body.maxRedemptions, 1, 1000) || 1;
   const validUntil = dateValue(body.validUntil);
-  const code = createPlainCode(plan);
-  const codePrefix = code.split("-").slice(0, 3).join("-");
+  const code = createPlainCode(plan, mode);
+  const codePrefix = code.split("-").slice(0, 4).join("-");
   const now = new Date().toISOString();
   const limits = planLimits[plan];
+  const notes = stringValue(body.notes)?.slice(0, 1000);
 
   const insert = await supabase
     .from(licenseCodesTable)
@@ -117,7 +122,7 @@ async function createCode(
       redeemed_count: 0,
       valid_until: validUntil,
       is_active: true,
-      notes: stringValue(body.notes)?.slice(0, 1000) || null,
+      notes: [`mode:${mode}`, notes].filter(Boolean).join(" | ") || null,
       created_by: adminUserId,
       updated_at: now
     })
@@ -132,16 +137,18 @@ async function createCode(
     ok: true,
     data: {
       code,
+      mode,
       codeInfo: insert.data,
       limits
     }
   });
 }
 
-function createPlainCode(plan: string): string {
+function createPlainCode(plan: string, mode: CodeMode): string {
   const planPrefix = plan.slice(0, 3).toUpperCase();
   const raw = randomBytes(9).toString("hex").toUpperCase();
-  return `GD-${planPrefix}-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
+  const modePrefix = mode === "guest" ? "GST" : "ACC";
+  return `GD-${modePrefix}-${planPrefix}-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
 }
 
 function hashCode(code: string): string {
@@ -158,6 +165,14 @@ function normalizePlan(value: unknown): string {
     throw new Error("plan은 starter, standard, pro 중 하나여야 합니다.");
   }
   return plan;
+}
+
+function normalizeMode(value: unknown): CodeMode {
+  const mode = stringValue(value)?.toLowerCase() || "account";
+  if (mode === "guest" || mode === "account") {
+    return mode;
+  }
+  throw new Error("mode는 account 또는 guest여야 합니다.");
 }
 
 function normalizeDuration(unitValue: unknown, amountValue: unknown): number | null {
