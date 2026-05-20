@@ -545,6 +545,7 @@ h3 {
 .category-nav,
 .feature-section,
 .flow-section,
+.setup-section,
 .updates-section,
 .pricing-section,
 .download-section,
@@ -605,6 +606,7 @@ h3 {
 
 .feature-section,
 .flow-section,
+.setup-section,
 .updates-section,
 .pricing-section,
 .download-section,
@@ -822,6 +824,79 @@ h3 {
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0;
+}
+
+.setup-section {
+  border-top: 1px solid var(--line);
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 5vw, 64px);
+  border-top: 1px solid var(--line);
+}
+
+.setup-block {
+  min-width: 0;
+  padding-top: 24px;
+}
+
+.setup-label {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: var(--blue-2);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.setup-block h3 {
+  margin-bottom: 18px;
+}
+
+.setup-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-list li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.setup-list li:first-child {
+  border-top: 0;
+}
+
+.setup-list strong {
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.setup-list span {
+  color: var(--secondary);
+}
+
+.setup-list b {
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.setup-note {
+  max-width: 920px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--secondary);
+  font-size: 14px;
 }
 
 .timeline {
@@ -1464,6 +1539,7 @@ h3 {
   .status-strip,
   .feature-grid,
   .feature-showcase,
+  .setup-grid,
   .screen-gallery,
   .pricing-grid,
   .login-section,
@@ -1618,5 +1694,10 @@ h3 {
 
   .timeline article {
     padding: 18px 0;
+  }
+
+  .setup-list li {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }

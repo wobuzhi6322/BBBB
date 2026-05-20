@@ -45,7 +45,7 @@ const planLimits: Record<string, PlanLimits> = {
   pro: {
     maxSignatures: 50,
     maxMediaMb: 1024,
-    maxDevices: 3,
+    maxDevices: 1,
     sharedSyncEnabled: true
   }
 };

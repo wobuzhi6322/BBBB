@@ -81,7 +81,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    const license = await getActiveLicense(user.id, supabase);
+    const license = normalizeLicenseDeviceLimit(await getActiveLicense(user.id, supabase));
     const devices = await getLicenseDevices(license.id, supabase);
     const existing = devices.find((device) => device.device_fingerprint === deviceFingerprint);
 
@@ -220,6 +220,10 @@ function publicDevice(device: DeviceRow) {
     lastSeenAt: device.last_seen_at,
     createdAt: device.created_at
   };
+}
+
+function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {
+  return { ...license, max_devices: 1 };
 }
 
 function normalizeFingerprint(value: unknown): string {

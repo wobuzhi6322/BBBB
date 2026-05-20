@@ -84,7 +84,7 @@ async function listUserDevices(req: IncomingMessage, res: ServerResponse, supaba
   assertNoError(licensesResult.error);
   assertNoError(devicesResult.error);
 
-  const licenses = (licensesResult.data || []) as LicenseRow[];
+  const licenses = ((licensesResult.data || []) as LicenseRow[]).map(normalizeLicenseDeviceLimit);
   const devices = ((devicesResult.data || []) as DeviceRow[]).map((device) => ({
     ...publicDevice(device),
     license: licenses.find((license) => license.id === device.license_id) || null
@@ -189,6 +189,10 @@ function publicDevice(device: DeviceRow) {
     lastSeenAt: device.last_seen_at,
     createdAt: device.created_at
   };
+}
+
+function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {
+  return { ...license, max_devices: 1 };
 }
 
 function serviceClient() {

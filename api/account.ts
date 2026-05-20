@@ -111,9 +111,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     assertNoError(sharedCodesResult.error);
     assertNoError(downloadsResult.error);
 
-    const licenses = (licensesResult.data || []) as LicenseRow[];
     const profile = profileResult.data as SiteProfileRow;
     const ownerAccount = isOwnerEmail(user.email || profile.email);
+    const licenses = ownerAccount ? ((licensesResult.data || []) as LicenseRow[]) : ((licensesResult.data || []) as LicenseRow[]).map(normalizeLicenseDeviceLimit);
     const ownerActiveLicense = ownerAccount ? (ownerLicense(user.id) as LicenseRow) : null;
     const activeLicense = ownerActiveLicense || licenses.find(isUsableLicense) || licenses[0] || null;
 
@@ -135,6 +135,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
 function isUsableLicense(license: LicenseRow): boolean {
   return license.status === "active" && (!license.expires_at || new Date(license.expires_at).getTime() > Date.now());
+}
+
+function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {
+  return { ...license, max_devices: 1 };
 }
 
 async function ensureProfile(userId: string, email: string | null): Promise<void> {

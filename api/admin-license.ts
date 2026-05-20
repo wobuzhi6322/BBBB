@@ -66,7 +66,7 @@ const planLimits: Record<string, PlanLimits> = {
   pro: {
     maxSignatures: 50,
     maxMediaMb: 1024,
-    maxDevices: 3,
+    maxDevices: 1,
     sharedSyncEnabled: true
   }
 };
@@ -234,7 +234,11 @@ async function getLicensesForUser(userId: string, supabase: ReturnType<typeof se
   if (result.error) {
     throw new Error(result.error.message);
   }
-  return (result.data || []) as LicenseRow[];
+  return ((result.data || []) as LicenseRow[]).map(normalizeLicenseDeviceLimit);
+}
+
+function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {
+  return { ...license, max_devices: 1 };
 }
 
 async function resolveProfile(body: Pick<AdminLicenseBody, "email" | "userId">, supabase: ReturnType<typeof serviceClient>): Promise<SiteProfileRow> {
