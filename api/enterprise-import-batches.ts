@@ -9,8 +9,8 @@ import {
 import { handleEnterpriseRoute, readJsonBody } from "./_enterprise.js";
 
 type ImportBody = {
-  readonly sourceKind?: unknown;
-  readonly sourceLabel?: unknown;
+  readonly sourceKind?: "csv" | "google_sheet" | "manual";
+  readonly sourceLabel: string | null;
   readonly rows?: unknown;
 };
 
@@ -91,7 +91,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       const body = parseImportBody(await readJsonBody(request));
       const rows = normalizeRows(body.rows);
       const sourceKind = normalizeSourceKind(body.sourceKind);
-      const sourceLabel = normalizeOptionalText(typeof body.sourceLabel === "string" ? body.sourceLabel : null);
+      const sourceLabel = body.sourceLabel;
       const streamersResult = await supabase
         .from(streamersTable)
         .select("id,display_name")
@@ -239,8 +239,8 @@ function parseImportBody(value: unknown): ImportBody {
     throw new EnterpriseHttpError(400, "rows must be an array");
   }
   return {
-    sourceKind: value.sourceKind,
-    sourceLabel: value.sourceLabel,
+    sourceKind: parseSourceKind(value.sourceKind),
+    sourceLabel: parseOptionalText(value.sourceLabel, "sourceLabel must be a string"),
     rows: value.rows
   };
 }
@@ -309,8 +309,28 @@ function isOptionalString(value: unknown): boolean {
   return value === undefined || typeof value === "string";
 }
 
-function normalizeSourceKind(value: unknown): "csv" | "google_sheet" | "manual" {
-  return value === "google_sheet" || value === "manual" ? value : "csv";
+function normalizeSourceKind(value: "csv" | "google_sheet" | "manual" | undefined): "csv" | "google_sheet" | "manual" {
+  return value ?? "csv";
+}
+
+function parseSourceKind(value: unknown): "csv" | "google_sheet" | "manual" | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (value === "csv" || value === "google_sheet" || value === "manual") {
+    return value;
+  }
+  throw new EnterpriseHttpError(400, "sourceKind is invalid");
+}
+
+function parseOptionalText(value: unknown, message: string): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    throw new EnterpriseHttpError(400, message);
+  }
+  return normalizeOptionalText(value);
 }
 
 function normalizeOptionalText(value: string | null): string | null {
