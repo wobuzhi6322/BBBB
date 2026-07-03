@@ -15,7 +15,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     capability: req.method === "POST" ? "manageStreamers" : "streamers",
     run: async ({ method, req: request, supabase, access }) => {
       if (method === "POST") {
-        const body = (await readJsonBody(request)) as StreamerBody;
+        const body = parseStreamerBody(await readJsonBody(request));
         const displayName = normalizeText(body.displayName, "displayName is required");
         const insertResult = await supabase
           .from(streamersTable)
@@ -46,10 +46,23 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   });
 }
 
+function parseStreamerBody(value: unknown): StreamerBody {
+  if (!isRecord(value)) {
+    throw new EnterpriseHttpError(400, "request body must be an object");
+  }
+  return {
+    displayName: value.displayName
+  };
+}
+
 function normalizeText(value: unknown, message: string): string {
   const normalized = typeof value === "string" ? value.trim() : "";
   if (!normalized) {
     throw new EnterpriseHttpError(400, message);
   }
   return normalized;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

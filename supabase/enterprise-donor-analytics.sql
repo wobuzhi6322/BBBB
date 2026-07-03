@@ -1,5 +1,5 @@
 create table if not exists public.bbbb_enterprises (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   name text not null,
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -7,19 +7,19 @@ create table if not exists public.bbbb_enterprises (
 );
 
 create table if not exists public.bbbb_enterprise_members (
-  id uuid primary key default gen_random_uuid(),
-  enterprise_id uuid not null references public.bbbb_enterprises(id) on delete cascade,
+  id text primary key default gen_random_uuid()::text,
+  enterprise_id text not null references public.bbbb_enterprises(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   role text not null check (role in ('owner', 'admin', 'streamer', 'viewer')),
-  streamer_id uuid,
+  streamer_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (enterprise_id, user_id)
 );
 
 create table if not exists public.bbbb_enterprise_streamers (
-  id uuid primary key default gen_random_uuid(),
-  enterprise_id uuid not null references public.bbbb_enterprises(id) on delete cascade,
+  id text primary key default gen_random_uuid()::text,
+  enterprise_id text not null references public.bbbb_enterprises(id) on delete cascade,
   display_name text not null,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -27,9 +27,9 @@ create table if not exists public.bbbb_enterprise_streamers (
 );
 
 create table if not exists public.bbbb_enterprise_donation_imports (
-  id uuid primary key default gen_random_uuid(),
-  enterprise_id uuid not null references public.bbbb_enterprises(id) on delete cascade,
-  streamer_id uuid references public.bbbb_enterprise_streamers(id) on delete set null,
+  id text primary key default gen_random_uuid()::text,
+  enterprise_id text not null references public.bbbb_enterprises(id) on delete cascade,
+  streamer_id text references public.bbbb_enterprise_streamers(id) on delete set null,
   source_kind text not null check (source_kind in ('csv', 'google_sheet', 'manual')),
   source_label text,
   status text not null check (status in ('processing', 'imported', 'failed', 'reverted')),
@@ -41,10 +41,10 @@ create table if not exists public.bbbb_enterprise_donation_imports (
 );
 
 create table if not exists public.bbbb_enterprise_donations (
-  id uuid primary key default gen_random_uuid(),
-  enterprise_id uuid not null references public.bbbb_enterprises(id) on delete cascade,
-  streamer_id uuid not null references public.bbbb_enterprise_streamers(id) on delete cascade,
-  import_id uuid references public.bbbb_enterprise_donation_imports(id) on delete set null,
+  id text primary key default gen_random_uuid()::text,
+  enterprise_id text not null references public.bbbb_enterprises(id) on delete cascade,
+  streamer_id text not null references public.bbbb_enterprise_streamers(id) on delete cascade,
+  import_id text references public.bbbb_enterprise_donation_imports(id) on delete set null,
   donor_name text not null,
   donor_key text not null,
   amount_krw integer not null check (amount_krw > 0),
@@ -57,8 +57,8 @@ create table if not exists public.bbbb_enterprise_donations (
 );
 
 create table if not exists public.bbbb_enterprise_donor_aliases (
-  id uuid primary key default gen_random_uuid(),
-  enterprise_id uuid not null references public.bbbb_enterprises(id) on delete cascade,
+  id text primary key default gen_random_uuid()::text,
+  enterprise_id text not null references public.bbbb_enterprises(id) on delete cascade,
   donor_key text not null,
   alias text not null,
   created_at timestamptz not null default now(),
@@ -80,7 +80,7 @@ grant select, insert, update, delete on table public.bbbb_enterprise_donation_im
 grant select, insert, update, delete on table public.bbbb_enterprise_donations to authenticated;
 grant select, insert, update, delete on table public.bbbb_enterprise_donor_aliases to authenticated;
 
-create or replace function public.bbbb_enterprise_member_role(target_enterprise_id uuid)
+create or replace function public.bbbb_enterprise_member_role(target_enterprise_id text)
 returns text
 language sql
 stable
@@ -94,7 +94,7 @@ as $$
   limit 1
 $$;
 
-create or replace function public.bbbb_enterprise_can_manage(target_enterprise_id uuid)
+create or replace function public.bbbb_enterprise_can_manage(target_enterprise_id text)
 returns boolean
 language sql
 stable
@@ -104,7 +104,7 @@ as $$
   select public.bbbb_enterprise_member_role(target_enterprise_id) in ('owner', 'admin')
 $$;
 
-create or replace function public.bbbb_enterprise_can_read_streamer_data(target_enterprise_id uuid, target_streamer_id uuid)
+create or replace function public.bbbb_enterprise_can_read_streamer_data(target_enterprise_id text, target_streamer_id text)
 returns boolean
 language sql
 stable
