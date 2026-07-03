@@ -228,7 +228,14 @@ function isImportInputRow(value: unknown): value is ImportInputRow {
     && typeof value.streamerName === "string"
     && typeof value.donorName === "string"
     && typeof value.amountText === "string"
-    && typeof value.rawText === "string";
+    && typeof value.rawText === "string"
+    && isOptionalString(value.donatedAtText)
+    && isOptionalString(value.memo)
+    && isOptionalString(value.externalId);
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === "string";
 }
 
 function normalizeSourceKind(value: unknown): "csv" | "google_sheet" | "manual" {
