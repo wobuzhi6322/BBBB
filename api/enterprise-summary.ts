@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { requireEnterpriseStreamerScope } from "./_enterprise-access.js";
+import { assertNoError, requireEnterpriseStreamerScope } from "./_enterprise-access.js";
 import { handleEnterpriseRoute } from "./_enterprise.js";
 
 type EnterpriseRow = {
@@ -61,13 +61,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         donationsQuery.eq("streamer_id", scopedStreamerId);
       }
       const donationsResult = await donationsQuery;
+      assertNoError(enterpriseResult.error);
+      assertNoError(streamersResult.error);
+      assertNoError(importsResult.error);
+      assertNoError(donationsResult.error);
 
       const enterprise = (enterpriseResult.data ?? null) as EnterpriseRow | null;
       const allStreamers = ((streamersResult.data ?? []) as StreamerRow[]).filter((streamer) =>
         scopedStreamerId === null ? true : streamer.id === scopedStreamerId
       );
       const donations = (donationsResult.data ?? []) as DonationRow[];
-      const imports = (importsResult.data ?? []) as ImportRow[];
+      const imports = visibleImports(access.role, donations, (importsResult.data ?? []) as ImportRow[]);
       const topStreamers = summarizeTopStreamers(donations, allStreamers);
 
       return {
@@ -79,7 +83,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           donorCount: uniqueDonorCount(donations),
           streamerCount: uniqueStreamerCount(donations, allStreamers),
           donationCount: donations.length,
-          importBatchCount: visibleImportCount(access.role, donations, imports)
+          importBatchCount: imports.length
         },
         streamers: access.role === "viewer" ? [] : allStreamers,
         recentImports: access.role === "viewer" ? [] : imports.slice(0, 5),
@@ -105,12 +109,15 @@ function uniqueStreamerCount(donations: readonly DonationRow[], streamers: reado
   return new Set(donations.map((donation) => donation.streamer_id)).size;
 }
 
-function visibleImportCount(role: string, donations: readonly DonationRow[], imports: readonly ImportRow[]): number {
+function visibleImports(role: string, donations: readonly DonationRow[], imports: readonly ImportRow[]): readonly ImportRow[] {
   if (role === "viewer") {
-    return 0;
+    return [];
+  }
+  if (role !== "streamer") {
+    return imports;
   }
   const importedIds = new Set(donations.map((donation) => donation.import_id).filter((value): value is string => Boolean(value)));
-  return importedIds.size || imports.length;
+  return imports.filter((row) => importedIds.has(row.id));
 }
 
 function summarizeDailyTotals(donations: readonly DonationRow[]) {

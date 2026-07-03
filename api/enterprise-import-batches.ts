@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import {
   EnterpriseHttpError,
+  assertNoError,
   requireEnterpriseStreamerScope
 } from "./_enterprise-access.js";
 import { handleEnterpriseRoute, readJsonBody } from "./_enterprise.js";
@@ -54,6 +55,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           query.eq("streamer_id", scopedStreamerId);
         }
         const importsResult = await query;
+        assertNoError(importsResult.error);
         return { importBatches: importsResult.data ?? [] };
       }
 
@@ -69,6 +71,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .from(streamersTable)
         .select("id,display_name")
         .eq("enterprise_id", access.enterpriseId);
+      assertNoError(streamersResult.error);
       const streamers = (streamersResult.data ?? []) as StreamerRow[];
       const importResult = await supabase
         .from(importsTable)
@@ -82,11 +85,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         })
         .select("id,enterprise_id,source_kind,source_label,status,raw_row_count,imported_row_count")
         .single();
+      assertNoError(importResult.error);
       const importBatch = importResult.data as { readonly id: string };
       const parsed = parseRows({ enterpriseId: access.enterpriseId, importId: importBatch.id, sourceKind, rows, streamers });
-      const donationRows = parsed.donationRows.length === 0
-        ? []
-        : ((await supabase.from(donationsTable).insert(parsed.donationRows).select()).data ?? []);
+      const donationInsertResult = parsed.donationRows.length === 0
+        ? { data: [], error: null }
+        : await supabase.from(donationsTable).insert(parsed.donationRows).select();
+      assertNoError(donationInsertResult.error);
+      const donationRows = donationInsertResult.data ?? [];
       const updateResult = await supabase
         .from(importsTable)
         .update({
@@ -96,6 +102,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         })
         .eq("id", importBatch.id)
         .single();
+      assertNoError(updateResult.error);
 
       return {
         importBatch: {

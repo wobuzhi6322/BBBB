@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { EnterpriseHttpError, requireEnterpriseStreamerScope } from "./_enterprise-access.js";
+import { EnterpriseHttpError, assertNoError, requireEnterpriseStreamerScope } from "./_enterprise-access.js";
 import { handleEnterpriseRoute, readJsonBody } from "./_enterprise.js";
 
 type StreamerBody = {
@@ -26,6 +26,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           })
           .select("id,enterprise_id,display_name,is_active")
           .single();
+        assertNoError(insertResult.error);
         return { streamer: insertResult.data };
       }
 
@@ -39,6 +40,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         query.eq("id", scopedStreamerId);
       }
       const streamersResult = await query;
+      assertNoError(streamersResult.error);
       return { streamers: streamersResult.data ?? [] };
     }
   });

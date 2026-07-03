@@ -84,6 +84,8 @@ create or replace function public.bbbb_enterprise_member_role(target_enterprise_
 returns text
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select role
   from public.bbbb_enterprise_members
@@ -96,6 +98,8 @@ create or replace function public.bbbb_enterprise_can_manage(target_enterprise_i
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select public.bbbb_enterprise_member_role(target_enterprise_id) in ('owner', 'admin')
 $$;
@@ -104,6 +108,8 @@ create or replace function public.bbbb_enterprise_can_read_streamer_data(target_
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select exists (
     select 1

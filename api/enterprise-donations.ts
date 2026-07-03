@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { requireEnterpriseStreamerScope } from "./_enterprise-access.js";
+import { assertNoError, requireEnterpriseStreamerScope } from "./_enterprise-access.js";
 import { handleEnterpriseRoute } from "./_enterprise.js";
 
 const donationsTable = "bbbb_enterprise_donations";
@@ -21,6 +21,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         query.eq("streamer_id", scopedStreamerId);
       }
       const donationsResult = await query;
+      assertNoError(donationsResult.error);
       return { donations: donationsResult.data ?? [] };
     }
   });

@@ -152,7 +152,7 @@ export async function createEnterpriseAccess(input: {
 
   const ownerAccount = isOwnerEmail(email);
   const member = membership.data as EnterpriseMemberRow | null;
-  if (!member && !ownerAccount) {
+  if (!member) {
     throw new EnterpriseHttpError(403, "non-member");
   }
 
@@ -160,8 +160,8 @@ export async function createEnterpriseAccess(input: {
     enterpriseId,
     userId,
     email,
-    role: ownerAccount ? "owner" : member?.role ?? "viewer",
-    streamerId: member?.streamer_id ?? null,
+    role: member.role,
+    streamerId: member.streamer_id,
     ownerAccount
   };
 
