@@ -172,6 +172,12 @@ to authenticated
 using (
   public.bbbb_enterprise_can_manage(enterprise_id)
   or public.bbbb_enterprise_can_read_streamer_data(enterprise_id, streamer_id)
+  or exists (
+    select 1
+    from public.bbbb_enterprise_donations donation
+    where donation.import_id = bbbb_enterprise_donation_imports.id
+      and public.bbbb_enterprise_can_read_streamer_data(donation.enterprise_id, donation.streamer_id)
+  )
 );
 
 create policy "bbbb imports write manage"

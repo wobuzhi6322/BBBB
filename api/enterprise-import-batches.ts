@@ -30,6 +30,11 @@ type StreamerRow = {
   readonly display_name?: string | null;
 };
 
+type ImportRow = {
+  readonly id: string;
+  readonly created_at?: string | null;
+};
+
 type RowError = {
   readonly rowNumber: number;
   readonly reason: "invalid_amount" | "invalid_date" | "missing_donor" | "missing_streamer";
@@ -52,7 +57,27 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           .eq("enterprise_id", access.enterpriseId)
           .order("created_at", { ascending: false });
         if (scopedStreamerId !== null) {
-          query.eq("streamer_id", scopedStreamerId);
+          const directImportsResult = await query.eq("streamer_id", scopedStreamerId);
+          assertNoError(directImportsResult.error);
+          const donationRefsResult = await supabase
+            .from(donationsTable)
+            .select("import_id")
+            .eq("enterprise_id", access.enterpriseId)
+            .eq("streamer_id", scopedStreamerId);
+          assertNoError(donationRefsResult.error);
+          const donationImportIds = uniqueImportIds(donationRefsResult.data);
+          const donationImportsResult = donationImportIds.length === 0
+            ? { data: [], error: null }
+            : await supabase
+              .from(importsTable)
+              .select("id,enterprise_id,source_kind,source_label,status,raw_row_count,imported_row_count,created_at")
+              .eq("enterprise_id", access.enterpriseId)
+              .in("id", donationImportIds)
+              .order("created_at", { ascending: false });
+          assertNoError(donationImportsResult.error);
+          return {
+            importBatches: mergeImportRows(directImportsResult.data, donationImportsResult.data)
+          };
         }
         const importsResult = await query;
         assertNoError(importsResult.error);
@@ -73,10 +98,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .eq("enterprise_id", access.enterpriseId);
       assertNoError(streamersResult.error);
       const streamers = normalizeStreamers(streamersResult.data);
+      const batchStreamerId = resolveBatchStreamerId(rows, streamers);
       const importResult = await supabase
         .from(importsTable)
         .insert({
           enterprise_id: access.enterpriseId,
+          streamer_id: batchStreamerId,
           source_kind: sourceKind,
           source_label: sourceLabel,
           status: "processing",
@@ -97,6 +124,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       const updateResult = await supabase
         .from(importsTable)
         .update({
+          streamer_id: batchStreamerId,
           status: "imported",
           raw_row_count: rows.length,
           imported_row_count: donationRows.length
@@ -132,7 +160,7 @@ function parseRows(input: {
   const rowErrors: RowError[] = [];
 
   for (const row of input.rows) {
-    const streamer = input.streamers.find((candidate) => normalizeLookup(candidate.display_name ?? "") === normalizeLookup(row.streamerName));
+    const streamer = findStreamer(input.streamers, row.streamerName);
     const donorName = row.donorName.trim();
     const amountKrw = parseWonAmount(row.amountText);
     const donatedOn = parseDonationDate(row.donatedAtText);
@@ -176,6 +204,33 @@ function parseRows(input: {
   return { donationRows, rowErrors };
 }
 
+function uniqueImportIds(value: unknown): readonly string[] {
+  const ids = new Set<string>();
+  const rows = Array.isArray(value) ? value : [];
+  for (const row of rows) {
+    if (isRecord(row) && typeof row.import_id === "string" && row.import_id) {
+      ids.add(row.import_id);
+    }
+  }
+  return [...ids];
+}
+
+function mergeImportRows(primary: unknown, secondary: unknown): readonly ImportRow[] {
+  const rows = new Map<string, ImportRow>();
+  for (const row of [...normalizeImportRows(primary), ...normalizeImportRows(secondary)]) {
+    rows.set(row.id, row);
+  }
+  return [...rows.values()].sort((left, right) => String(right.created_at ?? "").localeCompare(String(left.created_at ?? "")));
+}
+
+function normalizeImportRows(value: unknown): readonly ImportRow[] {
+  return Array.isArray(value) ? value.filter(isImportRow) : [];
+}
+
+function isImportRow(value: unknown): value is ImportRow {
+  return isRecord(value) && typeof value.id === "string";
+}
+
 function parseImportBody(value: unknown): ImportBody {
   if (!isRecord(value)) {
     throw new EnterpriseHttpError(400, "request body must be an object");
@@ -203,6 +258,22 @@ function requireInsertedId(value: unknown): string {
     return value.id;
   }
   throw new EnterpriseHttpError(500, "import-batch-create-failed");
+}
+
+function resolveBatchStreamerId(rows: readonly ImportInputRow[], streamers: readonly StreamerRow[]): string | null {
+  const streamerIds = new Set<string>();
+  for (const row of rows) {
+    const streamer = findStreamer(streamers, row.streamerName);
+    if (streamer) {
+      streamerIds.add(streamer.id);
+    }
+  }
+  return streamerIds.size === 1 ? [...streamerIds][0] ?? null : null;
+}
+
+function findStreamer(streamers: readonly StreamerRow[], streamerName: string): StreamerRow | undefined {
+  const normalizedName = normalizeLookup(streamerName);
+  return streamers.find((candidate) => normalizeLookup(candidate.display_name ?? "") === normalizedName);
 }
 
 function normalizeRows(value: unknown): readonly ImportInputRow[] {
