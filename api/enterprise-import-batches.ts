@@ -178,7 +178,10 @@ function parseRows(input: {
 
 function parseImportBody(value: unknown): ImportBody {
   if (!isRecord(value)) {
-    return {};
+    throw new EnterpriseHttpError(400, "request body must be an object");
+  }
+  if (!Array.isArray(value.rows)) {
+    throw new EnterpriseHttpError(400, "rows must be an array");
   }
   return {
     sourceKind: value.sourceKind,
@@ -203,14 +206,25 @@ function requireInsertedId(value: unknown): string {
 }
 
 function normalizeRows(value: unknown): readonly ImportInputRow[] {
-  return Array.isArray(value) ? value.filter(isImportInputRow) : [];
+  if (!Array.isArray(value)) {
+    throw new EnterpriseHttpError(400, "rows must be an array");
+  }
+  if (value.length === 0) {
+    throw new EnterpriseHttpError(400, "rows must not be empty");
+  }
+  return value.map((row) => {
+    if (!isImportInputRow(row)) {
+      throw new EnterpriseHttpError(400, "row is malformed");
+    }
+    return row;
+  });
 }
 
 function isImportInputRow(value: unknown): value is ImportInputRow {
   if (!isRecord(value)) {
     return false;
   }
-  return typeof value.rowNumber === "number"
+  return Number.isInteger(value.rowNumber)
     && typeof value.streamerName === "string"
     && typeof value.donorName === "string"
     && typeof value.amountText === "string"
