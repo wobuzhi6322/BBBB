@@ -21,6 +21,7 @@ type EnterpriseRouteOptions = {
 };
 
 const maxJsonBodyBytes = 1_000_000;
+const enterpriseIdPattern = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[a-z0-9][a-z0-9_-]{0,127})$/iu;
 
 export async function handleEnterpriseRoute(
   req: IncomingMessage,
@@ -40,7 +41,7 @@ export async function handleEnterpriseRoute(
     }
 
     const url = new URL(req.url ?? "/", `http://${headerValue(req.headers.host) ?? "localhost"}`);
-    const enterpriseId = normalizeRequiredText(url.searchParams.get("enterpriseId"), "enterpriseId is required");
+    const enterpriseId = parseEnterpriseId(normalizeRequiredText(url.searchParams.get("enterpriseId"), "enterpriseId is required"));
     const supabase = serviceClient();
     const access = await createEnterpriseAccess({
       req,
@@ -49,7 +50,7 @@ export async function handleEnterpriseRoute(
       capability: options.capability,
       method
     });
-    const data = await options.run({ req, method, url, supabase, access })
+    const data = await options.run({ req, method, url, supabase, access });
     sendJson(res, 200, { ok: true, data });
   } catch (error) {
     if (error instanceof EnterpriseHttpError) {
@@ -90,6 +91,13 @@ export function normalizeRequiredText(value: string | null, message: string): st
     throw new EnterpriseHttpError(400, message);
   }
   return normalized;
+}
+
+export function parseEnterpriseId(enterpriseId: string): string {
+  if (!enterpriseIdPattern.test(enterpriseId)) {
+    throw new EnterpriseHttpError(400, "enterpriseId format is invalid");
+  }
+  return enterpriseId;
 }
 
 function normalizeMethod(value: string | undefined): EnterpriseMethod {

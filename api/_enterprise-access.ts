@@ -24,7 +24,6 @@ export type EnterpriseAccess = {
   readonly email: string | null;
   readonly role: EnterpriseRole;
   readonly streamerId: string | null;
-  readonly ownerAccount: boolean;
 };
 
 export class EnterpriseHttpError extends Error {
@@ -76,8 +75,6 @@ export const mutationRoles = ["owner", "admin"] as const;
 
 const membersTable = "bbbb_enterprise_members";
 const profilesTable = "bbbb_site_profiles";
-const defaultOwnerEmails = ["wobuzhi6322@gmail.com"] as const;
-
 export function serviceClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -150,7 +147,6 @@ export async function createEnterpriseAccess(input: {
     .maybeSingle();
   assertNoError(membership.error);
 
-  const ownerAccount = isOwnerEmail(email);
   const member = membership.data as EnterpriseMemberRow | null;
   if (!member) {
     throw new EnterpriseHttpError(403, "non-member");
@@ -161,8 +157,7 @@ export async function createEnterpriseAccess(input: {
     userId,
     email,
     role: member.role,
-    streamerId: member.streamer_id,
-    ownerAccount
+    streamerId: member.streamer_id
   };
 
   if (input.capability && !enterpriseRoleCapabilities[access.role][input.capability]) {
@@ -196,16 +191,6 @@ function bearerToken(req: IncomingMessage): string | undefined {
 
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function isOwnerEmail(value: string | null): boolean {
-  const ownerEmails = new Set(
-    (process.env.BBBB_OWNER_EMAILS || defaultOwnerEmails.join(","))
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean)
-  );
-  return Boolean(value && ownerEmails.has(value.trim().toLowerCase()));
 }
 
 async function requireEnterpriseUserFromClient(supabase: ReturnType<typeof serviceClient>) {

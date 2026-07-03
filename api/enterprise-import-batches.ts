@@ -63,7 +63,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         throw new EnterpriseHttpError(403, "mutation-forbidden");
       }
 
-      const body = (await readJsonBody(request)) as ImportBody;
+      const body = parseImportBody(await readJsonBody(request));
       const rows = normalizeRows(body.rows);
       const sourceKind = normalizeSourceKind(body.sourceKind);
       const sourceLabel = normalizeOptionalText(typeof body.sourceLabel === "string" ? body.sourceLabel : null);
@@ -72,7 +72,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .select("id,display_name")
         .eq("enterprise_id", access.enterpriseId);
       assertNoError(streamersResult.error);
-      const streamers = (streamersResult.data ?? []) as StreamerRow[];
+      const streamers = normalizeStreamers(streamersResult.data);
       const importResult = await supabase
         .from(importsTable)
         .insert({
@@ -81,13 +81,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           source_label: sourceLabel,
           status: "processing",
           raw_row_count: rows.length,
-          imported_row_count: 0
+          imported_row_count: 0,
+          created_by: access.userId
         })
         .select("id,enterprise_id,source_kind,source_label,status,raw_row_count,imported_row_count")
         .single();
       assertNoError(importResult.error);
-      const importBatch = importResult.data as { readonly id: string };
-      const parsed = parseRows({ enterpriseId: access.enterpriseId, importId: importBatch.id, sourceKind, rows, streamers });
+      const importBatchId = requireInsertedId(importResult.data);
+      const parsed = parseRows({ enterpriseId: access.enterpriseId, importId: importBatchId, sourceKind, rows, streamers });
       const donationInsertResult = parsed.donationRows.length === 0
         ? { data: [], error: null }
         : await supabase.from(donationsTable).insert(parsed.donationRows).select();
@@ -100,7 +101,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           raw_row_count: rows.length,
           imported_row_count: donationRows.length
         })
-        .eq("id", importBatch.id)
+        .eq("id", importBatchId)
         .single();
       assertNoError(updateResult.error);
 
@@ -173,6 +174,32 @@ function parseRows(input: {
   }
 
   return { donationRows, rowErrors };
+}
+
+function parseImportBody(value: unknown): ImportBody {
+  if (!isRecord(value)) {
+    return {};
+  }
+  return {
+    sourceKind: value.sourceKind,
+    sourceLabel: value.sourceLabel,
+    rows: value.rows
+  };
+}
+
+function normalizeStreamers(value: unknown): readonly StreamerRow[] {
+  return Array.isArray(value) ? value.filter(isStreamerRow) : [];
+}
+
+function isStreamerRow(value: unknown): value is StreamerRow {
+  return isRecord(value) && typeof value.id === "string";
+}
+
+function requireInsertedId(value: unknown): string {
+  if (isRecord(value) && typeof value.id === "string" && value.id) {
+    return value.id;
+  }
+  throw new EnterpriseHttpError(500, "import-batch-create-failed");
 }
 
 function normalizeRows(value: unknown): readonly ImportInputRow[] {
