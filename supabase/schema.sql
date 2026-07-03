@@ -29,6 +29,11 @@ create table if not exists public.bbbb_site_profiles (
   email text,
   display_name text,
   role text not null default 'user' check (role in ('user', 'admin')),
+  channel_platform text not null default 'youtube',
+  channel_name text,
+  channel_url text,
+  trial_started_at timestamptz,
+  trial_license_id uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -43,6 +48,7 @@ create table if not exists public.bbbb_account_licenses (
   max_media_mb integer not null default 50 check (max_media_mb >= 0),
   max_devices integer not null default 1 check (max_devices >= 0),
   shared_sync_enabled boolean not null default false,
+  feature_flags jsonb not null default '{"signatures":true,"wallpapers":true,"tagBattle":true,"chatRace":true,"manualOverlays":true}'::jsonb,
   notes text,
   issued_at timestamptz not null default now(),
   activated_at timestamptz,
@@ -72,6 +78,7 @@ create table if not exists public.bbbb_license_codes (
   redeemed_count integer not null default 0 check (redeemed_count >= 0),
   valid_until timestamptz,
   is_active boolean not null default true,
+  feature_flags jsonb not null default '{"signatures":true,"wallpapers":true,"tagBattle":true,"chatRace":true,"manualOverlays":true}'::jsonb,
   notes text,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -123,6 +130,10 @@ create index if not exists bbbb_shared_code_members_user_idx
 create index if not exists bbbb_account_licenses_user_status_idx
   on public.bbbb_account_licenses(user_id, status);
 
+create unique index if not exists bbbb_account_licenses_one_trial_idx
+  on public.bbbb_account_licenses(user_id)
+  where notes = 'system:free-trial-2d';
+
 create index if not exists bbbb_account_devices_user_seen_idx
   on public.bbbb_account_devices(user_id, last_seen_at desc);
 
@@ -144,6 +155,44 @@ alter table public.bbbb_account_licenses
 alter table public.bbbb_account_licenses
   add constraint bbbb_account_licenses_status_check
   check (status in ('pending', 'inactive', 'active', 'expired', 'suspended'));
+
+alter table public.bbbb_account_licenses
+  add column if not exists feature_flags jsonb not null default '{"signatures":true,"wallpapers":true,"tagBattle":true,"chatRace":true,"manualOverlays":true}'::jsonb;
+
+alter table public.bbbb_license_codes
+  add column if not exists feature_flags jsonb not null default '{"signatures":true,"wallpapers":true,"tagBattle":true,"chatRace":true,"manualOverlays":true}'::jsonb;
+
+alter table public.bbbb_site_profiles
+  add column if not exists channel_platform text not null default 'youtube';
+
+alter table public.bbbb_site_profiles
+  add column if not exists channel_name text;
+
+alter table public.bbbb_site_profiles
+  add column if not exists channel_url text;
+
+alter table public.bbbb_site_profiles
+  add column if not exists trial_started_at timestamptz;
+
+alter table public.bbbb_site_profiles
+  add column if not exists trial_license_id uuid;
+
+alter table public.bbbb_site_profiles
+  drop constraint if exists bbbb_site_profiles_channel_platform_check;
+
+alter table public.bbbb_site_profiles
+  add constraint bbbb_site_profiles_channel_platform_check
+  check (channel_platform in ('youtube', 'instagram', 'tiktok'));
+
+alter table public.bbbb_site_profiles
+  drop constraint if exists bbbb_site_profiles_trial_license_id_fkey;
+
+alter table public.bbbb_site_profiles
+  add constraint bbbb_site_profiles_trial_license_id_fkey
+  foreign key (trial_license_id) references public.bbbb_account_licenses(id) on delete set null;
+
+create index if not exists bbbb_site_profiles_channel_idx
+  on public.bbbb_site_profiles(channel_platform, channel_name);
 
 alter table public.bbbb_site_profiles enable row level security;
 alter table public.bbbb_account_licenses enable row level security;
@@ -176,10 +225,23 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.bbbb_site_profiles (user_id, email)
-  values (new.id, new.email)
+  insert into public.bbbb_site_profiles (user_id, email, channel_platform, channel_name, channel_url)
+  values (
+    new.id,
+    new.email,
+    case
+      when lower(coalesce(new.raw_user_meta_data->>'channel_platform', 'youtube')) in ('youtube', 'instagram', 'tiktok')
+        then lower(coalesce(new.raw_user_meta_data->>'channel_platform', 'youtube'))
+      else 'youtube'
+    end,
+    nullif(left(coalesce(new.raw_user_meta_data->>'channel_name', ''), 120), ''),
+    nullif(left(coalesce(new.raw_user_meta_data->>'channel_url', ''), 500), '')
+  )
   on conflict (user_id) do update
     set email = excluded.email,
+        channel_platform = coalesce(public.bbbb_site_profiles.channel_platform, excluded.channel_platform),
+        channel_name = coalesce(public.bbbb_site_profiles.channel_name, excluded.channel_name),
+        channel_url = coalesce(public.bbbb_site_profiles.channel_url, excluded.channel_url),
         updated_at = now();
   return new;
 end;
