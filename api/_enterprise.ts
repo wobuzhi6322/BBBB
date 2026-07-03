@@ -54,7 +54,7 @@ export async function handleEnterpriseRoute(
     sendJson(res, 200, { ok: true, data });
   } catch (error) {
     if (error instanceof EnterpriseHttpError) {
-      sendJson(res, error.status, { ok: false, error: error.message });
+      sendJson(res, error.status, { ok: false, error: error.expose ? error.message : "enterprise-api-failed" });
       return;
     }
     sendJson(res, 500, { ok: false, error: "enterprise-api-failed" });

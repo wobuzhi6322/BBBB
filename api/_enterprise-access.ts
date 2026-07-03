@@ -28,11 +28,13 @@ export type EnterpriseAccess = {
 
 export class EnterpriseHttpError extends Error {
   readonly status: number;
+  readonly expose: boolean;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, options: { readonly expose?: boolean } = {}) {
     super(message);
     this.name = "EnterpriseHttpError";
     this.status = status;
+    this.expose = options.expose ?? status < 500;
   }
 }
 
@@ -91,7 +93,7 @@ export function serviceClient() {
 
 export function assertNoError(error: { readonly message: string } | null | undefined): void {
   if (error) {
-    throw new EnterpriseHttpError(500, error.message);
+    throw new EnterpriseHttpError(500, "enterprise-storage-failed", { expose: false });
   }
 }
 
