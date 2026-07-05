@@ -9,5 +9,16 @@
     "api/download-events.ts": {
       "maxDuration": 15
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/@:handle/d/:messageId", "destination": "/channel.html" },
+    { "source": "/@:handle", "destination": "/channel.html" },
+    { "source": "/me/:section", "destination": "/me.html" },
+    { "source": "/me", "destination": "/me.html" },
+    { "source": "/studio/:section", "destination": "/studio.html" },
+    { "source": "/studio", "destination": "/studio.html" },
+    { "source": "/channels", "destination": "/channels.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/signup", "destination": "/signup.html" }
+  ]
 }
