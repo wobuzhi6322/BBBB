@@ -92,6 +92,9 @@ create table if not exists public.bbbb_donation_messages (
 create index if not exists bbbb_donation_messages_page_status_idx
   on public.bbbb_donation_messages (page_id, status, expires_at);
 
+-- IP 단위 레이트리밋용 (기존 적용분에도 안전하게 추가되도록 alter 사용)
+alter table public.bbbb_donation_messages add column if not exists ip_hash text;
+
 -- 활성 pending 내 입금코드 유일 (만료·매칭된 코드는 재사용 가능)
 create unique index if not exists bbbb_donation_messages_pending_code_idx
   on public.bbbb_donation_messages (page_id, code_norm)

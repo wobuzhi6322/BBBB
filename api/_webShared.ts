@@ -260,6 +260,8 @@ export type MyDonationItem = {
 
 export type StudioPageSettings = {
   handle: string;
+  /** 핸들 마지막 변경 시각(30일 쿨다운 UI용) — 서버가 additive로 내려줌 */
+  handleChangedAt?: string | null;
   bannerUrl: string | null;
   avatarUrl: string | null;
   bio: string | null;
