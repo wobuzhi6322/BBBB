@@ -1,0 +1,63 @@
+{
+  "headers": [
+    {
+      "source": "/assets/site.css",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/site.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(site\\.css|site\\.js)",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "continue": true
+    },
+    {
+      "src": "/admin/?",
+      "dest": "/api/admin"
+    },
+    {
+      "src": "/admin/index\\.html",
+      "dest": "/api/admin"
+    },
+    {
+      "src": "/admin/(admin\\.(js|css))",
+      "dest": "/api/admin-asset?file=$1"
+    }
+  ],
+  "functions": {
+    "api/admin.ts": {
+      "includeFiles": "admin-private/index.html"
+    },
+    "api/admin-asset.ts": {
+      "includeFiles": "admin-private/**"
+    },
+    "api/shared-profile.ts": {
+      "maxDuration": 60
+    },
+    "api/releases.ts": {
+      "maxDuration": 15
+    },
+    "api/mobile-release.ts": {
+      "maxDuration": 15
+    },
+    "api/download-events.ts": {
+      "maxDuration": 15
+    }
+  }
+}

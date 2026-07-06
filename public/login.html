@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="계이득 서비스 계정 로그인 페이지입니다." />
+    <title>계정 로그인 - 계이득</title>
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("bbbb-site-theme");
+        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/site.css?v=20260614-auth-capslock1" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="/assets/site.js?v=20260614-auth-capslock1"></script>
+  </head>
+  <body>
+    <!-- Top App Bar / Header -->
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="계이득 홈">
+        <img class="brand-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+      </a>
+      <nav class="site-nav" aria-label="메인 메뉴">
+        <a href="/#flow">작동 방식</a>
+        <a href="/#features">기능</a>
+        <a href="/#setup">세팅법</a>
+        <a href="/#pricing">요금제</a>
+        <a href="/#download">다운로드</a>
+      </nav>
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
+          <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
+          </svg>
+        </button>
+        <a id="header-admin" class="header-admin" href="/admin/" style="display: none;">관리자</a>
+        <button id="header-account" class="header-account" type="button">로그인</button>
+        <a class="header-download" href="/#download">다운로드</a>
+      </div>
+    </header>
+
+    <main class="login-page-container">
+      <section id="login-dialog" class="login-page-card">
+        <div class="login-form-content">
+          <div class="account-heading">
+            <p class="eyebrow">Account</p>
+            <h2 id="login-title">계정 로그인</h2>
+            <p>로그인하면 내 라이선스와 다운로드 기록을 확인할 수 있습니다.</p>
+          </div>
+          <form id="login-form" class="login-form">
+            <label>
+              이메일
+              <input id="email" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              비밀번호
+              <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+            </label>
+            <p id="caps-lock-warning" class="caps-lock-warning" hidden>Caps Lock이 켜져 있습니다. 비밀번호 대소문자를 확인하세요.</p>
+            <label class="signup-only is-hidden" data-signup-only hidden>
+              비밀번호 확인
+              <input id="password-confirm" type="password" autocomplete="new-password" />
+            </label>
+            <div id="password-strength" class="password-strength signup-only is-hidden" data-signup-only hidden>
+              <div class="password-strength-head">
+                <span>비밀번호 강도</span>
+                <strong id="password-strength-label">입력 대기</strong>
+              </div>
+              <div class="password-strength-track" aria-hidden="true">
+                <span id="password-strength-bar"></span>
+              </div>
+              <p id="password-strength-hint">8자 이상, 대문자, 소문자, 숫자, 특수문자를 섞으면 강해집니다.</p>
+            </div>
+            <fieldset id="signup-channel-fields" class="signup-channel-fields signup-only is-hidden" data-signup-only hidden>
+              <legend>회원가입 채널 정보</legend>
+              <label>
+                플랫폼
+                <select id="signup-channel-platform">
+                  <option value="youtube">▶ YouTube</option>
+                  <option value="instagram">◎ Instagram</option>
+                  <option value="tiktok">♪ TikTok</option>
+                </select>
+              </label>
+              <label>
+                채널명
+                <input id="signup-channel-name" type="text" autocomplete="off" placeholder="예: 계이득 공식" />
+              </label>
+              <label>
+                채널 주소
+                <input id="signup-channel-url" type="url" autocomplete="off" placeholder="https://youtube.com/..." />
+              </label>
+            </fieldset>
+            <div class="form-actions">
+              <button id="login-button" class="button primary" type="submit">로그인</button>
+              <button id="signup-button" class="button secondary" type="button">회원가입</button>
+              <button id="reset-password-button" class="button secondary" type="button">비밀번호 찾기</button>
+              <button id="save-password-button" class="button primary is-hidden" type="button">새 비밀번호 저장</button>
+            </div>
+            <p id="auth-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <!-- Floating Open Chat Button Stack -->
+    <div class="contact-stack" aria-label="문의 링크">
+      <a
+        class="contact-float contact-float-discord"
+        href="https://discord.gg/5QZw7pu45E"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="계이득 디스코드 열기"
+        title="디스코드"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M7.5 8.5c2.7-1 6.3-1 9 0M8.2 16.5c2.5 1.3 5.1 1.3 7.6 0" />
+          <path d="M7.2 5.5C5.6 6.4 4.5 9.6 4.2 16.3c1.9 1.4 3.7 2.1 5.5 2.3l.8-1.4M16.8 5.5c1.6.9 2.7 4.1 3 10.8-1.9 1.4-3.7 2.1-5.5 2.3l-.8-1.4" />
+          <path d="M9 12.2h.1M15 12.2h.1" />
+        </svg>
+        <span>디스코드</span>
+      </a>
+      <a
+        class="contact-float"
+        href="https://open.kakao.com/o/g3D2oJvi"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="카카오 오픈채팅 문의하기"
+        title="문의하기"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M21 11.5a8.4 8.4 0 0 1-8.7 8.2 9.8 9.8 0 0 1-3.1-.5L4 21l1.6-4.2A7.8 7.8 0 0 1 3 11.5a8.4 8.4 0 0 1 8.7-8.2A8.4 8.4 0 0 1 21 11.5Z" />
+          <path d="M8 10h8M8 14h5" />
+        </svg>
+        <span>문의하기</span>
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div>
+        <img class="footer-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+        <p>계좌 후원 알림을 방송 리액션으로 바꾸는 Windows 프로그램.</p>
+      </div>
+      <nav class="footer-links" aria-label="법적 고지">
+        <a href="/privacy.html">개인정보처리방침</a>
+        <a href="/terms.html">이용약관</a>
+        <a href="/ads.html">광고 및 쿠키 안내</a>
+      </nav>
+    </footer>
+  </body>
+</html>
