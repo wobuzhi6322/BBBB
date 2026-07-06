@@ -8,10 +8,15 @@
       content="계이득은 계좌 입금 알림을 방송용 OBS 시그니처, 벽지, 이미지, 영상, 음악 출력으로 연결하는 Windows 프로그램입니다."
     />
     <title>계이득 - 계좌 후원 시그니처 프로그램</title>
+    <meta name="theme-color" content="#FFF7EA" />
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("bbbb-site-theme");
-        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+        let savedTheme = "light";
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme") || "light";
+          localStorage.setItem("bbbb-site-theme", savedTheme);
+        } catch {}
+        document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";
       })();
     </script>
     <link rel="stylesheet" href="/assets/site.css" />
@@ -33,7 +38,7 @@
         <a id="nav-account" href="#login">계정</a>
       </nav>
       <div class="header-actions">
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="다크 모드로 전환" title="다크 모드로 전환">
           <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="4"></circle>
             <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
@@ -49,17 +54,38 @@
 
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
-        <img class="hero-background" src="/assets/gyeideuk-product-visual.png" alt="" />
-        <div class="hero-copy">
-          <p class="eyebrow">계좌 후원 시그니처 프로그램</p>
-          <h1 id="hero-title">계이득</h1>
-          <p class="hero-lead">
-            계좌로 들어온 후원을 방송 PC에서 감지하고, OBS 화면에 시그니처, 영상, 음악, 벽지로 바로 보여주는
-            Windows 방송 도구입니다.
-          </p>
-          <div class="hero-actions">
-            <a class="button primary" href="#download">Windows 다운로드</a>
-            <a class="button secondary" href="#flow">작동 방식 보기</a>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow hero-badge">계좌 후원 시그니처 프로그램</p>
+            <h1 id="hero-title">계좌에 <span class="wavy">딩동</span> 하면,<br />방송엔 바로 팡!</h1>
+            <p class="hero-lead">
+              계이득은 계좌로 들어온 후원 입금 알림을 방송 PC에서 감지하고, OBS 화면에
+              <strong>시그니처·영상·음악·벽지</strong>로 바로 보여주는 Windows 방송 도구입니다.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#download">Windows 다운로드</a>
+              <a class="button secondary" href="#flow">작동 방식 구경하기</a>
+            </div>
+          </div>
+          <div class="hero-stage" aria-hidden="true">
+            <div class="stage-ticket stage-ticket--1">
+              <span class="stage-ticket__stub">1</span>
+              <span class="stage-ticket__name">계좌에 입금 알림 도착</span>
+            </div>
+            <div class="stage-ticket stage-ticket--2">
+              <span class="stage-ticket__stub">2</span>
+              <span class="stage-ticket__name">금액·조건 매칭</span>
+            </div>
+            <div class="stage-ticket stage-ticket--3">
+              <span class="stage-ticket__stub">3</span>
+              <span class="stage-ticket__name">OBS 화면에 팡!</span>
+            </div>
+            <div class="stage-star"><span>팡!</span></div>
+            <div class="stage-stamp">돈은 안 만져요<br />알림만 읽어요</div>
+            <span class="stage-coin stage-coin--1">₩</span>
+            <span class="stage-coin stage-coin--2">₩</span>
+            <span class="stage-spark stage-spark--1">✦</span>
+            <span class="stage-spark stage-spark--2">✦</span>
           </div>
         </div>
         <dl class="hero-metrics" aria-label="제품 요약">
