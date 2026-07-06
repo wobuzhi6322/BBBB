@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { hasSupportedActiveLicensePlan, selectActiveLicenseForAccount } from "../_license-policy.js";
 import { isOwnerEmail, ownerLicense } from "../_owner.js";
 
 type RegisterDeviceBody = {
@@ -162,19 +163,19 @@ async function getActiveLicense(userId: string, supabase: ReturnType<typeof serv
     .eq("user_id", userId)
     .eq("status", "active")
     .order("issued_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
   if (result.error) {
     throw new Error(result.error.message);
   }
-  if (!result.data) {
-    throw new Error("활성 이용권이 없습니다. 이용권 코드를 먼저 등록하세요.");
+  const licenses = (result.data || []) as LicenseRow[];
+  const license = selectActiveLicenseForAccount(licenses);
+  if (license) {
+    return license;
   }
-  const license = result.data as LicenseRow;
-  if (license.expires_at && new Date(license.expires_at).getTime() < Date.now()) {
+  if (hasSupportedActiveLicensePlan(licenses)) {
     throw new Error("이용권이 만료되었습니다.");
   }
-  return license;
+  throw new Error("요금제가 없습니다. 관리자가 요금제를 부여해야 로그인할 수 있습니다.");
 }
 
 async function getLicenseDevices(licenseId: string, supabase: ReturnType<typeof serviceClient>): Promise<DeviceRow[]> {

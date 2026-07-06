@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { selectActiveLicenseForAccount } from "./_license-policy.js";
 import { isOwnerEmail, ownerLicense } from "./_owner.js";
 
 type SiteProfileRow = {
@@ -115,7 +116,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const ownerAccount = isOwnerEmail(user.email || profile.email);
     const licenses = ownerAccount ? ((licensesResult.data || []) as LicenseRow[]) : ((licensesResult.data || []) as LicenseRow[]).map(normalizeLicenseDeviceLimit);
     const ownerActiveLicense = ownerAccount ? (ownerLicense(user.id) as LicenseRow) : null;
-    const activeLicense = ownerActiveLicense || licenses.find(isUsableLicense) || licenses[0] || null;
+    const activeLicense = ownerActiveLicense || selectActiveLicenseForAccount(licenses);
 
     sendJson(res, 200, {
       ok: true,
@@ -131,10 +132,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   } catch (error) {
     sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "account-load-failed" });
   }
-}
-
-function isUsableLicense(license: LicenseRow): boolean {
-  return license.status === "active" && (!license.expires_at || new Date(license.expires_at).getTime() > Date.now());
 }
 
 function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {

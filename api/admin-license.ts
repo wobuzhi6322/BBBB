@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { selectActiveLicenseForAccount } from "./_license-policy.js";
 import { isOwnerEmail } from "./_owner.js";
 
 type AdminLicenseBody = {
@@ -116,7 +117,7 @@ async function handleLookup(req: IncomingMessage, res: ServerResponse, supabase:
     ok: true,
     data: {
       profile,
-      activeLicense: licenses.find((license) => license.status === "active") || licenses[0] || null,
+      activeLicense: selectActiveLicenseForAccount(licenses),
       licenses
     }
   });
