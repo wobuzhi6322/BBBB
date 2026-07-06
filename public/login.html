@@ -7,13 +7,22 @@
     <title>계정 로그인 - 계이득</title>
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("bbbb-site-theme");
-        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
       })();
     </script>
-    <link rel="stylesheet" href="/assets/site.css?v=20260614-auth-capslock1" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="/assets/site.js?v=20260614-auth-capslock1"></script>
+    <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
   </head>
   <body>
     <!-- Top App Bar / Header -->
