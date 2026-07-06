@@ -10,13 +10,22 @@
     <title>계이득 - 계좌 후원 시그니처 프로그램</title>
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("bbbb-site-theme");
-        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
       })();
     </script>
-    <link rel="stylesheet" href="/assets/site.css?v=20260608-prod-cache-v1" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="/assets/site.js?v=20260608-prod-cache-v1"></script>
+    <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
   </head>
   <body>
     <header class="site-header">
@@ -50,27 +59,57 @@
 
     <main id="top">
       <section class="hero landing-hero" aria-labelledby="hero-title">
-        <video
-          class="hero-background hero-background-video"
-          src="/assets/videos/gyeideuk-signature-hero-bg.mp4?v=20260608-prod-cache-v1"
-          poster="/assets/gyeideuk-product-visual.png"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="metadata"
-          aria-hidden="true"
-        ></video>
-        <div class="hero-copy">
-          <p class="eyebrow">계좌 후원 시그니처 프로그램</p>
-          <h1 id="hero-title">계이득</h1>
-          <p class="hero-lead">
-            계좌로 들어온 후원을 방송 PC에서 감지하고, OBS 화면에 시그니처, 영상, 음악, 벽지로 바로 보여주는
-            Windows 방송 도구입니다.
-          </p>
-          <div class="hero-actions">
-            <a class="button primary" href="#download">무료로 시작하기</a>
-            <a class="button secondary" href="#screens">방송 화면 보기</a>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow hero-badge">계좌 후원 시그니처 프로그램</p>
+            <h1 id="hero-title">계좌에 <span class="wavy">딩동</span> 하면,<br />방송엔 바로 팡!</h1>
+            <p class="hero-lead">
+              계이득은 계좌로 들어온 후원을 방송 PC에서 감지하고, OBS 화면에 <strong>시그니처·영상·음악·벽지</strong>로 바로 보여주는
+              Windows 방송 도구입니다.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#download">무료로 시작하기</a>
+              <a class="button secondary" href="#screens">방송 화면 보기</a>
+            </div>
+          </div>
+          <div class="hero-stage">
+            <figure class="hero-screen" aria-hidden="true">
+              <figcaption class="hero-screen__bar">
+                <span></span>
+                <span></span>
+                <span></span>
+                <strong>OBS 방송 화면 미리보기</strong>
+              </figcaption>
+              <video
+                class="hero-background hero-background-video"
+                src="/assets/videos/gyeideuk-signature-hero-bg.mp4?v=20260608-prod-cache-v1"
+                poster="/assets/gyeideuk-product-visual.png"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                aria-hidden="true"
+              ></video>
+            </figure>
+            <div class="stage-ticket stage-ticket--1" aria-hidden="true">
+              <span class="stage-ticket__stub">1</span>
+              <span class="stage-ticket__name">계좌에 입금 알림 도착</span>
+            </div>
+            <div class="stage-ticket stage-ticket--2" aria-hidden="true">
+              <span class="stage-ticket__stub">2</span>
+              <span class="stage-ticket__name">금액·조건 매칭</span>
+            </div>
+            <div class="stage-ticket stage-ticket--3" aria-hidden="true">
+              <span class="stage-ticket__stub">3</span>
+              <span class="stage-ticket__name">OBS 화면에 팡!</span>
+            </div>
+            <div class="stage-star" aria-hidden="true"><span>팡!</span></div>
+            <div class="stage-stamp" aria-hidden="true">돈은 안 만져요<br />알림만 읽어요</div>
+            <span class="stage-coin stage-coin--1" aria-hidden="true">₩</span>
+            <span class="stage-coin stage-coin--2" aria-hidden="true">₩</span>
+            <span class="stage-spark stage-spark--1" aria-hidden="true">✦</span>
+            <span class="stage-spark stage-spark--2" aria-hidden="true">✦</span>
           </div>
         </div>
         <dl class="hero-metrics" aria-label="제품 요약">
