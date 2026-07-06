@@ -10,12 +10,21 @@
     <title>주요 기능 소개 - 계이득</title>
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("bbbb-site-theme");
-        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
       })();
     </script>
-    <link rel="stylesheet" href="/assets/site.css?v=20260608-prod-cache-v1" />
-    <script type="module" src="/assets/site.js?v=20260608-prod-cache-v1"></script>
+    <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
+    <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
   </head>
   <body>
     <header class="site-header">
