@@ -7,13 +7,22 @@
     <title>내 프로필 - 계이득</title>
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("bbbb-site-theme");
-        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
       })();
     </script>
-    <link rel="stylesheet" href="/assets/site.css?v=20260608-prod-cache-v1" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="/assets/site.js?v=20260608-prod-cache-v1"></script>
+    <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
   </head>
   <body>
     <!-- Top App Bar / Header -->
@@ -50,7 +59,7 @@
         <a href="/" class="m3-back-btn" aria-label="메인 홈페이지로 돌아가기">
           <span>← 홈으로 돌아가기</span>
         </a>
-        <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0;">계정 센터</h2>
+        <h2>계정 센터</h2>
       </div>
 
       <!-- M3 Profile Card (User Banner) -->
@@ -71,31 +80,31 @@
         <article class="profile-m3-card-item">
           <h3>🎟️ 라이선스 요금제</h3>
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <strong id="license-plan" style="font-size: 1.6rem; color: #fff; display: block; font-weight: 800;">확인 중</strong>
-            <p id="license-status" style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">플랜 상태를 불러오고 있습니다.</p>
+            <strong id="license-plan" class="profile-plan-name">확인 중</strong>
+            <p id="license-status">플랜 상태를 불러오고 있습니다.</p>
           </div>
-          <div style="background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
-            <code id="license-code" style="font-family: monospace; font-size: 0.85rem; color: var(--color-blue); font-weight: 600;">-</code>
-            <span style="font-size: 0.68rem; color: rgba(255,255,255,0.35);">라이선스 코드</span>
+          <div class="profile-license-code-row">
+            <code id="license-code">-</code>
+            <span class="code-caption">라이선스 코드</span>
           </div>
         </article>
 
         <!-- 2. Code Redeem Form Card -->
         <article id="redeem-code-panel" class="profile-m3-card-item">
           <h3>🔑 이용권 코드 등록</h3>
-          <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">관리자가 발급한 이용권 코드를 등록하여 라이선스를 갱신 또는 추가할 수 있습니다.</p>
+          <p>관리자가 발급한 이용권 코드를 등록하여 라이선스를 갱신 또는 추가할 수 있습니다.</p>
           <form id="redeem-code-form" class="profile-m3-input-group">
             <input id="redeem-code-input" class="profile-m3-input" type="text" autocomplete="off" placeholder="GD-ACC-STA-ABCD-1234-EFGH" required aria-label="이용권 코드 입력" />
             <button class="m3-button" type="submit">코드 등록</button>
           </form>
-          <p id="redeem-code-message" class="form-message" aria-live="polite" style="font-size: 0.8rem; margin: 0;"></p>
+          <p id="redeem-code-message" class="form-message" aria-live="polite"></p>
           <div id="redeem-code-result" class="account-list" style="display: none;"></div>
         </article>
 
         <!-- Channel Profile Card -->
         <article class="profile-m3-card-item full-width profile-channel-card">
           <h3>채널 정보</h3>
-          <p id="profile-channel-summary" style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">채널 정보를 입력하면 관리자 패널에서 바로 확인할 수 있습니다.</p>
+          <p id="profile-channel-summary">채널 정보를 입력하면 관리자 패널에서 바로 확인할 수 있습니다.</p>
           <form id="profile-channel-form" class="profile-channel-form">
             <label>
               플랫폼
@@ -115,7 +124,7 @@
             </label>
             <button class="m3-button" type="submit">채널 정보 저장</button>
           </form>
-          <p id="profile-channel-message" class="form-message" aria-live="polite" style="font-size: 0.8rem; margin: 0;"></p>
+          <p id="profile-channel-message" class="form-message" aria-live="polite"></p>
         </article>
 
         <!-- 3. License Limits Card -->
@@ -152,7 +161,7 @@
             </label>
             <button id="account-delete-button" class="m3-button danger" type="submit" disabled>계정 탈퇴</button>
           </form>
-          <p id="account-delete-message" class="form-message" aria-live="polite" style="font-size: 0.8rem; margin: 0;"></p>
+          <p id="account-delete-message" class="form-message" aria-live="polite"></p>
         </article>
       </div>
     </main>
