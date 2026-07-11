@@ -48,6 +48,9 @@
          이 랜딩은 site.css 원본 토큰만 사용한다. -->
     <link rel="stylesheet" href="/assets/site.css" />
     <link rel="stylesheet" href="/assets/web-landing.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="/assets/web-common.js"></script>
+    <script defer src="/assets/web-viewer-nav.js"></script>
   </head>
   <body>
     <header class="site-header">
@@ -56,7 +59,8 @@
       </a>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="/channels">채널 탐색</a>
-        <a href="/streamer">스트리머 페이지</a>
+        <a href="/guide">이용 가이드</a>
+        <a href="/notices">공지</a>
       </nav>
       <div class="header-actions">
         <button
@@ -75,7 +79,7 @@
             <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
           </svg>
         </button>
-        <a class="header-account" href="/login">로그인</a>
+        <a id="account-button" class="header-account" href="/login?next=%2F">로그인</a>
       </div>
     </header>
 
