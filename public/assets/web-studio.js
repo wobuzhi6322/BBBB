@@ -345,7 +345,7 @@
 
   // 바로가기 정본 URL (기획서 §6.1) — 방송 설명란·홍보물에 박제되는 주소이므로 항상 정본 도메인
   function shortcutUrl() {
-    return "https://gaeideuk.com/@" + S.page.handle;
+    return "https://www.gaeideuk.com/@" + S.page.handle;
   }
 
   function renderShortcutCard() {

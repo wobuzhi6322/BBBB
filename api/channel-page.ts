@@ -13,7 +13,8 @@ import { join } from "node:path";
 
 import { TABLES, serviceClient } from "./_webServer.js";
 
-export const SITE_ORIGIN = "https://gaeideuk.com";
+// 정본 도메인 = www (apex는 307로 www에 리다이렉트 — 2026-07-11 curl 실측)
+export const SITE_ORIGIN = "https://www.gaeideuk.com";
 const FALLBACK_OG_IMAGE_PATH = "/assets/gyeideuk-logo.png";
 const FAVICON_TAG = `<link rel="icon" type="image/png" href="/assets/gyeideuk-logo.png" />`;
 
