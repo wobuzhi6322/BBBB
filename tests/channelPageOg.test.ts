@@ -1,11 +1,18 @@
 // api/channel-page.ts — OG 메타 주입 순수 로직 단위 테스트
-// (핸들러 자체는 Supabase I/O — 여기서는 injectChannelOg·ogDescription·escapeHtml만)
+// (핸들러 자체는 Supabase I/O — 여기서는 injectChannelOg·ogDescription·escapeHtml·resolveSiteOrigin만)
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { SITE_ORIGIN, escapeHtml, injectChannelOg, ogDescription, type ChannelOgPage } from "../api/channel-page.js";
+import {
+  SITE_ORIGIN,
+  escapeHtml,
+  injectChannelOg,
+  ogDescription,
+  resolveSiteOrigin,
+  type ChannelOgPage
+} from "../api/channel-page.js";
 
 const MINIMAL_TEMPLATE = [
   "<!doctype html>",
@@ -111,5 +118,55 @@ describe("injectChannelOg", () => {
 describe("escapeHtml", () => {
   it("&, <, >, 따옴표를 모두 치환한다", () => {
     expect(escapeHtml(`a&b<c>"d"'e'`)).toBe("a&amp;b&lt;c&gt;&quot;d&quot;&#39;e&#39;");
+  });
+});
+
+describe("resolveSiteOrigin", () => {
+  const savedEnv = process.env.SITE_ORIGIN;
+
+  beforeEach(() => {
+    delete process.env.SITE_ORIGIN;
+  });
+
+  afterEach(() => {
+    if (savedEnv === undefined) {
+      delete process.env.SITE_ORIGIN;
+    } else {
+      process.env.SITE_ORIGIN = savedEnv;
+    }
+  });
+
+  function req(headers: Record<string, string | string[]> = {}) {
+    return { headers };
+  }
+
+  it("env SITE_ORIGIN이 있으면 최우선이고 끝 슬래시를 제거한다", () => {
+    process.env.SITE_ORIGIN = "https://relay.example.com/";
+    expect(resolveSiteOrigin(req({ "x-forwarded-host": "other.example.com" }))).toBe("https://relay.example.com");
+  });
+
+  it("env SITE_ORIGIN이 http(s) 형식이 아니면 무시하고 헤더로 폴백한다", () => {
+    process.env.SITE_ORIGIN = "relay.example.com";
+    expect(resolveSiteOrigin(req({ host: "deploy.vercel.app" }))).toBe("https://deploy.vercel.app");
+  });
+
+  it("env가 없으면 x-forwarded-host를 host보다 우선한다", () => {
+    expect(resolveSiteOrigin(req({ "x-forwarded-host": "front.example.com", host: "internal.local" }))).toBe(
+      "https://front.example.com"
+    );
+  });
+
+  it("x-forwarded-host가 콤마 목록이면 첫 값을 쓴다", () => {
+    expect(resolveSiteOrigin(req({ "x-forwarded-host": "front.example.com, proxy.internal" }))).toBe(
+      "https://front.example.com"
+    );
+  });
+
+  it("x-forwarded-host가 없으면 host 헤더로 https 오리진을 만든다", () => {
+    expect(resolveSiteOrigin(req({ host: "deploy.vercel.app" }))).toBe("https://deploy.vercel.app");
+  });
+
+  it("env·헤더 모두 없으면 SITE_ORIGIN 상수로 폴백한다", () => {
+    expect(resolveSiteOrigin(req())).toBe(SITE_ORIGIN);
   });
 });

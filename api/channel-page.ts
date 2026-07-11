@@ -13,9 +13,27 @@ import { join } from "node:path";
 
 import { TABLES, serviceClient } from "./_webServer.js";
 
+// 도메인 미확정 — 최후 폴백 상수. 실제 오리진은 resolveSiteOrigin()이 요청마다 결정한다.
 export const SITE_ORIGIN = "https://gaeideuk.com";
 const FALLBACK_OG_IMAGE_PATH = "/assets/gyeideuk-logo.png";
 const FAVICON_TAG = `<link rel="icon" type="image/png" href="/assets/gyeideuk-logo.png" />`;
+
+/**
+ * 사이트 정본 오리진 결정 (도메인 확정 전까지 배포 오리진이 정본):
+ * 1) env SITE_ORIGIN — 정본 도메인(http(s):// 필수, 끝 슬래시 제거)
+ * 2) x-forwarded-host(프록시) 또는 host 헤더 — https://{host} (콤마 목록이면 첫 값)
+ * 3) SITE_ORIGIN 상수 폴백
+ */
+export function resolveSiteOrigin(req: Pick<IncomingMessage, "headers">): string {
+  const envOrigin = (process.env.SITE_ORIGIN ?? "").trim().replace(/\/+$/, "");
+  if (/^https?:\/\//.test(envOrigin)) return envOrigin;
+
+  const rawHost = req.headers["x-forwarded-host"] ?? req.headers.host;
+  const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost ?? "").split(",")[0].trim();
+  if (host) return `https://${host}`;
+
+  return SITE_ORIGIN;
+}
 
 // ---------------------------------------------------------------------------
 // 순수 로직 — OG 주입 (tests/channelPageOg.test.ts에서 단위 테스트)
@@ -182,7 +200,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       // 닉네임 없이 진행
     }
 
-    sendHtml(req, res, injectChannelOg(template, page));
+    sendHtml(req, res, injectChannelOg(template, page, resolveSiteOrigin(req)));
   } catch {
     // Supabase 접근 자체가 실패해도 셸은 서빙한다(클라이언트가 에러 UI 처리)
     sendHtml(req, res, template);

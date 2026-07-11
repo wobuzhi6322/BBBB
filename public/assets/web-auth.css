@@ -315,6 +315,7 @@
   margin: 0;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   color: var(--secondary);
   font-size: 14px;
@@ -328,6 +329,37 @@
 
 .auth-alt a:hover {
   text-decoration: underline;
+}
+
+/* 링크처럼 보이는 토글 버튼 — 터치 타깃 44px+ */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue-2);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.link-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 비밀번호 재설정 메일 요청 폼 — 카드 안 구획(카드 안 카드 금지 → 구분선만) */
+.reset-form {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .auth-footer {
