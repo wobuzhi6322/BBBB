@@ -68,6 +68,18 @@
       "dest": "/signup.html"
     },
     {
+      "src": "/wallet/?",
+      "dest": "/wallet.html"
+    },
+    {
+      "src": "/guide/?",
+      "dest": "/guide.html"
+    },
+    {
+      "src": "/notices/?",
+      "dest": "/notices.html"
+    },
+    {
       "src": "/streamer/?",
       "dest": "/streamer.html"
     }

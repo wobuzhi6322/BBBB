@@ -13,10 +13,12 @@
 // 검사 계약:
 //   1. vercel.json — legacy routes 문법. admin 라우트 3종 유지(/admin/? →
 //      /api/admin 등), /@handle/d/:id → /api/channel-page 가 /@handle 보다 먼저,
-//      /streamer → /streamer.html, functions includeFiles에 public/channel.html +
+//      /streamer → /streamer.html, /wallet·/guide·/notices → *.html(시청자 확장
+//      페이지 3종), functions includeFiles에 public/channel.html +
 //      admin-private 항목 유지.
 //   2. api/channel-page.ts · api/_webServer.ts 존재.
-//   3. 웹 페이지 5종(channel/channels/me/signup/studio) — viewport, favicon,
+//   3. 웹 페이지 8종(channel/channels/me/signup/studio/wallet/guide/notices)
+//      — viewport, favicon,
 //      site.css → web-tokens.css → 페이지 web-*.css 링크 순서, admin 링크 표면 금지.
 //      * "admin" 검사 범위: href/src/action 속성값, admin.html, /api/admin 만.
 //        본문 카피의 "프로그램 관리 화면(/admin)" 안내는 위반이 아니다.
@@ -147,6 +149,23 @@ function checkVercelJson() {
         `vercel.json: /streamer 라우트 dest가 /streamer.html이 아닙니다 (현재: ${JSON.stringify(streamer.route.dest)})`
       );
     }
+
+    // --- 시청자 확장 페이지 3종: /wallet · /guide · /notices → *.html ---
+    const viewerPages = [
+      { src: "/wallet/?", dest: "/wallet.html" },
+      { src: "/guide/?", dest: "/guide.html" },
+      { src: "/notices/?", dest: "/notices.html" }
+    ];
+    for (const { src, dest } of viewerPages) {
+      const found = findRoute((r) => r.src === src);
+      if (!found) {
+        fail(`vercel.json: "${src}" 라우트가 없습니다 (${dest} 접근 불가)`);
+      } else if (found.route.dest !== dest) {
+        fail(
+          `vercel.json: "${src}" 라우트 dest가 ${dest}가 아닙니다 (현재: ${JSON.stringify(found.route.dest)})`
+        );
+      }
+    }
   }
 
   // --- functions includeFiles ---
@@ -201,7 +220,17 @@ function checkRequiredApiFiles() {
 // ---------------------------------------------------------------------------
 
 // 웹 플랫폼 페이지 — site.css → web-tokens.css → 페이지 web-*.css, admin 링크 금지
-const WEB_PAGES = ["channel.html", "channels.html", "me.html", "signup.html", "studio.html"];
+// wallet/guide/notices 는 시청자 확장 페이지(플레이스홀더 랜딩 포함) — 동일 계약 적용
+const WEB_PAGES = [
+  "channel.html",
+  "channels.html",
+  "me.html",
+  "signup.html",
+  "studio.html",
+  "wallet.html",
+  "guide.html",
+  "notices.html"
+];
 // 프로그램 계열 페이지 — index=시청자 랜딩, streamer=이전된 프로그램 랜딩, login=겸용.
 // site.js 합법(헤더가 /admin/ 링크를 렌더링), admin 링크 검사 제외.
 const PROGRAM_PAGES = ["index.html", "streamer.html", "login.html"];
@@ -381,5 +410,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `check-web-static: OK — vercel.json 라우팅(admin/@handle/streamer), 웹 페이지 ${WEB_PAGES.length}종 + 프로그램 페이지 ${PROGRAM_PAGES.length}종 계약, api 임포트(${apiFiles.length}파일) 모두 통과`
+  `check-web-static: OK — vercel.json 라우팅(admin/@handle/streamer/wallet/guide/notices), 웹 페이지 ${WEB_PAGES.length}종 + 프로그램 페이지 ${PROGRAM_PAGES.length}종 계약, api 임포트(${apiFiles.length}파일) 모두 통과`
 );
