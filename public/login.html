@@ -20,8 +20,15 @@
         document.documentElement.dataset.theme = savedTheme;
       })();
     </script>
+    <link rel="icon" type="image/png" href="/assets/gyeideuk-logo.png" />
     <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
+    <!-- 주의: web-tokens.css는 여기서 로드하지 않는다 — site.css의 --border(보더 축약형)를
+         색상 값으로 덮어써 로그인 카드 보더가 깨진다. web-auth.css의 로그인 탭 구획은
+         site.css 원 토큰만 사용하므로 단독 로드가 안전하다. -->
+    <link rel="stylesheet" href="/assets/web-auth.css?v=20260711-login-tabs" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="/assets/web-common.js"></script>
+    <script defer src="/assets/web-viewer-login.js?v=20260711-login-tabs"></script>
     <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
   </head>
   <body>
@@ -31,11 +38,11 @@
         <img class="brand-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
       </a>
       <nav class="site-nav" aria-label="메인 메뉴">
-        <a href="/#flow">작동 방식</a>
-        <a href="/#features">기능</a>
-        <a href="/#setup">세팅법</a>
-        <a href="/#pricing">요금제</a>
-        <a href="/#download">다운로드</a>
+        <a href="/streamer#flow">작동 방식</a>
+        <a href="/streamer#features">기능</a>
+        <a href="/streamer#setup">세팅법</a>
+        <a href="/streamer#pricing">요금제</a>
+        <a href="/streamer#download">다운로드</a>
       </nav>
       <div class="header-actions">
         <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
@@ -49,16 +56,77 @@
         </button>
         <a id="header-admin" class="header-admin" href="/admin/" style="display: none;">관리자</a>
         <button id="header-account" class="header-account" type="button">로그인</button>
-        <a class="header-download" href="/#download">다운로드</a>
+        <a class="header-download" href="/streamer#download">다운로드</a>
       </div>
     </header>
 
     <main class="login-page-container">
       <section id="login-dialog" class="login-page-card">
         <div class="login-form-content">
+          <!-- 역할 탭: 전환은 show/hide만 수행한다(web-viewer-login.js).
+               스트리머 패널 내부 마크업·ID는 site.js가 바인딩하므로 그대로 유지. -->
+          <div class="login-role-tabs" role="tablist" aria-label="로그인 유형 선택">
+            <button
+              id="login-tab-viewer"
+              class="login-role-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="login-panel-viewer"
+            >
+              시청자
+            </button>
+            <button
+              id="login-tab-streamer"
+              class="login-role-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="login-panel-streamer"
+              tabindex="-1"
+            >
+              스트리머
+            </button>
+          </div>
+
+          <!-- 시청자 패널 (기본 탭) — web-viewer-login.js가 처리 -->
+          <div id="login-panel-viewer" class="login-role-panel" role="tabpanel" aria-labelledby="login-tab-viewer">
+            <div class="account-heading">
+              <p class="eyebrow">Viewer</p>
+              <h2 id="viewer-login-title">시청자 로그인</h2>
+              <p>로그인하고 좋아하는 스트리머를 후원해 보세요.</p>
+            </div>
+            <form id="viewer-login-form" class="login-form" novalidate>
+              <label>
+                이메일
+                <input id="viewer-login-email" type="email" autocomplete="email" required />
+              </label>
+              <label>
+                비밀번호
+                <input id="viewer-login-password" type="password" autocomplete="current-password" required minlength="6" />
+              </label>
+              <div class="form-actions">
+                <button id="viewer-login-submit" class="button primary" type="submit">로그인</button>
+              </div>
+              <p id="viewer-login-message" class="form-message" aria-live="polite"></p>
+              <p class="viewer-login-links">
+                <a href="/signup">회원가입</a>
+                <a id="viewer-login-reset-link" href="#streamer">비밀번호 재설정</a>
+              </p>
+            </form>
+          </div>
+
+          <!-- 스트리머 패널 — 기존 프로그램 로그인 폼(site.js 소유)을 그대로 감싼다 -->
+          <div
+            id="login-panel-streamer"
+            class="login-role-panel"
+            role="tabpanel"
+            aria-labelledby="login-tab-streamer"
+            hidden
+          >
           <div class="account-heading">
             <p class="eyebrow">Account</p>
-            <h2 id="login-title">계정 로그인</h2>
+            <h2 id="login-title">스트리머 로그인</h2>
             <p>로그인하면 내 라이선스와 다운로드 기록을 확인할 수 있습니다.</p>
           </div>
           <form id="login-form" class="login-form">
@@ -112,6 +180,7 @@
             </div>
             <p id="auth-message" class="form-message" aria-live="polite"></p>
           </form>
+          </div>
         </div>
       </section>
     </main>
