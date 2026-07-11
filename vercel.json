@@ -38,6 +38,34 @@
     {
       "src": "/admin/(admin\\.(js|css))",
       "dest": "/api/admin-asset?file=$1"
+    },
+    {
+      "src": "/@([^/]+)/d/([^/]+)",
+      "dest": "/channel.html"
+    },
+    {
+      "src": "/@([^/]+)",
+      "dest": "/channel.html"
+    },
+    {
+      "src": "/me(/.*)?",
+      "dest": "/me.html"
+    },
+    {
+      "src": "/studio(/.*)?",
+      "dest": "/studio.html"
+    },
+    {
+      "src": "/channels/?",
+      "dest": "/channels.html"
+    },
+    {
+      "src": "/login/?",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/signup/?",
+      "dest": "/signup.html"
     }
   ],
   "functions": {
