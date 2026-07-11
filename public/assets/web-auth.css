@@ -190,12 +190,13 @@
 
 .auth-form input {
   width: 100%;
-  min-height: 44px;
+  min-height: 48px; /* 터치 타깃 44px+ */
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--primary);
+  font-size: 16px; /* iOS 포커스 확대 방지 */
 }
 
 .auth-form input:focus-visible {
@@ -212,6 +213,7 @@
 .auth-actions .button {
   flex: 1;
   min-width: 120px;
+  min-height: 48px; /* 터치 타깃 44px+ */
 }
 
 /* 핸들 입력 */
@@ -282,7 +284,7 @@
 }
 
 .social-button {
-  min-height: 42px;
+  min-height: 44px; /* 터치 타깃 44px+ */
   display: inline-flex;
   align-items: center;
   justify-content: center;

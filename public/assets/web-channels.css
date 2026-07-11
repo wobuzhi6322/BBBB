@@ -60,13 +60,13 @@
 
 .ch-search input {
   width: 100%;
-  min-height: 44px;
+  min-height: 48px; /* 터치 타깃 44px+ */
   padding: 10px 14px 10px 38px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--primary);
-  font-size: 14px;
+  font-size: 16px; /* iOS 포커스 확대 방지 */
 }
 
 .ch-search input::placeholder {
@@ -80,11 +80,24 @@
 
 /* 카드 그리드 ---------------------------------------------------------- */
 
+/* 모바일 퍼스트: 1열(360px 기준) → 2열(768px) → 넓은 화면 auto-fill */
 .ch-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
   min-width: 0;
+}
+
+@media (min-width: 560px) {
+  .ch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .ch-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
 }
 
 .ch-card {
@@ -180,12 +193,12 @@
 
 .ch-name {
   margin-top: 6px;
-  overflow: hidden;
   color: var(--primary);
   font-size: 16px;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* 한국어 클리핑 금지 — 말줄임 대신 줄바꿈 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .ch-handle {
@@ -199,11 +212,12 @@
 
 .ch-bio {
   margin: 6px 0 10px;
-  overflow: hidden;
   color: var(--secondary);
   font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.5;
+  /* 한국어 클리핑 금지 — 말줄임 대신 줄바꿈 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .ch-meta {
@@ -353,10 +367,4 @@
 
 .ch-toast.error {
   border-color: var(--danger);
-}
-
-@media (max-width: 420px) {
-  .ch-grid {
-    grid-template-columns: 1fr;
-  }
 }
