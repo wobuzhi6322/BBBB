@@ -206,3 +206,41 @@ alter table public.bbbb_payment_intents enable row level security;
 insert into storage.buckets (id, name, public)
 values ('bbbb-web-thumbs', 'bbbb-web-thumbs', true)
 on conflict (id) do nothing;
+
+-- 1.5 핸들 변경 정책 (P1 바로가기 — VIEWER_MESSAGE_RELAY_PLAN §6.2) ---------------
+-- 구 핸들 → 새 핸들 301 리다이렉트(90일)와 그 기간 재사용 잠금의 진실 테이블.
+-- old_handle이 PK: 구 핸들 하나는 정확히 하나의 현재 목적지만 가진다
+-- (a→b→c 체인은 변경 시 API가 내 이력 전체를 새 핸들로 재조준해 1홉을 보장).
+-- RLS 활성 + 정책 없음 = service role 전용. SSR 301 조회(api/channel-page.ts)도
+-- service key 경유라 anon 정책은 두지 않는다.
+
+create table if not exists public.bbbb_handle_history (
+  old_handle text primary key,
+  page_id uuid not null references public.bbbb_streamer_pages(id) on delete cascade,
+  new_handle text not null,
+  changed_at timestamptz not null default now()
+);
+
+-- 핸들 변경·페이지 삭제 시 내 이력 일괄 재조준/정리용
+create index if not exists bbbb_handle_history_page_idx
+  on public.bbbb_handle_history (page_id);
+
+alter table public.bbbb_handle_history enable row level security;
+
+-- 예약어 핸들 (api/_webShared.ts RESERVED_HANDLES와 동기 유지 — 코드가 1차 게이트,
+-- 이 테이블은 DB 레벨 참조·운영 중 추가 차단용)
+create table if not exists public.bbbb_reserved_handles (
+  handle text primary key
+);
+
+alter table public.bbbb_reserved_handles enable row level security;
+
+insert into public.bbbb_reserved_handles (handle) values
+  ('admin'), ('api'), ('app'), ('assets'), ('auth'), ('about'), ('account'),
+  ('ads'), ('bbbb'), ('blog'), ('channel'), ('channels'), ('dev'), ('docs'),
+  ('download'), ('downloads'), ('gaeideuk'), ('gyeideuk'), ('help'), ('home'),
+  ('login'), ('logout'), ('m'), ('me'), ('news'), ('ops'), ('overlay'),
+  ('privacy'), ('relay'), ('releases'), ('root'), ('settings'), ('signup'),
+  ('site'), ('static'), ('studio'), ('support'), ('terms'), ('test'),
+  ('wallet'), ('ws'), ('www')
+on conflict (handle) do nothing;
