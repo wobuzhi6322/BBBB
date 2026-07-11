@@ -62,7 +62,7 @@
   width: 100%;
   min-height: 48px; /* 터치 타깃 44px+ */
   padding: 10px 14px 10px 38px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--primary);
@@ -106,7 +106,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   color: inherit;
@@ -231,7 +231,7 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   color: var(--secondary);
   font-size: 12px;
@@ -250,7 +250,7 @@
 
 .ch-skeleton {
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
 }
@@ -295,7 +295,7 @@
   align-items: center;
   gap: 8px;
   padding: 56px 20px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   text-align: center;
@@ -356,7 +356,7 @@
 .ch-toast {
   max-width: 100%;
   padding: 11px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-3);
   box-shadow: var(--shadow);

@@ -1,32 +1,27 @@
 /* =============================================================================
-   웹 후원 플랫폼 토큰 브리지 — 프로덕션 site.css 토큰을 web-* 페이지 토큰명으로 연결
-   site.css(recover/prod-design)는 --bg-surface/--text-primary 계열만 정의하므로,
-   web-channel/channels/me/auth.css가 쓰는 축약 토큰을 여기서 별칭으로 제공한다.
-   새 팔레트 발명 금지 — 모든 값은 site.css 기존 토큰에서 파생한다.
+   웹 후원 플랫폼 토큰 브리지 — D 리스킨 site.css 위에서 web-* 페이지가 쓰는
+   "부족분"만 정의한다.
+   ⚠️ 순환 금지: D 리스킨 site.css는 --page/--surface/--surface-2/--surface-3/
+   --blue/--green/--yellow/--muted/--on-blue/--focus/--radius 를 원천 토큰으로
+   직접 정의하고, --bg-page/--color-blue/--success/--warning 계열은 그 별칭이다.
+   여기서 원천 토큰을 별칭으로 재정의하면 순환 참조로 두 변수 모두 무효가 되어
+   라이트 모드가 통째로 깨진다(2026-07-11 실증). 절대 재정의하지 말 것.
+   --border 는 site.css에서 축약형(굵기 solid 색)이고 web-*.css는 색상으로 쓰므로
+   이름을 분리했다: web-*.css는 var(--gw-border)를 쓴다.
    로드 순서: site.css → web-tokens.css → web-*.css
    ============================================================================= */
 
 :root {
-  --page: var(--bg-page);
-  --surface: var(--bg-surface);
-  --surface-2: var(--bg-surface-2);
-  --surface-3: var(--bg-surface-3);
-  /* --border-subtle(5% 백색)은 입력 필드 경계로는 너무 옅어 가시 경계만 살짝 올린다 */
-  --border: rgba(255, 255, 255, 0.09);
+  /* site.css에 없는 web 전용 이름만 별칭으로 제공 (전부 단방향, 비순환) */
   --line: var(--border-subtle);
   --primary: var(--text-primary);
   --secondary: var(--text-secondary);
-  --muted: var(--text-muted);
-  --blue: var(--color-blue);
-  --blue-2: var(--color-blue);
-  --on-blue: #ffffff;
-  --green: var(--success);
-  --yellow: var(--warning);
-  --radius: var(--radius-md);
-  --focus: var(--focus-ring);
+  --blue-2: var(--blue);
   --shadow: var(--shadow-md);
+  /* web-*.css 전용 경계 색 (site.css --border 축약형과 이름 충돌 회피) */
+  --gw-border: rgba(23, 38, 92, 0.18);
 }
 
-:root[data-theme="light"] {
-  --border: rgba(15, 23, 42, 0.12);
+:root[data-theme="dark"] {
+  --gw-border: rgba(242, 236, 217, 0.16);
 }

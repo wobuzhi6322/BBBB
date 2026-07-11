@@ -30,7 +30,7 @@
   display: grid;
   gap: 20px;
   padding: 28px 24px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   color: var(--muted);
   font-size: 12px;
@@ -139,7 +139,7 @@
   display: grid;
   gap: 6px;
   padding: 18px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--primary);
@@ -192,7 +192,7 @@
   width: 100%;
   min-height: 48px; /* 터치 타깃 44px+ */
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--primary);
@@ -226,7 +226,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-right: 0;
   border-radius: var(--radius) 0 0 var(--radius);
   background: var(--surface-3);
@@ -290,7 +290,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--secondary);
@@ -302,7 +302,7 @@
 
 .soon-badge {
   padding: 2px 8px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   background: var(--surface-3);
   color: var(--muted);
@@ -347,6 +347,76 @@
 
 .auth-footer a:hover {
   color: var(--primary);
+}
+
+/* =============================================================================
+   /login 역할 탭 (login.html 전용 — role-split login 레인)
+   ⚠ login.html은 web-tokens.css 없이 site.css만 로드한다(브리지의 --border 색상
+   재정의가 site.css의 --border 보더 축약형과 충돌하기 때문). 따라서 이 구획은
+   site.css 원 토큰(--bw-sm/--edge/--radius-sm/--surface-2/--blue/--hard-soft…)만
+   사용한다. 위쪽 .auth-* 구획과 토큰 이름을 섞지 말 것.
+   ============================================================================= */
+
+.login-role-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 6px;
+  border: var(--bw-sm) solid var(--edge);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.login-role-tab {
+  min-height: 44px; /* 터치 타깃 44px+ */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: var(--bw-sm) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  font-weight: 800;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.login-role-tab[aria-selected="true"] {
+  border-color: var(--edge);
+  background: var(--blue);
+  color: var(--on-blue);
+  box-shadow: 3px 3px 0 var(--hard-soft);
+}
+
+.login-role-tab:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.viewer-login-links {
+  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.viewer-login-links a {
+  min-height: 44px; /* 터치 타깃 44px+ */
+  display: inline-flex;
+  align-items: center;
+  color: var(--blue-deep);
+  text-decoration: none;
+  word-break: keep-all;
+}
+
+.viewer-login-links a:hover,
+.viewer-login-links a:focus-visible {
+  text-decoration: underline;
 }
 
 /* 모바일 360px */

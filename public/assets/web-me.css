@@ -62,7 +62,7 @@
   display: inline-flex;
   align-items: center;
   padding: 1px 7px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   color: var(--muted);
   font-size: 11px;
@@ -81,7 +81,7 @@
 .me-card {
   min-width: 0;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
 }
@@ -265,7 +265,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 9px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   color: var(--secondary);
   font-size: 12px;
@@ -390,7 +390,7 @@
 .me-filters select {
   min-height: 44px; /* 터치 타깃 44px+ */
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--primary);
@@ -409,7 +409,7 @@
   min-width: 0;
   max-width: 640px;
   padding: 22px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
 }
@@ -439,7 +439,7 @@
 .me-form textarea {
   width: 100%;
   padding: 11px 13px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--primary);
@@ -523,7 +523,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 50%;
   background: var(--surface);
   color: var(--secondary);
@@ -553,7 +553,7 @@
 /* 상태 3종: 스켈레톤 · 빈 상태 · 에러 --------------------------------------- */
 
 .me-skeleton-block {
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   padding: 20px;
@@ -656,7 +656,7 @@
 .me-toast {
   max-width: 100%;
   padding: 11px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-3);
   box-shadow: var(--shadow);

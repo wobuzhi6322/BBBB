@@ -132,7 +132,7 @@
 .ch-empty {
   margin: 8px 0 0;
   padding: 22px 16px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--gw-border);
   border-radius: var(--radius);
   color: var(--secondary);
   text-align: center;
@@ -148,7 +148,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   max-height: 260px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   object-fit: cover;
   background: var(--surface);
@@ -254,7 +254,7 @@
   gap: 6px;
   min-height: 32px;
   padding: 5px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   background: var(--surface);
   color: var(--secondary);
@@ -310,7 +310,7 @@
   position: relative;
   min-width: 0;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--primary);
@@ -425,7 +425,7 @@
 .offline-banner {
   margin: 12px 0 0;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-left: 3px solid var(--yellow);
   border-radius: var(--radius);
   background: var(--surface);
@@ -436,7 +436,7 @@
 .donation-form {
   margin-top: 14px;
   padding: 18px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   display: grid;
@@ -461,7 +461,7 @@
   width: 100%;
   min-height: 48px; /* 모바일 터치 타깃 44px+ */
   padding: 11px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--primary);
@@ -495,7 +495,7 @@
 .preset-chip {
   min-height: 44px; /* 터치 타깃 44px+ */
   padding: 8px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--primary);
@@ -597,7 +597,7 @@
 .report-button {
   min-height: 34px;
   padding: 6px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: none;
   color: var(--muted);
@@ -660,7 +660,7 @@ body.gw-modal-open {
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   padding: 22px 18px 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -687,7 +687,7 @@ body.gw-modal-open {
   right: 10px;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--secondary);
@@ -741,7 +741,7 @@ body.gw-modal-open {
 .transfer-restore-note {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--secondary);
@@ -779,7 +779,7 @@ body.gw-modal-open {
   min-height: 44px; /* 계좌 복사 등 모바일 터치 타깃 */
   margin-left: 8px;
   padding: 8px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--secondary);
@@ -808,7 +808,7 @@ body.gw-modal-open {
   justify-content: center;
   min-height: 44px;
   padding: 10px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   text-decoration: none;
   font-size: 14px;
@@ -837,7 +837,7 @@ body.gw-modal-open {
   gap: 12px;
   margin-top: 16px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--gw-border);
   border-radius: var(--radius);
   background: var(--surface-2);
 }
