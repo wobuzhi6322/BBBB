@@ -163,7 +163,9 @@ const adminHtml = fs.readFileSync(path.join(root, "admin-private/index.html"), "
 const adminCss = fs.readFileSync(path.join(root, "admin-private/admin.css"), "utf8");
 const adminJs = fs.readFileSync(path.join(root, "admin-private/admin.js"), "utf8");
 const signupApi = fs.readFileSync(path.join(root, "api/auth-signup.ts"), "utf8");
-const publicIndexHtml = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
+// 투네이션 재구성(2026-07-11): 프로그램 랜딩(가격표 포함)이 / → /streamer 로 이설됨.
+// 가격표 계약은 streamer.html을 검사한다 (index.html은 시청자 랜딩).
+const publicIndexHtml = fs.readFileSync(path.join(root, "public/streamer.html"), "utf8");
 const siteLoginHtml = fs.readFileSync(path.join(root, "public/login.html"), "utf8");
 const siteCss = fs.readFileSync(path.join(root, "public/assets/site.css"), "utf8");
 const siteJs = fs.readFileSync(path.join(root, "public/assets/site.js"), "utf8");

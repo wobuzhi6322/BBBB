@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit && node scripts/check-admin-static.cjs",
+    "check": "tsc --noEmit && node scripts/check-admin-static.cjs && node scripts/check-web-static.cjs",
     "test": "vitest run"
   },
   "dependencies": {
