@@ -1,0 +1,32 @@
+/* =============================================================================
+   웹 후원 플랫폼 토큰 브리지 — 프로덕션 site.css 토큰을 web-* 페이지 토큰명으로 연결
+   site.css(recover/prod-design)는 --bg-surface/--text-primary 계열만 정의하므로,
+   web-channel/channels/me/auth.css가 쓰는 축약 토큰을 여기서 별칭으로 제공한다.
+   새 팔레트 발명 금지 — 모든 값은 site.css 기존 토큰에서 파생한다.
+   로드 순서: site.css → web-tokens.css → web-*.css
+   ============================================================================= */
+
+:root {
+  --page: var(--bg-page);
+  --surface: var(--bg-surface);
+  --surface-2: var(--bg-surface-2);
+  --surface-3: var(--bg-surface-3);
+  /* --border-subtle(5% 백색)은 입력 필드 경계로는 너무 옅어 가시 경계만 살짝 올린다 */
+  --border: rgba(255, 255, 255, 0.09);
+  --line: var(--border-subtle);
+  --primary: var(--text-primary);
+  --secondary: var(--text-secondary);
+  --muted: var(--text-muted);
+  --blue: var(--color-blue);
+  --blue-2: var(--color-blue);
+  --on-blue: #ffffff;
+  --green: var(--success);
+  --yellow: var(--warning);
+  --radius: var(--radius-md);
+  --focus: var(--focus-ring);
+  --shadow: var(--shadow-md);
+}
+
+:root[data-theme="light"] {
+  --border: rgba(15, 23, 42, 0.12);
+}
