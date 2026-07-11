@@ -1,0 +1,246 @@
+/* ==========================================================================
+   랜딩(/) + 법적 문서(terms/privacy) — site.css 토큰만 사용, 새 팔레트 발명 금지
+   모바일 우선(360px), 가로 스크롤 0, 한국어 클리핑 0 (word-break: keep-all)
+   로드 순서: site.css → web-tokens.css → web-landing.css
+   ========================================================================== */
+
+/* 랜딩 레이아웃 ---------------------------------------------------------- */
+
+.ld-main {
+  width: var(--content);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 34px 0 64px;
+}
+
+.ld-hero {
+  padding: 26px 0 8px;
+  text-align: center;
+}
+
+.ld-hero h1 {
+  max-width: 620px;
+  margin: 0 auto 14px;
+  font-size: clamp(30px, 8.4vw, 46px);
+  line-height: 1.18;
+  word-break: keep-all;
+}
+
+.ld-lead {
+  max-width: 460px;
+  margin: 0 auto;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* CTA — 터치 타깃 44px 이상 */
+.ld-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 340px);
+  margin: 26px auto 0;
+}
+
+.ld-actions .button {
+  height: auto;
+  min-height: 50px;
+  font-size: 15px;
+}
+
+@media (min-width: 768px) {
+  .ld-actions {
+    flex-direction: row;
+    justify-content: center;
+    width: auto;
+  }
+
+  .ld-actions .button {
+    min-width: 200px;
+  }
+}
+
+/* "이렇게 동작해요" 3단계 ------------------------------------------------- */
+
+.ld-how {
+  max-width: 880px;
+  margin: 54px auto 0;
+}
+
+.ld-how h2 {
+  margin: 0 0 18px;
+  font-size: clamp(21px, 5vw, 26px);
+  font-weight: 900;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.ld-steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .ld-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+.ld-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 22px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.ld-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-violet-glow);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  color: var(--color-violet);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.ld-step h3 {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.ld-step p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* 스트리머 한 줄 안내 */
+.ld-streamer-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 10px;
+  margin: 18px 0 0;
+  padding: 14px 18px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.ld-streamer-note a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 */
+  padding: 0 4px;
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.ld-streamer-note a:hover {
+  text-decoration: underline;
+}
+
+/* 공용 푸터 -------------------------------------------------------------- */
+
+.ld-footer {
+  width: var(--content);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 18px;
+  margin: 0 auto;
+  padding: 10px 0 26px;
+  border-top: 1px solid var(--line);
+}
+
+.ld-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 */
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ld-footer a:hover {
+  color: var(--primary);
+}
+
+/* 법적 문서(terms/privacy) — 읽기 폭 ~720px ------------------------------- */
+
+.legal-main {
+  min-width: 0;
+  padding: 44px 0 64px;
+}
+
+.legal-hero {
+  margin-bottom: 34px;
+}
+
+.legal-hero h1 {
+  margin-bottom: 12px;
+  font-size: clamp(26px, 7vw, 38px);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.legal-hero p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14px;
+}
+
+.legal-section {
+  max-width: 720px;
+  gap: 16px;
+}
+
+.legal-card {
+  min-width: 0;
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.legal-card h2 {
+  font-size: 18px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.legal-card li {
+  line-height: 1.6;
+}
+
+.legal-card a {
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: underline;
+}
