@@ -70,7 +70,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  if (!["GET", "POST", "PATCH"].includes(req.method || "")) {
+  if (!["GET", "POST", "PATCH", "DELETE"].includes(req.method || "")) {
     sendJson(res, 405, { ok: false, error: "허용되지 않은 요청입니다.", code: "method-not-allowed" });
     return;
   }
@@ -87,6 +87,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const body = await readJson(req);
     if (req.method === "POST") {
       await registerPage(res, body, supabase);
+      return;
+    }
+    if (req.method === "DELETE") {
+      await deletePage(res, body, supabase);
       return;
     }
     await updatePage(res, body, supabase);
@@ -269,6 +273,32 @@ async function updatePage(res: ServerResponse, body: AdminWebPageBody, supabase:
   }
 
   sendJson(res, 200, { ok: true, data: { created: false, page: await pageSummary(supabase, update.data as PageRow) } });
+}
+
+// ---------------------------------------------------------------------------
+// DELETE {handle} — 웹 채널(페이지) 삭제
+// bbbb_streamer_pages 행만 삭제한다(계정·라이선스는 보존). page_id FK가 전부
+// on delete cascade라 시그니처·후원 메시지·매칭·차단·릴레이 기기·핸들 이력이
+// 함께 정리되고, 엔터 소속은 set null이다.
+// ---------------------------------------------------------------------------
+
+async function deletePage(res: ServerResponse, body: AdminWebPageBody, supabase: Supa): Promise<void> {
+  const handle = normalizeHandleInput(body.handle);
+  if (!handle) {
+    throw new ApiError(400, "validation-failed", "삭제할 채널 핸들을 입력해 주세요.");
+  }
+
+  const page = await findPageByHandle(supabase, handle);
+  if (!page) {
+    throw new ApiError(404, "not-found", "해당 핸들의 웹 채널이 없습니다.");
+  }
+
+  const del = await supabase.from(pagesTable).delete().eq("id", page.id);
+  if (del.error) {
+    throw new Error(del.error.message);
+  }
+
+  sendJson(res, 200, { ok: true, data: { deleted: true, handle: page.handle } });
 }
 
 // ---------------------------------------------------------------------------

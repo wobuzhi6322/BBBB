@@ -129,6 +129,7 @@
     webPageStatus: document.getElementById("web-page-status"),
     webPageFeedback: document.getElementById("web-page-feedback"),
     webPageSubmitBtn: document.getElementById("web-page-submit-btn"),
+    webPageDeleteBtn: document.getElementById("web-page-delete-btn"),
 
     // Enterprise Management Card
     enterpriseRefreshBtn: document.getElementById("enterprise-refresh-btn"),
@@ -534,6 +535,12 @@
       });
     }
 
+    if (els.webPageDeleteBtn) {
+      els.webPageDeleteBtn.addEventListener("click", async () => {
+        await deleteWebPage();
+      });
+    }
+
     // K. Enterprise management card (엔터 생성·이름 수정·목록)
     if (els.enterpriseCreateForm) {
       els.enterpriseCreateForm.addEventListener("submit", async (e) => {
@@ -923,6 +930,8 @@
     const lookup = state.webPageLookup;
     clearFeedback(els.webPageFeedback);
 
+    if (els.webPageDeleteBtn) els.webPageDeleteBtn.style.display = "none";
+
     if (!lookup || !lookup.found) {
       if (els.webPageSubmitBtn) {
         els.webPageSubmitBtn.disabled = true;
@@ -957,6 +966,7 @@
         els.webPageStatus.value = lookup.page.status === "hidden" ? "hidden" : "active";
       }
       if (els.webPageSubmitBtn) els.webPageSubmitBtn.textContent = "웹 채널 수정";
+      if (els.webPageDeleteBtn) els.webPageDeleteBtn.style.display = "";
       return;
     }
 
@@ -1073,6 +1083,43 @@
     } catch (err) {
       showFeedback(els.webPageFeedback, err.message, "error");
     } finally {
+      if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = false;
+    }
+  }
+
+  async function deleteWebPage() {
+    const lookup = state.webPageLookup;
+    clearFeedback(els.webPageFeedback);
+    if (!lookup || !lookup.hasPage || !lookup.page) {
+      showFeedback(els.webPageFeedback, "삭제할 채널을 먼저 조회해 주세요.", "error");
+      return;
+    }
+
+    const handle = lookup.page.handle;
+    if (
+      !window.confirm(
+        `@${handle} 채널을 완전히 삭제할까요?\n\n페이지·시그니처·후원 메시지·릴레이 연결이 모두 삭제됩니다. (계정과 라이선스는 유지됩니다.)\n되돌릴 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+
+    if (els.webPageDeleteBtn) els.webPageDeleteBtn.disabled = true;
+    if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = true;
+    showFeedback(els.webPageFeedback, "채널을 삭제하는 중입니다...", "info");
+
+    try {
+      const result = await callApi("/api/admin-web-page", "DELETE", { handle });
+      if (!result.ok || !result.data?.deleted) {
+        throw new Error(result.error || "삭제에 실패했습니다.");
+      }
+      // 삭제 후에는 계정에 페이지가 없는 상태 — 재조회로 카드를 신규 등록 모드로 되돌린다
+      await lookupWebPageAccount();
+      showFeedback(els.webPageFeedback, `삭제 완료: @${handle} 채널이 제거되었습니다.`, "success");
+    } catch (err) {
+      showFeedback(els.webPageFeedback, err.message, "error");
+    } finally {
+      if (els.webPageDeleteBtn) els.webPageDeleteBtn.disabled = false;
       if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = false;
     }
   }
