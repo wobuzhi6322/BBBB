@@ -6,7 +6,7 @@
 // 1) [시청자]|[스트리머] 탭 전환 — show/hide(hidden 속성)만 수행한다.
 //    스트리머 패널 내부의 #login-form/#email/#password 등은 site.js(읽기 전용)가
 //    ID로 바인딩하므로 마크업을 절대 만지지 않는다. 딥링크 /login#streamer 지원.
-// 2) 시청자 로그인 — supabase signInWithPassword 후 roles 기반 랜딩(/studio | /me).
+// 2) 시청자 로그인 — supabase signInWithPassword 후 /me 랜딩(탭 선택 = 역할 의사).
 //
 // ⚠ 핵심 설계 메모(경합 방지):
 // site.js는 같은 페이지에서 기본 storageKey(sb-<ref>-auth-token)로 만든 자체
@@ -223,15 +223,12 @@
         return;
       }
 
-      // 랜딩 결정: 스트리머 페이지 소유(roles: streamer) → /studio, 그 외 → /me.
+      // 랜딩: 시청자 탭(과 스트리머 탭의 시청자 폴백)을 거쳤다는 것 자체가
+      // "시청자로 쓰겠다"는 명시적 의사이므로 roles와 무관하게 /me로 보낸다.
+      // (한 계정 양역할 이후 roles 기반 랜딩은 스트리머 role 계정을 시청자 탭에서도
+      // /studio로 던지는 버그였다. 스트리머 랜딩은 스트리머 탭=site.js 흐름이 담당.)
       // ?next= 는 GW.safeNext로 내부 경로만 허용.
-      var profile = null;
-      try {
-        profile = await GW.api("/api/me/profile", { token: session.access_token });
-      } catch (err) {
-        profile = null; // 프로필 조회 실패는 시청자 랜딩(/me)으로 진행
-      }
-      var target = GW.safeNext(hasStreamerRole(profile) ? "/studio" : "/me");
+      var target = GW.safeNext("/me");
 
       say("로그인되었습니다. 이동 중입니다…");
       await persistSession(session);
@@ -305,10 +302,6 @@
         button.disabled = false;
       }
     });
-  }
-
-  function hasStreamerRole(profile) {
-    return Boolean(profile && Array.isArray(profile.roles) && profile.roles.indexOf("streamer") >= 0);
   }
 
   /** 방송·저장 없는 인증 전용 클라이언트 (파일 상단 설계 메모 참고) */
