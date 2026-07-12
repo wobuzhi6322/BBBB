@@ -654,6 +654,35 @@
   margin-bottom: 14px;
 }
 
+/* --- 팀코드 (프로그램 공유 코드) — 연결 코드와 같은 모노 표기, 44px 이상 터치 타깃 --- */
+
+.teamcode-input {
+  min-height: 44px;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  letter-spacing: 0.06em;
+}
+
+.teamcode-result {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--gw-border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--secondary);
+  font-size: 0.88rem;
+}
+
+.teamcode-result[hidden] {
+  display: none;
+}
+
+.teamcode-result.ok {
+  border-style: solid;
+  border-color: var(--green);
+  color: var(--green);
+  font-weight: 700;
+}
+
 .form-actions {
   display: flex;
   align-items: center;

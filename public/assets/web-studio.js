@@ -25,6 +25,9 @@
 
   var MEDIA_LABEL = { image: "이미지", gif: "GIF", video: "영상", audio: "음악" };
 
+  // 팀코드(공유 코드) 형식 — api/shared-profile.ts normalizeCode와 동일 계약
+  var TEAM_CODE_RE = /^[A-Z0-9][A-Z0-9-]{2,63}$/;
+
   var S = {
     token: null,
     email: null,
@@ -363,9 +366,50 @@
     });
   }
 
+  // 팀코드 입력 렌더 — 서버가 아직 필드를 내려주지 않으면(병렬 레인 배포 전) 입력값을 유지
+  function renderTeamCodeField(page) {
+    var teamCode = page.teamCode !== undefined ? page.teamCode : page.team_code;
+    if (teamCode !== undefined) $("#ps-teamcode").value = teamCode || "";
+    var row = $("#ps-teamcode-result");
+    row.hidden = true;
+    row.textContent = "";
+    row.classList.remove("ok");
+  }
+
+  // 저장 성공 후 확인 행: 공개 페이지(/api/page/:handle)의 시그니처 개수를 보여준다
+  function refreshTeamCodeResult(teamCode) {
+    var row = $("#ps-teamcode-result");
+    if (!teamCode) {
+      row.hidden = true;
+      row.textContent = "";
+      row.classList.remove("ok");
+      return;
+    }
+    row.hidden = false;
+    row.classList.remove("ok");
+    row.textContent = "메뉴에 표시될 시그니처를 확인하는 중…";
+    call("/api/page/" + encodeURIComponent(S.page.handle))
+      .then(function (data) {
+        // 확인 중에 코드를 또 바꿨으면 낡은 결과는 버린다
+        if ($("#ps-teamcode").value.trim().toUpperCase() !== teamCode) return;
+        var count = data && Array.isArray(data.signatures) ? data.signatures.length : 0;
+        if (count > 0) {
+          row.classList.add("ok");
+          row.textContent = "시그니처 " + count.toLocaleString("ko-KR") + "개가 메뉴에 표시됩니다";
+        } else {
+          row.textContent = "아직 이 코드로 확정된 시그니처가 없어요 — 프로그램에서 공유 코드 동기화를 한 번 실행해 주세요.";
+        }
+      })
+      .catch(function () {
+        if ($("#ps-teamcode").value.trim().toUpperCase() !== teamCode) return;
+        row.textContent = "아직 이 코드로 확정된 시그니처가 없어요 — 프로그램에서 공유 코드 동기화를 한 번 실행해 주세요.";
+      });
+  }
+
   function renderPageForm() {
     var page = S.page;
     renderShortcutCard();
+    renderTeamCodeField(page);
     $("#ps-handle").value = page.handle;
     var blocked = handleBlockedUntil();
     $("#ps-handle").disabled = Boolean(blocked);
@@ -411,6 +455,16 @@
     if (!$("#ps-handle").disabled && handle && handle !== S.page.handle.toLowerCase()) {
       body.handle = handle;
     }
+
+    // 팀코드(공유 코드) — 대문자 정규화 후 형식 검증 (빈 값 = 해제)
+    var teamCode = $("#ps-teamcode").value.trim().toUpperCase();
+    if (teamCode && !TEAM_CODE_RE.test(teamCode)) {
+      throw new Error("팀코드는 영문 대문자·숫자·하이픈 3~64자여야 해요. (예: TEAM-ABCD)");
+    }
+    // 서버 계약 브리지: 이 API의 camelCase 표기(teamCode)와 컬럼 표기(team_code)를
+    // 함께 보낸다 — buildPagePatch 패턴은 모르는 키를 무시하므로 어느 쪽이든 안전.
+    body.teamCode = teamCode || null;
+    body.team_code = teamCode || null;
 
     body.bannerUrl = $("#ps-banner").value.trim() || null;
     body.avatarUrl = $("#ps-avatar").value.trim() || null;
@@ -475,6 +529,15 @@
     $("#ps-bio").addEventListener("input", function () {
       $("#ps-bio-count").textContent = String($("#ps-bio").value.length);
     });
+    // 팀코드는 입력 즉시 대문자 정규화 (커서 위치 유지)
+    $("#ps-teamcode").addEventListener("input", function (event) {
+      var input = event.target;
+      var upper = input.value.toUpperCase();
+      if (upper === input.value) return;
+      var pos = input.selectionStart;
+      input.value = upper;
+      if (pos != null && input.setSelectionRange) input.setSelectionRange(pos, pos);
+    });
     var radios = document.querySelectorAll('input[name="account-display"]');
     for (var i = 0; i < radios.length; i += 1) {
       radios[i].addEventListener("change", function (event) {
@@ -505,6 +568,7 @@
           renderPageLink();
           toast("저장했어요.", "ok");
           $("#ps-save-note").textContent = fmtTime(new Date().toISOString()) + " 저장됨";
+          refreshTeamCodeResult(body.teamCode);
         })
         .catch(function (err) {
           toast(err.message || "저장에 실패했어요.", "err");
@@ -958,7 +1022,8 @@
           accountDisplay: "link_only",
           accountInfo: null,
           transferLinks: [],
-          handleChangedAt: null
+          handleChangedAt: null,
+          teamCode: null
         },
         signatures: [],
         matches: [],
@@ -981,7 +1046,8 @@
         accountDisplay: "link_only",
         accountInfo: null,
         transferLinks: [{ type: "toss", url: "https://toss.me/gyeideuk" }],
-        handleChangedAt: null
+        handleChangedAt: null,
+        teamCode: null
       },
       signatures: [
         { id: "s1", localSignatureId: "L1", title: "풍선 100개", webTitle: null, amount: 1000, mediaType: "image", thumbUrl: null, published: true, pinned: true, sort: 0, syncedAt: isoAgo(45 * 60000) },
@@ -1032,6 +1098,11 @@
       if (body.handle) {
         M.page.handle = body.handle;
         M.page.handleChangedAt = new Date().toISOString();
+      }
+      // 팀코드 — 실서버와 같은 계약(teamCode/team_code 어느 표기든 수용, 대문자 정규화)
+      if (Object.prototype.hasOwnProperty.call(body, "teamCode") || Object.prototype.hasOwnProperty.call(body, "team_code")) {
+        var tc = body.teamCode !== undefined ? body.teamCode : body.team_code;
+        M.page.teamCode = tc ? String(tc).trim().toUpperCase() : null;
       }
       var keys = ["bannerUrl", "avatarUrl", "bio", "broadcastLinks", "presetAmounts", "minAmount", "tickerPublic", "directoryOptin", "accountDisplay", "accountInfo", "transferLinks"];
       for (var i = 0; i < keys.length; i += 1) {
@@ -1130,6 +1201,26 @@
         }
       }
       return clone({ blocks: M.blocks });
+    }
+    // 공개 페이지 뷰 — 팀코드 확인 행이 시그니처 개수(N)를 읽는다.
+    // 목에서는 공개(published) 시그니처 수로 N을 만든다 (empty=1이면 0 → 안내 문구 경로).
+    if (path.indexOf("/api/page/") === 0 && method === "GET") {
+      var pubSigs = M.signatures.filter(function (row) {
+        return row.published;
+      });
+      return clone({
+        handle: M.page.handle,
+        signatures: pubSigs.map(function (row) {
+          return {
+            id: row.id,
+            title: row.webTitle || row.title,
+            amount: row.amount,
+            mediaType: row.mediaType,
+            thumbUrl: row.thumbUrl,
+            pinned: row.pinned
+          };
+        })
+      });
     }
     if (path === "/api/studio/relay-connect-code" && method === "POST") {
       var alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

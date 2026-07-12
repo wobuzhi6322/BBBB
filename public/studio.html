@@ -153,6 +153,16 @@
 
           <form id="page-form" class="settings-form" novalidate>
             <fieldset class="panel">
+              <legend>팀코드 (프로그램 공유 코드)</legend>
+              <label class="field">
+                <span class="field-label">팀코드</span>
+                <input id="ps-teamcode" class="teamcode-input" type="text" maxlength="64" placeholder="예: TEAM-ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                <span class="field-hint">계이득 프로그램의 공유 코드 동기화 코드를 입력하면 프로그램의 모든 시그니처가 후원 페이지 메뉴에 자동으로 표시됩니다. 비워 두면 릴레이로 동기화된 시그니처만 표시돼요.</span>
+              </label>
+              <p class="teamcode-result" id="ps-teamcode-result" aria-live="polite" hidden></p>
+            </fieldset>
+
+            <fieldset class="panel">
               <legend>기본 정보</legend>
               <label class="field">
                 <span class="field-label">핸들</span>
