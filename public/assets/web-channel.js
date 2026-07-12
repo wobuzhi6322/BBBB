@@ -4,6 +4,7 @@
 // 명세: donation-system/docs/WEB_PAGE_SPECS.md §3·§3.1, WEB_TECH_SPEC.md §2.1
 // 목 모드: ?mock=1 — 백엔드 없이 화면 검증.
 //   보조 파라미터: &offline=1(방송 준비 중) &nobanner=1(배너 없음) &many=1(13개+ 아코디언)
+//                 &teamcode=1(팀코드 전체 메뉴 18개 — 영상·사운드 no-thumb 다수 포함)
 //                 &account=full(계좌 직노출) &outcome=pending|expired(모달 상태 시나리오)
 //                 &handle=xxx(핸들 지정) &d=xxx(/d/:messageId 재진입 시뮬레이션)
 // =============================================================================
@@ -206,7 +207,34 @@
     return base + suffix;
   }
 
+  // 팀코드(공유 코드) 전체 메뉴 시뮬레이션 — 데스크톱 프로그램이 동기화한
+  // bundle.rules 규모(15개+)를 재현한다. 영상·사운드 룰은 썸네일이 없는 경우가
+  // 많아 no-thumb 카드가 다수 섞인다. 카드 형태는 페이지 API 계약과 동일.
+  function mockTeamcodeSignatures() {
+    return [
+      { id: "tc-01", title: "환영 인사", amount: 1000, mediaType: "image", thumbUrl: "/assets/product-media.png", pinned: false },
+      { id: "tc-02", title: "짝짝짝 박수", amount: 2000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-03", title: "박수 갈채 GIF", amount: 3000, mediaType: "gif", thumbUrl: "/assets/product-signatures.png", pinned: false },
+      { id: "tc-04", title: "야유 부저", amount: 3000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-05", title: "풀콤보 리액션", amount: 5000, mediaType: "video", thumbUrl: "/assets/gyeideuk-hero.png", pinned: true },
+      { id: "tc-06", title: "노래 한 곡 신청", amount: 5000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-07", title: "환호성 폭발", amount: 7000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-08", title: "벽지 5분 교체", amount: 10000, mediaType: "image", thumbUrl: "/assets/gyeideuk-product-visual.png", pinned: true },
+      { id: "tc-09", title: "하이라이트 리플레이", amount: 15000, mediaType: "video", thumbUrl: null, pinned: false },
+      { id: "tc-10", title: "등장 브금 교체 (10분)", amount: 15000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-11", title: "놀람 리액션 모음집 연속 재생", amount: 20000, mediaType: "video", thumbUrl: null, pinned: false },
+      { id: "tc-12", title: "시그니처 댄스 타임", amount: 25000, mediaType: "video", thumbUrl: "/assets/product-media.png", pinned: false },
+      { id: "tc-13", title: "생일 축하 세리머니 풀버전", amount: 30000, mediaType: "video", thumbUrl: null, pinned: false },
+      { id: "tc-14", title: "레전드 소원권", amount: 50000, mediaType: "gif", thumbUrl: "/assets/product-signatures.png", pinned: false },
+      { id: "tc-15", title: "방송 제목 1시간 변경권", amount: 50000, mediaType: "image", thumbUrl: null, pinned: false },
+      { id: "tc-16", title: "콘텐츠 추천 골든벨", amount: 70000, mediaType: "video", thumbUrl: null, pinned: false },
+      { id: "tc-17", title: "오프닝 고정 멘트 1주일", amount: 100000, mediaType: "audio", thumbUrl: null, pinned: false },
+      { id: "tc-18", title: "명예의 전당 등록", amount: 200000, mediaType: "image", thumbUrl: "/assets/gyeideuk-hero.png", pinned: false }
+    ];
+  }
+
   function mockSignatures() {
+    if (params.get("teamcode") === "1") return mockTeamcodeSignatures();
     var sigs = [
       { id: "sig-01", title: "환영 인사", amount: 1000, mediaType: "image", thumbUrl: "/assets/product-media.png", pinned: false },
       { id: "sig-02", title: "박수 갈채", amount: 3000, mediaType: "gif", thumbUrl: "/assets/product-signatures.png", pinned: false },
@@ -377,6 +405,8 @@
   // ---------------------------------------------------------------------------
 
   var TYPE_LABEL = { gif: "GIF", video: "영상", audio: "음악" };
+  // no-thumb 폴백 타일 캡션 — 배지(TYPE_LABEL)와 달리 image도 이름이 필요하다.
+  var TYPE_FALLBACK_LABEL = { image: "이미지", gif: "GIF", video: "영상", audio: "음악" };
   var TYPE_ICON = {
     image:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 19 6-6 4 4 3-3 3 3"/></svg>',
@@ -410,10 +440,17 @@
     els.sigGrid.innerHTML = visible
       .map(function (sig) {
         var thumbUrl = safeUrl(sig.thumbUrl);
+        // 팀코드 메뉴는 영상·사운드 룰의 thumb_url이 null인 경우가 많다 —
+        // 미디어 종류 아이콘 + 캡션의 폴백 타일로 렌더링(모르는 타입은 image 취급).
+        var mediaType = TYPE_ICON[sig.mediaType] ? sig.mediaType : "image";
         var thumb = thumbUrl
           ? '<img src="' + esc(thumbUrl) + '" alt="" loading="lazy" />'
-          : '<span class="sig-thumb-fallback">' + (TYPE_ICON[sig.mediaType] || TYPE_ICON.image) + "</span>";
-        var typeBadge = TYPE_LABEL[sig.mediaType]
+          : '<span class="sig-thumb-fallback">' +
+            '<span class="sig-fallback-icon" aria-hidden="true">' + TYPE_ICON[mediaType] + "</span>" +
+            '<span class="sig-fallback-label">' + TYPE_FALLBACK_LABEL[mediaType] + "</span>" +
+            "</span>";
+        // 타입 배지는 실제 썸네일 위에서만 — 폴백 타일은 캡션이 이미 종류를 말해 준다.
+        var typeBadge = thumbUrl && TYPE_LABEL[sig.mediaType]
           ? '<span class="sig-type">' + TYPE_LABEL[sig.mediaType] + "</span>"
           : "";
         return (

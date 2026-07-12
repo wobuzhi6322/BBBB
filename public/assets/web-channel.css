@@ -348,21 +348,44 @@
   object-fit: cover;
 }
 
+/* no-thumb 폴백 타일 — 팀코드 메뉴의 영상·사운드 룰은 썸네일이 없는 경우가 많다.
+   D 스타일: 원형 아이콘 배지 + 종류 캡션 (토큰만 사용 → 라이트/다크 자동 대응). */
 .sig-thumb-fallback {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   color: var(--muted);
 }
 
-.sig-thumb-fallback svg {
-  width: 30px;
-  height: 30px;
+.sig-fallback-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--gw-border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--secondary);
+}
+
+.sig-fallback-icon svg {
+  width: 22px;
+  height: 22px;
   stroke: currentColor;
-  stroke-width: 1.6;
+  stroke-width: 1.8;
   fill: none;
+}
+
+.sig-fallback-label {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+  color: var(--muted);
 }
 
 .sig-pin {
@@ -716,6 +739,7 @@ body.gw-modal-open {
 
 .deposit-code-box {
   display: flex;
+  flex-wrap: wrap; /* 360px: '입금자명 복사' 버튼이 코드 아래 줄로 자연 낙하 */
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -733,9 +757,20 @@ body.gw-modal-open {
   overflow-wrap: anywhere;
 }
 
+/* 모달의 1순위 액션 — 줄바꿈 시 전체 폭으로 늘어나 44px+ 타깃 유지 */
 .copy-code {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
   min-height: 44px; /* 터치 타깃 */
+}
+
+.deposit-code-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .transfer-restore-note {
