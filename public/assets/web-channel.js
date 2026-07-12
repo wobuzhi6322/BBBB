@@ -376,9 +376,12 @@
 
     var live = page.online ? '<span class="live-badge"><i aria-hidden="true"></i>LIVE</span>' : "";
 
-    // 엔터(소속 엔터테인먼트) 배지 — 이름 아래, 무소속(null·미배포 서버)이면 없음
+    // 엔터(소속 엔터테인먼트) 배지 — 이름 아래, 무소속(null·미배포 서버)이면 없음.
+    // 탭하면 채널 탐색의 해당 엔터 멤버 목록으로 이동(멤버 선택 흐름).
     var entBadge = page.enterprise && page.enterprise.name
-      ? '<div class="ch-ent-row"><span class="ch-ent-badge">' + esc(page.enterprise.name) + "</span></div>"
+      ? '<div class="ch-ent-row"><a class="ch-ent-badge" href="/channels?enterprise=' +
+        encodeURIComponent(page.enterprise.slug || "") + '" aria-label="' +
+        esc(page.enterprise.name) + ' 소속 채널 보기">' + esc(page.enterprise.name) + "</a></div>"
       : "";
 
     var links = (page.broadcastLinks || [])

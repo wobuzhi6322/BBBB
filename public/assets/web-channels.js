@@ -13,7 +13,9 @@
 
   const state = {
     q: "",
-    enterprise: null, // 선택된 엔터 slug (null = 전체)
+    // 선택된 엔터 slug (null = 전체). /channels?enterprise=슬러그 딥링크 지원 —
+    // 채널 페이지의 엔터 뱃지가 이 주소로 연결돼 "그 엔터 멤버 목록"이 된다.
+    enterprise: normalizeSlugParam(new URLSearchParams(location.search).get("enterprise")),
     enterprises: [], // 필터 칩 목록 [{ slug, name }]
     cursor: null,
     channels: [],
@@ -45,10 +47,24 @@
     els.entFilter.addEventListener("click", (event) => {
       const chip = event.target.closest(".ch-ent-chip");
       if (!chip) return;
-      const slug = chip.getAttribute("data-ent") || null;
-      if (slug === state.enterprise) return;
-      state.enterprise = slug;
-      load(true);
+      applyEnterpriseFilter(chip.getAttribute("data-ent") || null);
+    });
+
+    // 카드 안 엔터 뱃지 탭 = 그 엔터 멤버 목록으로 필터 (카드 링크 이동 대신)
+    els.grid.addEventListener("click", (event) => {
+      const badge = event.target.closest(".ch-ent-badge[data-ent]");
+      if (!badge) return;
+      event.preventDefault();
+      event.stopPropagation();
+      applyEnterpriseFilter(badge.getAttribute("data-ent") || null);
+      els.entFilter.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    els.grid.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const badge = event.target.closest(".ch-ent-badge[data-ent]");
+      if (!badge) return;
+      event.preventDefault();
+      applyEnterpriseFilter(badge.getAttribute("data-ent") || null);
     });
 
     setupTheme();
@@ -74,6 +90,27 @@
     const q = String(value || "").trim();
     if (q === state.q) return;
     state.q = q;
+    load(true);
+  }
+
+  /** URL 파라미터의 엔터 slug 정규화 — 형식 밖이면 null(전체) */
+  function normalizeSlugParam(raw) {
+    const slug = String(raw || "").trim().toLowerCase();
+    return /^[a-z0-9][a-z0-9-]{0,29}$/.test(slug) ? slug : null;
+  }
+
+  /** 필터 적용 + 주소 동기화(딥링크 공유 가능, 히스토리 오염 없이 replaceState) */
+  function applyEnterpriseFilter(slug) {
+    if (slug === state.enterprise) return;
+    state.enterprise = slug;
+    try {
+      const url = new URL(location.href);
+      if (slug) url.searchParams.set("enterprise", slug);
+      else url.searchParams.delete("enterprise");
+      history.replaceState(null, "", url.pathname + url.search);
+    } catch (err) {
+      /* 주소 동기화 실패는 치명적이지 않다 */
+    }
     load(true);
   }
 
@@ -218,7 +255,8 @@
     const bio = channel.bio ? esc(channel.bio) : "소개가 아직 없어요";
     // 엔터 소속 배지 — D 스티커 칩(노란 테두리), 무소속(null)이면 없음
     const entBadge = channel.enterprise && channel.enterprise.name
-      ? '<span class="ch-ent-badge">' + esc(channel.enterprise.name) + "</span>"
+      ? '<span class="ch-ent-badge" data-ent="' + esc(channel.enterprise.slug) + '" role="button" tabindex="0" aria-label="' +
+        esc(channel.enterprise.name) + ' 소속 채널 보기">' + esc(channel.enterprise.name) + "</span>"
       : "";
     return (
       '<a class="ch-card" href="' + esc(pageHref(channel.handle)) + '">' +

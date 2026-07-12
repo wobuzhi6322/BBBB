@@ -438,3 +438,19 @@
     min-width: 100%;
   }
 }
+
+/* 스트리머 탭 무요금제 폴백 — 같은 아이디로 시청자 로그인 원클릭 */
+.viewer-fallback {
+  margin-top: 12px;
+  padding: 12px;
+  border: 2px dashed var(--surface-3, rgba(23, 38, 92, 0.16));
+  border-radius: 10px;
+}
+.viewer-fallback-note {
+  margin: 0 0 10px;
+  font-size: 14px;
+  word-break: keep-all;
+}
+.viewer-fallback .button {
+  min-height: 44px;
+}

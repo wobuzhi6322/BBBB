@@ -36,6 +36,7 @@
     var tabsApi = initRoleTabs();
     initViewerForm();
     initResetLink(tabsApi);
+    initStreamerFallback();
   }
 
   // ---------------------------------------------------------------------------
@@ -188,43 +189,120 @@
       if (submit) {
         submit.disabled = true;
       }
-      say("로그인 중입니다…");
       try {
-        var probe = await createProbeClient();
-        if (!probe) {
-          say("지금은 로그인할 수 없어요. 잠시 후 다시 시도해 주세요.");
-          return;
-        }
-        var result = await probe.auth.signInWithPassword({ email: emailValue, password: passwordValue });
-        if (result.error) {
-          say(koreanAuthError(result.error));
-          return;
-        }
-        var session = result.data && result.data.session;
-        if (!session) {
-          say("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-          return;
-        }
-
-        // 랜딩 결정: 스트리머 페이지 소유(roles: streamer) → /studio, 그 외 → /me.
-        // ?next= 는 GW.safeNext로 내부 경로만 허용.
-        var profile = null;
-        try {
-          profile = await GW.api("/api/me/profile", { token: session.access_token });
-        } catch (err) {
-          profile = null; // 프로필 조회 실패는 시청자 랜딩(/me)으로 진행
-        }
-        var target = GW.safeNext(hasStreamerRole(profile) ? "/studio" : "/me");
-
-        say("로그인되었습니다. 이동 중입니다…");
-        await persistSession(session);
-        window.location.href = target;
-      } catch (err) {
-        say(koreanAuthError(err));
+        await viewerSignIn(emailValue, passwordValue, say);
       } finally {
         if (submit) {
           submit.disabled = false;
         }
+      }
+    });
+  }
+
+  /**
+   * 시청자 로그인 코어 — 시청자 폼과 스트리머 탭 무요금제 폴백이 공유한다.
+   * 성공 시 랜딩으로 이동(반환 없음), 실패 시 say()로 한국어 메시지.
+   */
+  async function viewerSignIn(emailValue, passwordValue, say) {
+    var GW = window.GW;
+    say("로그인 중입니다…");
+    try {
+      var probe = await createProbeClient();
+      if (!probe) {
+        say("지금은 로그인할 수 없어요. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      var result = await probe.auth.signInWithPassword({ email: emailValue, password: passwordValue });
+      if (result.error) {
+        say(koreanAuthError(result.error));
+        return;
+      }
+      var session = result.data && result.data.session;
+      if (!session) {
+        say("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+
+      // 랜딩 결정: 스트리머 페이지 소유(roles: streamer) → /studio, 그 외 → /me.
+      // ?next= 는 GW.safeNext로 내부 경로만 허용.
+      var profile = null;
+      try {
+        profile = await GW.api("/api/me/profile", { token: session.access_token });
+      } catch (err) {
+        profile = null; // 프로필 조회 실패는 시청자 랜딩(/me)으로 진행
+      }
+      var target = GW.safeNext(hasStreamerRole(profile) ? "/studio" : "/me");
+
+      say("로그인되었습니다. 이동 중입니다…");
+      await persistSession(session);
+      window.location.href = target;
+    } catch (err) {
+      say(koreanAuthError(err));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 스트리머 탭 무요금제 폴백 — 같은 아이디를 시청자로 바로 사용
+  // api/auth-login.ts의 no-active-license(403) 메시지를 site.js가 #auth-message에
+  // 그리면, 보호 파일(site.js·auth-login.ts) 무접촉으로 그 메시지를 감지해
+  // "시청자로 로그인" 원클릭을 제공한다. 요금제 게이트 자체는 그대로 유지.
+  // ---------------------------------------------------------------------------
+
+  var NO_LICENSE_SNIPPET = "사용 가능한 요금제가 없습니다";
+
+  function initStreamerFallback() {
+    var authMessage = document.getElementById("auth-message");
+    var streamerPanel = document.getElementById("login-panel-streamer");
+    if (!authMessage || !streamerPanel || typeof MutationObserver === "undefined") {
+      return;
+    }
+    var observer = new MutationObserver(function () {
+      var text = authMessage.textContent || "";
+      if (text.indexOf(NO_LICENSE_SNIPPET) === -1) {
+        removeFallbackPrompt();
+        return;
+      }
+      renderFallbackPrompt(authMessage);
+    });
+    observer.observe(authMessage, { childList: true, characterData: true, subtree: true });
+  }
+
+  function removeFallbackPrompt() {
+    var existing = document.getElementById("viewer-fallback");
+    if (existing) existing.remove();
+  }
+
+  function renderFallbackPrompt(authMessage) {
+    if (document.getElementById("viewer-fallback")) return;
+    var box = document.createElement("div");
+    box.id = "viewer-fallback";
+    box.className = "viewer-fallback";
+    box.innerHTML =
+      '<p class="viewer-fallback-note">스트리머 요금제가 없는 계정이에요. 같은 아이디로 <strong>시청자</strong>로는 바로 이용할 수 있어요.</p>' +
+      '<button id="viewer-fallback-login" class="button secondary" type="button">이 계정으로 시청자 로그인</button>' +
+      '<p id="viewer-fallback-message" class="form-message" aria-live="polite"></p>';
+    authMessage.insertAdjacentElement("afterend", box);
+
+    var button = document.getElementById("viewer-fallback-login");
+    var message = document.getElementById("viewer-fallback-message");
+    var say = function (text) {
+      if (message) message.textContent = text || "";
+    };
+    button.addEventListener("click", async function () {
+      var email = document.getElementById("email");
+      var password = document.getElementById("password");
+      var emailValue = email ? email.value.trim() : "";
+      var passwordValue = password ? password.value : "";
+      if (!emailValue || !passwordValue) {
+        say("이메일과 비밀번호를 다시 입력한 뒤 눌러 주세요.");
+        (passwordValue ? email : password).focus();
+        return;
+      }
+      button.disabled = true;
+      try {
+        await viewerSignIn(emailValue, passwordValue, say);
+      } finally {
+        button.disabled = false;
       }
     });
   }
