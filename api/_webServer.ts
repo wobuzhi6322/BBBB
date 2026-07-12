@@ -361,10 +361,10 @@ export function sendErr(res: ServerResponse, status: number, code: WebErrorCode,
 }
 
 export function sendServerError(res: ServerResponse, error: unknown): void {
-  sendJson(res, 500, {
-    ok: false,
-    error: error instanceof Error ? error.message : "internal-error"
-  });
+  // 원문 오류(Postgres/Supabase 메시지 = 테이블·컬럼·제약명 노출)는 서버 로그만.
+  // 클라이언트에는 일반 코드만 반환한다(스키마 정찰 차단).
+  console.error("[web-api] server error:", error instanceof Error ? error.message : error);
+  sendJson(res, 500, { ok: false, error: "internal-error", code: "validation-failed" });
 }
 
 export async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -422,13 +422,16 @@ export function bearerToken(req: IncomingMessage): string | undefined {
 }
 
 export function clientIp(req: IncomingMessage): string {
+  // Vercel이 설정하는 x-real-ip를 우선한다(엣지가 채우는 실접속 IP — 위조 불가).
+  // x-forwarded-for는 클라이언트가 먼저 채워 보낼 수 있어(엣지가 append) 좌측 홉이
+  // 공격자 제어 가능 → 레이트리밋 키로 신뢰하지 않는다.
+  const real = headerValue(req.headers["x-real-ip"]);
+  if (real && real.trim()) return real.trim();
   const forwarded = headerValue(req.headers["x-forwarded-for"]);
   if (forwarded) {
     const first = forwarded.split(",")[0]?.trim();
     if (first) return first;
   }
-  const real = headerValue(req.headers["x-real-ip"]);
-  if (real) return real.trim();
   return req.socket?.remoteAddress ?? "0.0.0.0";
 }
 

@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { isOwnerEmail } from "./_owner.js";
-import { ENTERPRISE_NAME_MAX, normalizeEnterpriseSlug } from "./_webShared.js";
+import { ENTERPRISE_NAME_MAX, constantTimeEqual, normalizeEnterpriseSlug } from "./_webShared.js";
 
 // =============================================================================
 // /api/admin-enterprises — 엔터(소속 엔터테인먼트) 관리 (관리자 전용)
@@ -211,7 +211,7 @@ async function assertAdmin(req: IncomingMessage, supabase: Supa): Promise<void> 
   const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
   const received = req.headers["x-bbbb-admin-token"];
   const token = Array.isArray(received) ? received[0] : received;
-  if (expected && token === expected) {
+  if (expected && constantTimeEqual(token, expected)) {
     return;
   }
 

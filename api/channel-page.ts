@@ -96,7 +96,11 @@ function readTemplate(): string {
 function sendHtml(req: IncomingMessage, res: ServerResponse, html: string): void {
   res.writeHead(200, {
     "content-type": "text/html; charset=utf-8",
-    "cache-control": "public, max-age=0, s-maxage=60"
+    "cache-control": "public, max-age=0, s-maxage=60",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "SAMEORIGIN",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "strict-transport-security": "max-age=31536000; includeSubDomains"
   });
   res.end(req.method === "HEAD" ? undefined : html);
 }

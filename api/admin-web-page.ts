@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { HANDLE_HISTORY_TABLE, validateHandleChange, type HandleHistoryRow } from "./_handlePolicy.js";
 import { isOwnerEmail } from "./_owner.js";
-import { handleRejectCode, normalizeEnterpriseSlug } from "./_webShared.js";
+import { constantTimeEqual, handleRejectCode, normalizeEnterpriseSlug } from "./_webShared.js";
 import { nicknameFromEmail } from "./me/profile.js";
 import { handleErrorMessage, normalizeHandleInput, rolesWithStreamer } from "./onboard-streamer.js";
 
@@ -437,7 +437,7 @@ async function assertAdmin(req: IncomingMessage, supabase: Supa): Promise<void> 
   const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
   const received = req.headers["x-bbbb-admin-token"];
   const token = Array.isArray(received) ? received[0] : received;
-  if (expected && token === expected) {
+  if (expected && constantTimeEqual(token, expected)) {
     return;
   }
 

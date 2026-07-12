@@ -57,12 +57,18 @@ export function encodeCursor(cursor: ListCursor): string {
   return Buffer.from(JSON.stringify({ t: cursor.createdAt, i: cursor.id }), "utf8").toString("base64url");
 }
 
+// 커서 id는 .or() 필터 문자열에 보간되므로 반드시 UUID 형식만 통과시킨다
+// (PostgREST 필터 인젝션 차단 — me/donations도 이 디코더를 공유). t는 ISO만.
+const CURSOR_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CURSOR_TS_RE = /^[0-9T:.+\-Z ]{1,40}$/;
+
 export function decodeCursor(raw: string | null | undefined): ListCursor | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) as { t?: unknown; i?: unknown };
     if (typeof parsed.t !== "string" || typeof parsed.i !== "string" || !parsed.i) return null;
-    if (Number.isNaN(Date.parse(parsed.t))) return null;
+    if (!CURSOR_UUID_RE.test(parsed.i)) return null;
+    if (!CURSOR_TS_RE.test(parsed.t) || Number.isNaN(Date.parse(parsed.t))) return null;
     return { createdAt: parsed.t, id: parsed.i };
   } catch {
     return null;

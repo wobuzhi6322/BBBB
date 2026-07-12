@@ -4,6 +4,7 @@ import {
   DEPOSIT_CODE_ALPHABET,
   LIMITS,
   RESERVED_HANDLES,
+  constantTimeEqual,
   generateDepositCode,
   handleRejectCode,
   isValidHandle,
@@ -13,6 +14,25 @@ import {
   senderMatchesCode,
   validateDonationInput
 } from "../api/_webShared.js";
+
+describe("constantTimeEqual", () => {
+  it("동일 문자열만 true, 나머지는 false", () => {
+    expect(constantTimeEqual("secret-token", "secret-token")).toBe(true);
+    expect(constantTimeEqual("secret-token", "secret-toke_")).toBe(false);
+    expect(constantTimeEqual("short", "shorter")).toBe(false); // 길이 다름
+    expect(constantTimeEqual("", "")).toBe(true);
+    expect(constantTimeEqual(undefined, "x")).toBe(false);
+    expect(constantTimeEqual("x", null)).toBe(false);
+    expect(constantTimeEqual(undefined, undefined)).toBe(false);
+  });
+});
+
+describe("매칭 시간창 = 24시간 (§8 #2 확정)", () => {
+  it("expires_at 24h, grace_until 25h", () => {
+    expect(LIMITS.messageTtlMinutes).toBe(24 * 60);
+    expect(LIMITS.messageTtlMinutes + LIMITS.graceMinutes).toBe(25 * 60);
+  });
+});
 
 describe("normalizeDepositTag", () => {
   it("공백 제거·대문자화·NFC 정규화", () => {

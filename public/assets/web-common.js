@@ -104,9 +104,14 @@
     return m ? { handle: m[1], messageId: m[2] || null } : null;
   };
 
-  /** ?next= 안전 처리(오픈 리다이렉트 방지: 사이트 내부 경로만 허용) */
+  /**
+   * ?next= 안전 처리(오픈 리다이렉트 방지: 동일 출처 경로만 허용).
+   * 백슬래시(\)는 브라우저가 /로 해석하므로 //, /\ 둘 다 차단해야 한다
+   * (/\evil.com 은 //evil.com 과 동일하게 외부 이동 = 우회 경로).
+   */
   GW.safeNext = function (fallback) {
     const raw = new URLSearchParams(location.search).get("next") || "";
-    return raw.startsWith("/") && !raw.startsWith("//") ? raw : fallback || "/";
+    const normalized = raw.replace(/\\/g, "/");
+    return normalized.startsWith("/") && !normalized.startsWith("//") ? raw : fallback || "/";
   };
 })();

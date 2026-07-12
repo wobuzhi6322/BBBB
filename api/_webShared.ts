@@ -47,7 +47,10 @@ export const LIMITS = {
   minAmountFloor: 100,
   minAmountDefault: 1000,
   presetsDefault: [1000, 5000, 10000, 50000] as readonly number[],
-  messageTtlMinutes: 30,
+  // 매칭 시간창 = 등록 후 24시간(VIEWER_MESSAGE_RELAY_PLAN §8 #2 확정). 표시 만료
+  // (expires_at)는 24h, grace_until은 +1h 여유(은행 이체 지연 흡수). UI·가이드·
+  // 스모크가 모두 24h 전제라 서버도 24h로 맞춘다.
+  messageTtlMinutes: 24 * 60,
   graceMinutes: 60,
   heartbeatOnlineSeconds: 180,
   relayPollSeconds: 30,
@@ -81,6 +84,21 @@ export function handleRejectCode(handle: string): WebErrorCode | null {
   if (!HANDLE_PATTERN.test(handle)) return "handle-invalid";
   if (RESERVED_HANDLES.includes(handle)) return "handle-reserved";
   return null;
+}
+
+/**
+ * 상수시간 문자열 비교 — 관리자 공유 토큰 검증의 타이밍 유출 차단.
+ * 순수 JS(Node crypto 의존 없음 — 계약 모듈은 브라우저 번들에도 안전).
+ * 길이 자체는 유출되나(불가피) 내용 비교는 조기 종료하지 않는다.
+ */
+export function constantTimeEqual(a: string | undefined | null, b: string | undefined | null): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 // ---------------------------------------------------------------------------

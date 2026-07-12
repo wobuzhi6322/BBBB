@@ -27,6 +27,7 @@ import {
 export { handleChangeBlockedUntil };
 
 const pagesTable = "bbbb_streamer_pages";
+const sharedMembersTable = "bbbb_shared_code_members";
 const pageSelect =
   "id,owner_user_id,handle,banner_url,avatar_url,bio,broadcast_links,preset_amounts,min_amount," +
   "ticker_public,directory_optin,account_display,account_info,transfer_links,status,handle_changed_at,team_code";
@@ -100,6 +101,23 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         nowMs: Date.now()
       });
       if (!verdict.ok) throw new ApiError(verdict.status, verdict.message, verdict.code);
+    }
+
+    // 팀코드는 그 공유 코드의 멤버(owner/editor)만 붙일 수 있다 — 남의 팀 코드를
+    // 자기 공개 페이지에 설정해 비공개 미디어(서명 URL)를 유출하는 것을 막는다.
+    // (해제·미변경은 검사 불필요)
+    if (typeof patch.team_code === "string" && patch.team_code) {
+      const membership = await supabase
+        .from(sharedMembersTable)
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("code", patch.team_code)
+        .maybeSingle();
+      if (membership.error) throw new Error(membership.error.message);
+      const role = (membership.data as { role?: string } | null)?.role;
+      if (role !== "owner" && role !== "editor") {
+        throw new ApiError(403, "이 팀 코드에 연결할 권한이 없습니다. 먼저 프로그램에서 팀 코드를 연동하세요.", "forbidden");
+      }
     }
 
     if (Object.keys(patch).length === 0) {

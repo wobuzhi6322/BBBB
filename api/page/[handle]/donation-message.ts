@@ -1,7 +1,7 @@
 // POST /api/page/:handle/donation-message — 후원 메시지 발급 (WEB_TECH_SPEC §2.1·§4)
-// 검증 → 차단 검사 → 레이트리밋 → 활성 pending 코드 집합 → 입금코드 발급 →
-// insert(expires_at=+30분, grace_until=만료+60분). 부분 유니크 인덱스
-// (page_id, code_norm where pending) 충돌 시 1회 재추첨.
+// 검증 → 차단 검사 → 레이트리밋(IP+page 분당 5, page 분당 20 이중) → 활성 pending
+// 코드 집합 → 입금코드 발급 → insert(expires_at=+24h, grace_until=만료+1h).
+// 부분 유니크 인덱스 (page_id, code_norm where pending) 충돌 시 1회 재추첨.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -16,7 +16,9 @@ import {
   TABLES,
   applyCors,
   bearerToken,
+  clientIp,
   handlePreflight,
+  hashIp,
   isUniqueViolation,
   isoAfterMinutes,
   issueDepositCode,
@@ -102,20 +104,38 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    // 레이트리밋: 계약은 IP+page 분당 5건이지만 ip_hash 저장 컬럼이 없어 IP별
-    // 판정이 불가 → 생성 시각 기반 카운트로 page 단위 분당 20건 상한 대체.
-    // (자세한 사유는 _webServer.PAGE_DONATION_MSG_PER_MIN 주석 참조)
+    // 레이트리밋 이중 방어(무인증 엔드포인트 — 돈 경로 가용성 보호):
+    //  ① IP별 분당 5건(주 방어) — 한 공격자가 page 상한을 홀로 채워 정상 후원자를
+    //     굶기는 것을 막는다(page 단위 상한만 있으면 단일 IP로 마비 가능).
+    //  ② page 전체 분당 20건(보조 상한) — 분산 공격 시 총량 방어.
+    // clientIp은 x-real-ip(엣지가 채우는 위조 불가 값) 우선.
     const now = Date.now();
     const windowStartIso = new Date(now - 60_000).toISOString();
-    const countResult = await supabase
+    const ipHash = hashIp(clientIp(req));
+
+    const ipCount = await supabase
+      .from(TABLES.messages)
+      .select("id", { count: "exact", head: true })
+      .eq("page_id", page.id)
+      .eq("ip_hash", ipHash)
+      .gte("created_at", windowStartIso);
+    if (ipCount.error) {
+      throw new Error(ipCount.error.message);
+    }
+    if ((ipCount.count ?? 0) >= LIMITS.donationMsgPerMinPerIp) {
+      sendErr(res, 429, "rate-limited");
+      return;
+    }
+
+    const pageCount = await supabase
       .from(TABLES.messages)
       .select("id", { count: "exact", head: true })
       .eq("page_id", page.id)
       .gte("created_at", windowStartIso);
-    if (countResult.error) {
-      throw new Error(countResult.error.message);
+    if (pageCount.error) {
+      throw new Error(pageCount.error.message);
     }
-    if ((countResult.count ?? 0) >= PAGE_DONATION_MSG_PER_MIN) {
+    if ((pageCount.count ?? 0) >= PAGE_DONATION_MSG_PER_MIN) {
       sendErr(res, 429, "rate-limited");
       return;
     }
@@ -153,7 +173,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           code_norm: code.codeNorm,
           status: "pending",
           expires_at: expiresAt,
-          grace_until: graceUntil
+          grace_until: graceUntil,
+          ip_hash: ipHash
         })
         .select("id,deposit_code,amount,expires_at")
         .single();

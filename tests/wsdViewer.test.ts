@@ -26,6 +26,27 @@ describe("encodeCursor / decodeCursor", () => {
     const badDate = Buffer.from(JSON.stringify({ t: "nope", i: "x" }), "utf8").toString("base64url");
     expect(decodeCursor(badDate)).toBeNull();
   });
+
+  it("id가 UUID가 아니면 거부 (PostgREST 필터 인젝션 차단)", () => {
+    const ts = "2026-07-06T05:00:00Z";
+    const inject = (id: string) => Buffer.from(JSON.stringify({ t: ts, i: id }), "utf8").toString("base64url");
+    // .or() 필터에 삽입될 수 있는 페이로드들 — 전부 null이어야 한다
+    expect(decodeCursor(inject("1,status.eq.active")))?.valueOf();
+    expect(decodeCursor(inject("1,status.eq.active"))).toBeNull();
+    expect(decodeCursor(inject("00000000-0000-0000-0000-00000000000)"))).toBeNull(); // 괄호
+    expect(decodeCursor(inject("not-a-uuid"))).toBeNull();
+    // 정상 UUID는 통과
+    const ok = inject("8b0f2a44-0000-4000-8000-000000000001");
+    expect(decodeCursor(ok)).toEqual({ createdAt: ts, id: "8b0f2a44-0000-4000-8000-000000000001" });
+  });
+
+  it("t가 ISO 타임스탬프 형식이 아니면 거부", () => {
+    const inject = Buffer.from(
+      JSON.stringify({ t: "2026;drop", i: "8b0f2a44-0000-4000-8000-000000000001" }),
+      "utf8"
+    ).toString("base64url");
+    expect(decodeCursor(inject)).toBeNull();
+  });
 });
 
 describe("matchesChannelQuery", () => {
