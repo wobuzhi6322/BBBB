@@ -434,10 +434,11 @@ function navigateToProfile() {
   state.pendingProfileNavigation = false;
   closeLoginDialog();
   clearLoginHash();
-  if (isProfilePage()) {
+  const target = profileDestination();
+  if (target === "/profile.html" && isProfilePage()) {
     return;
   }
-  window.location.href = "/profile.html";
+  window.location.href = target;
 }
 
 function clearLoginHash() {
@@ -473,6 +474,12 @@ function saveLastLoginRole(role) {
   } catch {
     // 프라이빗 모드 등 저장 실패 시 마커 없이 기존 흐름 유지
   }
+}
+
+// 로그인 상태의 "내 프로필" 목적지 — 마지막 로그인이 시청자면 /me(시청자 홈),
+// 그 외(스트리머·마커 없음)는 프로그램 계정 센터(/profile.html)를 유지한다.
+function profileDestination() {
+  return readLastLoginRole() === "viewer" ? "/me" : "/profile.html";
 }
 
 function setupAuth() {
@@ -929,13 +936,10 @@ function renderSession() {
     return;
   }
   if (isLoginPage()) {
-    // 시청자로 마지막 로그인한 세션은 /me로 — 역할 무관 /profile.html 강제 이동이
+    // 복원된 세션은 역할 목적지로 — 시청자 마커면 /me, 그 외 /profile.html
+    // (navigateToProfile이 마커를 읽는다). 역할 무관 /profile.html 강제 이동이
     // 시청자를 스트리머 계정 페이지로 던지던 버그의 수정. 스트리머 로그인은
     // signIn/signUp이 마커를 "streamer"로 갱신하므로 기존 흐름 그대로다.
-    if (readLastLoginRole() === "viewer") {
-      window.location.href = "/me";
-      return;
-    }
     navigateToProfile();
     return;
   }
@@ -944,7 +948,7 @@ function renderSession() {
   els.dashboardContent?.classList.remove("is-hidden");
   setText(els.headerAccount, "내 프로필");
   if (els.navAccount) {
-    els.navAccount.href = "/profile.html";
+    els.navAccount.href = profileDestination();
   }
   setText(els.dashboardMessage, "계정의 라이선스, 사용 제한, 공유 코드, 등록 PC를 확인합니다.");
   setText(els.userEmail, user.email || user.id);
@@ -958,8 +962,28 @@ function renderSession() {
   }
 
   if (profilePage) {
-    void loadAccount();
+    void enterProfilePage();
   }
+}
+
+// /profile.html(계정 센터) 진입 가드 — 시청자 마커 세션은 streamer 역할이 없으면
+// /me로 보낸다(즐겨찾기·구버전 링크·직접 URL 진입 방어). 겸직 계정(roles에
+// streamer 포함)은 계정 센터를 그대로 쓰고, 역할 조회 실패 시에도 그대로 둔다.
+async function enterProfilePage() {
+  if (readLastLoginRole() === "viewer") {
+    const token = state.session?.access_token;
+    try {
+      const result = token ? await getJsonWithAuth("/api/me/profile", token) : null;
+      const roles = Array.isArray(result?.data?.roles) ? result.data.roles : [];
+      if (!roles.includes("streamer")) {
+        window.location.replace("/me");
+        return;
+      }
+    } catch {
+      // 역할 확인 실패 — 오탐 리다이렉트 대신 계정 센터를 유지한다
+    }
+  }
+  void loadAccount();
 }
 
 function isPasswordRecoveryUrl() {
