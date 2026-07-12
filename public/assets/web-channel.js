@@ -216,11 +216,11 @@
       { id: "tc-02", title: "짝짝짝 박수", amount: 2000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-03", title: "박수 갈채 GIF", amount: 3000, mediaType: "gif", thumbUrl: "/assets/product-signatures.png", pinned: false },
       { id: "tc-04", title: "야유 부저", amount: 3000, mediaType: "audio", thumbUrl: null, pinned: false },
-      { id: "tc-05", title: "풀콤보 리액션", amount: 5000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-operation-demo.mp4", pinned: true },
+      { id: "tc-05", title: "풀콤보 리액션", amount: 5000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-operation-demo.mp4", durationMs: 6000, pinned: true },
       { id: "tc-06", title: "노래 한 곡 신청", amount: 5000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-07", title: "환호성 폭발", amount: 7000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-08", title: "벽지 5분 교체", amount: 10000, mediaType: "image", thumbUrl: "/assets/gyeideuk-product-visual.png", pinned: true },
-      { id: "tc-09", title: "하이라이트 리플레이", amount: 15000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-ranking-board-preview.mp4", pinned: false },
+      { id: "tc-09", title: "하이라이트 리플레이", amount: 15000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-ranking-board-preview.mp4", durationMs: 8000, pinned: false },
       { id: "tc-10", title: "등장 브금 교체 (10분)", amount: 15000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-11", title: "놀람 리액션 모음집 연속 재생", amount: 20000, mediaType: "video", thumbUrl: null, pinned: false },
       { id: "tc-12", title: "시그니처 댄스 타임", amount: 25000, mediaType: "video", thumbUrl: "/assets/product-media.png", pinned: false },
@@ -446,7 +446,7 @@
         // 그 외에는 미디어 종류 아이콘 + 캡션의 폴백 타일(모르는 타입은 image 취급).
         var mediaType = TYPE_ICON[sig.mediaType] ? sig.mediaType : "image";
         var thumb = mediaUrl
-          ? '<video class="sig-thumb-video" muted loop playsinline preload="none" data-media-src="' + esc(mediaUrl) + '"></video>'
+          ? '<video class="sig-thumb-video" muted playsinline preload="metadata" tabindex="-1" data-media-src="' + esc(mediaUrl) + '"></video>'
           : thumbUrl
           ? '<img src="' + esc(thumbUrl) + '" alt="" loading="lazy" />'
           : '<span class="sig-thumb-fallback">' +
@@ -457,7 +457,15 @@
         var typeBadge = (thumbUrl || mediaUrl) && TYPE_LABEL[sig.mediaType]
           ? '<span class="sig-type">' + TYPE_LABEL[sig.mediaType] + "</span>"
           : "";
+        // 미리보기 버튼은 카드(<button>)와 형제로 — 중첩 버튼은 무효 마크업이라 셀로 감싼다.
+        var previewBtn = mediaUrl
+          ? '<button type="button" class="sig-preview-btn" data-preview-id="' + esc(sig.id) + '" aria-label="' +
+            esc(sig.title) + ' 미리보기">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7 8 5-8 5z"/></svg>' +
+            "</button>"
+          : "";
         return (
+          '<div class="sig-cell">' +
           '<button type="button" class="sig-card' +
           (state.selectedSigId === sig.id ? " is-selected" : "") +
           '" data-sig-id="' + esc(sig.id) + '" data-amount="' + Number(sig.amount) + '">' +
@@ -469,7 +477,9 @@
           '<span class="sig-body">' +
           '<span class="sig-amount">' + esc(GW.formatKrw(sig.amount)) + "</span>" +
           '<span class="sig-title">' + esc(sig.title) + "</span>" +
-          "</span></button>"
+          "</span></button>" +
+          previewBtn +
+          "</div>"
         );
       })
       .join("");
@@ -485,39 +495,94 @@
     observeSigVideos();
   }
 
-  // 영상 타일은 화면에 보일 때만 로드·재생 — Supabase 전송량 보호(보이는 6~8개만
-  // 로드, 벗어나면 pause). IntersectionObserver 미지원 환경은 처음 4개만 로드.
+  // 영상 타일은 재생하지 않고 "첫 프레임"만 보여준다 — preload=metadata + #t=0.05
+  // 프래그먼트로 헤더+첫 프레임만 받는다(개당 수백 KB, 풀 영상 스트리밍 없음).
+  // 그것도 화면에 보이는 타일만: 뷰포트에 들어올 때 1회 로드 후 관찰 해제.
+  // 풀 영상은 미리보기 모달에서만 스트리밍된다.
   var sigVideoObserver = null;
+  function loadSigVideoFrame(video) {
+    if (!video.src) video.src = video.dataset.mediaSrc + "#t=0.05";
+  }
   function observeSigVideos() {
     var videos = els.sigGrid.querySelectorAll("video[data-media-src]");
-    if (!videos.length) {
-      if (sigVideoObserver) sigVideoObserver.disconnect();
-      return;
-    }
+    if (sigVideoObserver) sigVideoObserver.disconnect();
+    if (!videos.length) return;
     if (typeof IntersectionObserver === "undefined") {
       for (var i = 0; i < videos.length && i < 4; i++) {
-        videos[i].src = videos[i].dataset.mediaSrc;
+        loadSigVideoFrame(videos[i]);
       }
       return;
     }
-    if (sigVideoObserver) sigVideoObserver.disconnect();
     sigVideoObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
-          var video = entry.target;
-          if (entry.isIntersecting) {
-            if (!video.src) video.src = video.dataset.mediaSrc;
-            var played = video.play();
-            if (played && played.catch) played.catch(function () {});
-          } else if (video.src) {
-            video.pause();
-          }
+          if (!entry.isIntersecting) return;
+          loadSigVideoFrame(entry.target);
+          sigVideoObserver.unobserve(entry.target);
         });
       },
       { rootMargin: "120px 0px" }
     );
     Array.prototype.forEach.call(videos, function (video) {
       sigVideoObserver.observe(video);
+    });
+  }
+
+  // ── 시그니처 미리보기 모달 — 열 때만 풀 영상 스트리밍, 닫으면 즉시 해제 ──
+  function findSignatureById(sigId) {
+    var all = sortedSignatures();
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].id === sigId) return all[i];
+    }
+    return null;
+  }
+
+  function openSigPreview(sigId) {
+    var sig = findSignatureById(sigId);
+    if (!sig) return;
+    var mediaUrl = sig.mediaType === "video" ? safeUrl(sig.mediaUrl) : null;
+    if (!mediaUrl) return;
+    state.previewSigId = sigId;
+    $("sig-preview-title").textContent = sig.title;
+    var rows =
+      "<div><dt>후원 금액</dt><dd>" + esc(GW.formatKrw(sig.amount)) + "</dd></div>" +
+      "<div><dt>종류</dt><dd>" + (TYPE_FALLBACK_LABEL[sig.mediaType] || "이미지") + "</dd></div>";
+    if (typeof sig.durationMs === "number" && sig.durationMs > 0) {
+      rows += "<div><dt>재생 시간</dt><dd>약 " + Math.max(1, Math.round(sig.durationMs / 1000)) + "초</dd></div>";
+    }
+    $("sig-preview-meta").innerHTML = rows;
+    var video = $("sig-preview-video");
+    video.src = mediaUrl;
+    var played = video.play();
+    if (played && played.catch) played.catch(function () {});
+    show($("sig-preview-modal"));
+    document.body.classList.add("gw-modal-open");
+    $("sig-preview-close").focus();
+  }
+
+  function closeSigPreview() {
+    var modal = $("sig-preview-modal");
+    if (modal.classList.contains("is-hidden")) return;
+    var video = $("sig-preview-video");
+    video.pause();
+    video.removeAttribute("src");
+    video.load(); // 스트리밍 즉시 중단
+    hide(modal);
+    document.body.classList.remove("gw-modal-open");
+    state.previewSigId = null;
+  }
+
+  function bindSigPreview() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-close-sig-preview]"), function (el) {
+      el.addEventListener("click", closeSigPreview);
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeSigPreview();
+    });
+    $("sig-preview-donate").addEventListener("click", function () {
+      var sig = state.previewSigId ? findSignatureById(state.previewSigId) : null;
+      closeSigPreview();
+      if (sig) selectSignature(sig.id, Number(sig.amount));
     });
   }
 
@@ -920,11 +985,19 @@
     els.retry.addEventListener("click", loadPage);
 
     // 시그니처 카드 탭 → 금액 자동 입력 + 하이라이트 + 폼 스크롤
+    // (미리보기 버튼은 카드와 형제 — 먼저 가로채서 모달을 연다)
     els.sigGrid.addEventListener("click", function (event) {
+      var preview = event.target.closest(".sig-preview-btn");
+      if (preview) {
+        openSigPreview(preview.dataset.previewId);
+        return;
+      }
       var card = event.target.closest(".sig-card");
       if (!card) return;
       selectSignature(card.dataset.sigId, Number(card.dataset.amount));
     });
+
+    bindSigPreview();
 
     els.sigMore.addEventListener("click", function () {
       state.showAllSigs = !state.showAllSigs;

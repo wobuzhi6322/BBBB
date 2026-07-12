@@ -170,6 +170,7 @@ describe("sharedBundleToSignatureCards", () => {
       mediaType: "image",
       thumbUrl: null,
       mediaUrl: null,
+      durationMs: null,
       pinned: false
     });
   });

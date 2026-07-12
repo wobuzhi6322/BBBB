@@ -1059,3 +1059,73 @@ body.gw-modal-open {
   display: block;
   pointer-events: none;
 }
+
+/* 시그니처 셀 — 카드와 미리보기 버튼(형제)을 감싸는 그리드 자식 */
+.sig-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+.sig-cell .sig-card {
+  width: 100%;
+}
+
+/* 미리보기 버튼 — 영상 카드 우상단, 44px 히트 영역 */
+.sig-preview-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  z-index: 2;
+}
+.sig-preview-btn svg {
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgba(11, 17, 48, 0.62);
+  fill: #fff;
+  stroke: none;
+}
+.sig-preview-btn:hover svg,
+.sig-preview-btn:focus-visible svg {
+  background: var(--blue);
+}
+
+/* 미리보기 모달 — 영상은 이 안에서만 스트리밍 */
+.sig-preview-video {
+  width: 100%;
+  max-height: 320px;
+  border-radius: var(--radius);
+  background: #000;
+  display: block;
+  margin: 12px 0;
+}
+.sig-preview-meta {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 6px;
+}
+.sig-preview-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.sig-preview-meta dt {
+  color: var(--muted);
+  word-break: keep-all;
+}
+.sig-preview-meta dd {
+  margin: 0;
+  font-weight: 700;
+}

@@ -189,6 +189,20 @@
       </section>
     </div>
 
+    <!-- 시그니처 미리보기 — 풀 영상은 이 모달을 열었을 때만 스트리밍(전송량 절약) -->
+    <div id="sig-preview-modal" class="gw-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="sig-preview-title">
+      <button class="gw-modal-backdrop" type="button" data-close-sig-preview aria-label="미리보기 닫기"></button>
+      <section class="gw-modal-window gw-modal-window--small">
+        <button id="sig-preview-close" class="gw-modal-close" type="button" data-close-sig-preview aria-label="미리보기 닫기">×</button>
+        <h2 id="sig-preview-title">시그니처 미리보기</h2>
+        <video id="sig-preview-video" class="sig-preview-video" muted loop controls playsinline preload="none"></video>
+        <dl id="sig-preview-meta" class="sig-preview-meta"></dl>
+        <div class="donate-actions">
+          <button id="sig-preview-donate" class="button primary" type="button">이 시그니처로 후원하기</button>
+        </div>
+      </section>
+    </div>
+
     <script src="/assets/web-common.js"></script>
     <script src="/assets/web-channel.js"></script>
   </body>

@@ -179,6 +179,8 @@ export type PublicSignatureCard = {
   thumbUrl: string | null;
   /** 영상 룰의 원본 미디어 서명 URL (팀코드 메뉴 전용, 그 외 null) */
   mediaUrl: string | null;
+  /** 재생 시간 ms (팀코드 룰의 durationMs, 그 외 null) — 미리보기 세부정보용 */
+  durationMs: number | null;
   pinned: boolean;
 };
 
@@ -224,6 +226,7 @@ export type SharedBundleRule = {
   image?: unknown;
   video?: unknown;
   sound?: unknown;
+  durationMs?: unknown;
 };
 
 /** bbbb_shared_profile_versions.media_files 항목 중 웹이 쓰는 필드 */
@@ -240,6 +243,7 @@ type EligibleBundleRule = {
   image: string | null;
   video: string | null;
   sound: string | null;
+  durationMs: number | null;
 };
 
 function bundleString(value: unknown): string | null {
@@ -266,7 +270,11 @@ function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
       amount,
       image: bundleString(raw.image),
       video: bundleString(raw.video),
-      sound: bundleString(raw.sound)
+      sound: bundleString(raw.sound),
+      durationMs:
+        typeof raw.durationMs === "number" && Number.isFinite(raw.durationMs) && raw.durationMs > 0
+          ? raw.durationMs
+          : null
     });
   }
   return eligible;
@@ -361,6 +369,7 @@ export function sharedBundleToSignatureCards(
       mediaType,
       thumbUrl: storagePath ? (signedUrlByPath[storagePath] ?? null) : null,
       mediaUrl: videoPath ? (signedUrlByPath[videoPath] ?? null) : null,
+      durationMs: rule.durationMs,
       pinned: false
     };
   });
