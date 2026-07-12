@@ -1074,6 +1074,64 @@
   cursor: not-allowed;
 }
 
+/* 엔터 관리 카드 (소속 엔터테인먼트 목록·생성·이름 수정) */
+.enterprise-card .enterprise-create-form {
+  margin-bottom: 18px;
+}
+
+.enterprise-card .enterprise-create-btn {
+  align-self: end;
+  min-height: 44px;
+}
+
+.enterprise-card .table-wrap {
+  margin-top: 12px;
+}
+
+.enterprise-card .enterprise-table {
+  min-width: 560px;
+}
+
+.enterprise-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.enterprise-row-actions .button {
+  min-height: 44px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+.enterprise-name-cell {
+  min-width: 180px;
+}
+
+.enterprise-rename-input {
+  width: 100%;
+  min-width: 160px;
+  min-height: 42px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: rgba(23, 38, 92, 0.05);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  box-sizing: border-box;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.enterprise-rename-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background-color: rgba(23, 38, 92, 0.08);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
 .full-span {
   grid-column: 1 / -1;
 }

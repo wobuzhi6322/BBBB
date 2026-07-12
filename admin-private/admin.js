@@ -20,7 +20,9 @@
     folderLoadRequestId: 0,
     folderProfiles: [],
     selectedFolderUserIds: new Set(),
-    webPageLookup: null
+    webPageLookup: null,
+    enterprises: [],
+    enterpriseLoadRequestId: 0
   };
 
   // DOM Elements Selector Cache
@@ -122,10 +124,21 @@
     webPageHandle: document.getElementById("web-page-handle"),
     webPageNickname: document.getElementById("web-page-nickname"),
     webPageTeamCode: document.getElementById("web-page-team-code"),
+    webPageEnterprise: document.getElementById("web-page-enterprise"),
     webPageDirectoryOptin: document.getElementById("web-page-directory-optin"),
     webPageStatus: document.getElementById("web-page-status"),
     webPageFeedback: document.getElementById("web-page-feedback"),
     webPageSubmitBtn: document.getElementById("web-page-submit-btn"),
+
+    // Enterprise Management Card
+    enterpriseRefreshBtn: document.getElementById("enterprise-refresh-btn"),
+    enterpriseCreateForm: document.getElementById("enterprise-create-form"),
+    enterpriseName: document.getElementById("enterprise-name"),
+    enterpriseSlug: document.getElementById("enterprise-slug"),
+    enterpriseCreateBtn: document.getElementById("enterprise-create-btn"),
+    enterpriseFeedback: document.getElementById("enterprise-feedback"),
+    enterpriseListFeedback: document.getElementById("enterprise-list-feedback"),
+    enterpriseTable: document.getElementById("enterprise-table")?.querySelector("tbody"),
 
     // Code Generator Tab Elements
     codeForm: document.getElementById("create-code-form"),
@@ -273,6 +286,7 @@
 
     resetSearchState();
     loadFolderStructure();
+    loadEnterprises();
 
     const activeTab = document.querySelector(".nav-tab-btn.active");
     if (activeTab && activeTab.getAttribute("data-tab") === "codes-tab") {
@@ -517,6 +531,28 @@
       els.webPageForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         await submitWebPageForm();
+      });
+    }
+
+    // K. Enterprise management card (엔터 생성·이름 수정·목록)
+    if (els.enterpriseCreateForm) {
+      els.enterpriseCreateForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await createEnterprise();
+      });
+    }
+
+    if (els.enterpriseRefreshBtn) {
+      els.enterpriseRefreshBtn.addEventListener("click", () => {
+        loadEnterprises();
+      });
+    }
+
+    if (els.enterpriseTable) {
+      els.enterpriseTable.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-enterprise-rename]");
+        if (!button) return;
+        beginEnterpriseRename(button.dataset.enterpriseRename);
       });
     }
   }
@@ -878,9 +914,10 @@
   // Web Channel Registration Card (admin-driven streamer page)
   // -------------------------------------------------------------------------
 
-  // 서버 계약과 동일 규칙 (api/_webShared handle · api/shared-profile 공유 코드)
+  // 서버 계약과 동일 규칙 (api/_webShared handle · api/shared-profile 공유 코드 · bbbb_enterprises slug)
   const WEB_HANDLE_PATTERN = /^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$/;
   const WEB_TEAM_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{2,63}$/;
+  const ENTERPRISE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,29}$/;
 
   function applyWebPageMode() {
     const lookup = state.webPageLookup;
@@ -913,6 +950,7 @@
       }
       if (els.webPageNickname) els.webPageNickname.value = "";
       if (els.webPageTeamCode) els.webPageTeamCode.value = lookup.page.team_code || "";
+      if (els.webPageEnterprise) els.webPageEnterprise.value = lookup.page.enterprise_slug || "";
       if (els.webPageDirectoryOptin) els.webPageDirectoryOptin.checked = lookup.page.directory_optin !== false;
       if (els.webPageStatus) {
         els.webPageStatus.disabled = false;
@@ -982,6 +1020,14 @@
     }
     if (els.webPageTeamCode) els.webPageTeamCode.value = teamCode;
 
+    // 소속 엔터 slug (선택) — 비우면 무소속, 수정 모드에서 빈 값은 소속 해제
+    const enterpriseSlug = els.webPageEnterprise ? els.webPageEnterprise.value.trim().toLowerCase() : "";
+    if (enterpriseSlug && !ENTERPRISE_SLUG_PATTERN.test(enterpriseSlug)) {
+      showFeedback(els.webPageFeedback, "소속 엔터 slug는 영문 소문자·숫자·하이픈 1~30자입니다.", "error");
+      return;
+    }
+    if (els.webPageEnterprise) els.webPageEnterprise.value = enterpriseSlug;
+
     const directoryOptin = els.webPageDirectoryOptin ? els.webPageDirectoryOptin.checked : true;
     const isUpdate = lookup.hasPage === true;
 
@@ -990,6 +1036,7 @@
       payload = {
         handle,
         team_code: teamCode || null,
+        enterprise_slug: enterpriseSlug,
         directory_optin: directoryOptin,
         status: els.webPageStatus && els.webPageStatus.value === "hidden" ? "hidden" : "active"
       };
@@ -1002,6 +1049,7 @@
       const nickname = els.webPageNickname ? els.webPageNickname.value.trim() : "";
       if (nickname) payload.nickname = nickname;
       if (teamCode) payload.team_code = teamCode;
+      if (enterpriseSlug) payload.enterprise_slug = enterpriseSlug;
     }
 
     if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = true;
@@ -1014,17 +1062,183 @@
       }
       const page = result.data.page;
       const teamCodeLabel = page.team_code ? ` · 팀코드 ${page.team_code}` : "";
+      const enterpriseLabel = page.enterprise_slug ? ` · 엔터 ${page.enterprise_slug}` : "";
       // 최신 페이지 상태로 카드 모드를 갱신한 뒤 결과 메시지를 표시 (갱신이 feedback을 지우므로 순서 유지)
       await lookupWebPageAccount();
       showFeedback(
         els.webPageFeedback,
-        `${isUpdate ? "수정 완료" : "등록 완료"}: @${page.handle}${teamCodeLabel} · ${page.status === "hidden" ? "숨김" : "공개"}`,
+        `${isUpdate ? "수정 완료" : "등록 완료"}: @${page.handle}${teamCodeLabel}${enterpriseLabel} · ${page.status === "hidden" ? "숨김" : "공개"}`,
         "success"
       );
     } catch (err) {
       showFeedback(els.webPageFeedback, err.message, "error");
     } finally {
       if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = false;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Enterprise Management Card (소속 엔터테인먼트 — 목록·생성·이름 수정)
+  // v1 정책: 엔터 생성과 페이지 배정은 관리자 전용 (사칭 방지)
+  // -------------------------------------------------------------------------
+
+  async function loadEnterprises() {
+    if (!els.enterpriseTable) return;
+
+    const requestId = ++state.enterpriseLoadRequestId;
+    clearFeedback(els.enterpriseListFeedback);
+    els.enterpriseTable.innerHTML = `<tr><td colspan="4" class="text-center text-muted">엔터 목록을 불러오는 중입니다...</td></tr>`;
+
+    try {
+      const result = await callApi("/api/admin-enterprises");
+      if (requestId !== state.enterpriseLoadRequestId) return;
+      if (!result.ok || !result.data) {
+        throw new Error(result.error || "엔터 목록을 불러오지 못했습니다.");
+      }
+      state.enterprises = Array.isArray(result.data.enterprises) ? result.data.enterprises : [];
+      renderEnterpriseRows(state.enterprises);
+    } catch (err) {
+      if (requestId !== state.enterpriseLoadRequestId) return;
+      state.enterprises = [];
+      els.enterpriseTable.innerHTML = `<tr><td colspan="4" class="text-center text-muted">엔터 목록을 불러오지 못했습니다.</td></tr>`;
+      showFeedback(els.enterpriseListFeedback, err.message, "error");
+    }
+  }
+
+  function renderEnterpriseRows(enterprises) {
+    if (!els.enterpriseTable) return;
+
+    if (!enterprises || enterprises.length === 0) {
+      els.enterpriseTable.innerHTML = `<tr><td colspan="4" class="text-center text-muted">등록된 엔터가 없습니다. 위에서 새 엔터를 생성하세요.</td></tr>`;
+      return;
+    }
+
+    els.enterpriseTable.innerHTML = enterprises.map((ent) => `
+      <tr data-enterprise-slug="${escapeHtml(ent.slug)}">
+        <td><code class="info-value is-code">${escapeHtml(ent.slug)}</code></td>
+        <td class="enterprise-name-cell">${escapeHtml(ent.name)}</td>
+        <td><strong>${Number(ent.pageCount || 0).toLocaleString()}</strong></td>
+        <td>
+          <div class="enterprise-row-actions">
+            <button class="button secondary" type="button" data-enterprise-rename="${escapeHtml(ent.slug)}">이름 수정</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function findEnterpriseRow(slug) {
+    if (!els.enterpriseTable) return null;
+    return Array.from(els.enterpriseTable.querySelectorAll("tr[data-enterprise-slug]"))
+      .find((row) => row.dataset.enterpriseSlug === slug) || null;
+  }
+
+  function beginEnterpriseRename(slug) {
+    const target = (state.enterprises || []).find((ent) => ent.slug === slug);
+    if (!target) return;
+
+    // 다른 행이 편집 중이었다면 목록을 원상 복구한 뒤 이 행만 편집 모드로 전환
+    renderEnterpriseRows(state.enterprises);
+    const row = findEnterpriseRow(slug);
+    if (!row) return;
+
+    const nameCell = row.querySelector(".enterprise-name-cell");
+    const actionsCell = row.querySelector(".enterprise-row-actions");
+    if (!nameCell || !actionsCell) return;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 40;
+    input.value = target.name;
+    input.className = "enterprise-rename-input";
+    input.setAttribute("aria-label", `${target.slug} 엔터 이름 수정`);
+    nameCell.replaceChildren(input);
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "button primary";
+    saveBtn.textContent = "저장";
+    saveBtn.addEventListener("click", () => {
+      submitEnterpriseRename(slug, input.value, saveBtn);
+    });
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "button secondary";
+    cancelBtn.textContent = "취소";
+    cancelBtn.addEventListener("click", () => {
+      renderEnterpriseRows(state.enterprises);
+    });
+
+    actionsCell.replaceChildren(saveBtn, cancelBtn);
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitEnterpriseRename(slug, input.value, saveBtn);
+      } else if (event.key === "Escape") {
+        renderEnterpriseRows(state.enterprises);
+      }
+    });
+    input.focus();
+  }
+
+  async function submitEnterpriseRename(slug, rawName, saveBtn) {
+    const name = typeof rawName === "string" ? rawName.trim() : "";
+    if (!name || name.length > 40) {
+      showFeedback(els.enterpriseListFeedback, "엔터 이름은 1~40자로 입력하세요.", "error");
+      return;
+    }
+
+    clearFeedback(els.enterpriseListFeedback);
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      const result = await callApi("/api/admin-enterprises", "PATCH", { slug, name });
+      if (!result.ok) {
+        throw new Error(result.error || "엔터 이름 수정에 실패했습니다.");
+      }
+      // 목록 갱신이 feedback을 지우므로 갱신 후 결과 메시지 표시 (웹 채널 카드와 동일 순서)
+      await loadEnterprises();
+      showFeedback(els.enterpriseListFeedback, `엔터 이름을 수정했습니다: ${slug} → ${name}`, "success");
+    } catch (err) {
+      if (saveBtn) saveBtn.disabled = false;
+      showFeedback(els.enterpriseListFeedback, err.message, "error");
+    }
+  }
+
+  async function createEnterprise() {
+    clearFeedback(els.enterpriseFeedback);
+
+    const name = els.enterpriseName ? els.enterpriseName.value.trim() : "";
+    const slug = els.enterpriseSlug ? els.enterpriseSlug.value.trim().toLowerCase() : "";
+
+    if (!name || name.length > 40) {
+      showFeedback(els.enterpriseFeedback, "엔터 이름은 1~40자로 입력하세요.", "error");
+      return;
+    }
+    if (!ENTERPRISE_SLUG_PATTERN.test(slug)) {
+      showFeedback(els.enterpriseFeedback, "slug는 영문 소문자·숫자·하이픈 1~30자이며 하이픈으로 시작할 수 없습니다.", "error");
+      return;
+    }
+    if (els.enterpriseSlug) els.enterpriseSlug.value = slug;
+
+    if (els.enterpriseCreateBtn) els.enterpriseCreateBtn.disabled = true;
+    showFeedback(els.enterpriseFeedback, "엔터를 생성하는 중입니다...", "info");
+
+    try {
+      const result = await callApi("/api/admin-enterprises", "POST", { name, slug });
+      if (!result.ok) {
+        throw new Error(result.error || "엔터 생성에 실패했습니다.");
+      }
+      if (els.enterpriseName) els.enterpriseName.value = "";
+      if (els.enterpriseSlug) els.enterpriseSlug.value = "";
+      await loadEnterprises();
+      showFeedback(els.enterpriseFeedback, `엔터를 생성했습니다: ${name} (${slug})`, "success");
+    } catch (err) {
+      showFeedback(els.enterpriseFeedback, err.message, "error");
+    } finally {
+      if (els.enterpriseCreateBtn) els.enterpriseCreateBtn.disabled = false;
     }
   }
 

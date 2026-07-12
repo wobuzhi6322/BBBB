@@ -340,6 +340,9 @@
                 <label>팀코드 (공유 코드)
                   <input id="web-page-team-code" type="text" placeholder="예: TEAM-CODE-01" autocomplete="off" />
                 </label>
+                <label>소속 엔터 (slug, 선택)
+                  <input id="web-page-enterprise" type="text" placeholder="비우면 무소속" autocomplete="off" />
+                </label>
                 <label class="checkbox-line">
                   <input id="web-page-directory-optin" type="checkbox" checked />
                   채널 목록에 공개
@@ -353,6 +356,40 @@
                 <div id="web-page-feedback" class="feedback-msg full-span" style="display: none;" aria-live="polite"></div>
                 <button id="web-page-submit-btn" class="button primary full-width full-span" type="submit" disabled>웹 채널 등록</button>
               </form>
+            </section>
+
+            <section class="admin-card enterprise-card">
+              <div class="card-heading">
+                <div>
+                  <h3>엔터 관리</h3>
+                  <p>소속 엔터테인먼트를 생성하고 이름을 수정합니다. 웹 채널의 엔터 배정은 위 카드의 소속 엔터 입력으로 처리합니다.</p>
+                </div>
+                <button id="enterprise-refresh-btn" class="button secondary" type="button">목록 새로고침</button>
+              </div>
+              <form id="enterprise-create-form" class="admin-form-grid enterprise-create-form">
+                <label>엔터 이름
+                  <input id="enterprise-name" type="text" maxlength="40" placeholder="예: 계이득 엔터테인먼트" autocomplete="off" />
+                </label>
+                <label>slug
+                  <input id="enterprise-slug" type="text" placeholder="영문 소문자·숫자·하이픈 1~30자" autocomplete="off" />
+                </label>
+                <button id="enterprise-create-btn" class="button primary enterprise-create-btn" type="submit">엔터 생성</button>
+                <div id="enterprise-feedback" class="feedback-msg full-span" style="display: none;" aria-live="polite"></div>
+              </form>
+              <div id="enterprise-list-feedback" class="feedback-msg" style="display: none;" aria-live="polite"></div>
+              <div class="table-wrap">
+                <table id="enterprise-table" class="admin-table compact-table enterprise-table">
+                  <thead>
+                    <tr>
+                      <th>slug</th>
+                      <th>이름</th>
+                      <th>페이지 수</th>
+                      <th>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </section>
           </section>
 
