@@ -1,7 +1,7 @@
 // =============================================================================
 // GET /api/channels?q=&cursor= — 채널 탐색 디렉토리 (WSD, 공개·비로그인)
 // 계약: docs/WEB_TECH_SPEC.md §2.1 · docs/WEB_PAGE_SPECS.md §5
-// 노출 조건: directory_optin=true AND status='active' AND 공개 시그니처 ≥ 1
+// 노출 조건: directory_optin=true AND status='active' AND (공개 시그니처 ≥ 1 OR 팀코드 설정)
 // 정렬: 최근 활동순(created_at desc) · 커서 페이지네이션 20개
 // =============================================================================
 
@@ -33,6 +33,7 @@ type PageRow = {
   avatar_url: string | null;
   bio: string | null;
   created_at: string;
+  team_code?: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -121,7 +122,7 @@ async function listChannels(
   for (let batch = 0; batch < MAX_BATCHES && !filled && !exhausted; batch += 1) {
     let query = supabase
       .from(pagesTable)
-      .select("id,owner_user_id,handle,banner_url,avatar_url,bio,created_at")
+      .select("id,owner_user_id,handle,banner_url,avatar_url,bio,created_at,team_code")
       .eq("directory_optin", true)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -150,7 +151,9 @@ async function listChannels(
 
     for (const row of rows) {
       const signatureCount = signatureCounts.get(row.id) || 0;
-      if (signatureCount < 1) continue;
+      // 팀코드 연동 채널은 메뉴가 공유 번들에서 오므로 테이블 시그니처 0개여도 노출 대상.
+      const hasTeamCode = typeof row.team_code === "string" && row.team_code.trim() !== "";
+      if (signatureCount < 1 && !hasTeamCode) continue;
       const displayName = nicknames.get(row.owner_user_id) || row.handle;
       if (!matchesChannelQuery(q, row.handle, displayName)) continue;
       channels.push({

@@ -146,7 +146,9 @@
       '<strong class="ch-name">' + esc(name) + "</strong>" +
       '<span class="ch-handle">@' + esc(channel.handle) + "</span>" +
       '<p class="ch-bio">' + bio + "</p>" +
-      '<div class="ch-meta"><span class="ch-count">시그니처 ' + Number(channel.signatureCount || 0) + "개</span></div>" +
+      (Number(channel.signatureCount || 0) > 0
+        ? '<div class="ch-meta"><span class="ch-count">시그니처 ' + Number(channel.signatureCount) + "개</span></div>"
+        : '<div class="ch-meta"><span class="ch-count">시그니처 메뉴</span></div>') +
       "</div></a>"
     );
   }
