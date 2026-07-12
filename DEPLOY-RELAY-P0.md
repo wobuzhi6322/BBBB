@@ -35,6 +35,7 @@ service key 값은 어디에도 붙여넣거나 출력하지 않는다 — 이 �
    - 서비스 키 불필요 — 대시보드 세션 권한으로 충분하다.
    - 재실행해도 안전(모든 문장이 `create ... if not exists` / `on conflict do nothing`).
    - 기존 테이블 데이터 변경 없음(신규 생성 + `ip_hash` 컬럼 추가 1건뿐).
+   - `bbbb_streamer_pages.team_code` 컬럼(팀코드 → 시그니처 메뉴 소스)도 같은 idempotent 스크립트에 포함된다(`add column if not exists`, nullable, 데이터 무손실).
 3. 확인: Table Editor에서 `bbbb_streamer_pages`, `bbbb_donation_messages`,
    `bbbb_relay_devices`, `bbbb_handle_history`, `bbbb_reserved_handles` 존재 +
    각 테이블 RLS enabled 표시 확인. Storage에 `bbbb-web-thumbs` 버킷(공개) 확인.

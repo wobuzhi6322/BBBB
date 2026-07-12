@@ -142,6 +142,18 @@ describe("buildPagePatch", () => {
     expect(patch.bio).toBeNull();
     expect(patch.banner_url).toBeNull();
   });
+
+  it("팀코드: 대문자 정규화, 빈 값은 해제(null), 형식 위반은 거부", () => {
+    expect(buildPagePatch({ teamCode: "team-01" }, page, now).team_code).toBe("TEAM-01");
+    expect(buildPagePatch({ teamCode: "" }, page, now).team_code).toBeNull();
+    expect(buildPagePatch({ teamCode: null }, page, now).team_code).toBeNull();
+    // snake_case 별칭도 수용(웹 클라이언트 관례 밖 호출 대비)
+    expect(buildPagePatch({ team_code: "team-01" }, page, now).team_code).toBe("TEAM-01");
+    expect(() => buildPagePatch({ teamCode: "ab" }, page, now)).toThrow(/팀코드/);
+    expect(() => buildPagePatch({ teamCode: "팀코드!" }, page, now)).toThrow(/팀코드/);
+    // teamCode 키가 없으면 patch에 team_code 미포함(부분 PATCH 보존)
+    expect("team_code" in buildPagePatch({ bio: "x" }, page, now)).toBe(false);
+  });
 });
 
 describe("sanitize 헬퍼", () => {

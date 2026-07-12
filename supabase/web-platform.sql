@@ -43,6 +43,13 @@ create table if not exists public.bbbb_streamer_pages (
 create unique index if not exists bbbb_streamer_pages_handle_idx
   on public.bbbb_streamer_pages (lower(handle));
 
+-- 팀코드(= 프로그램 공유 코드, bbbb_shared_profile_versions.code). 설정 시 공개
+-- 페이지 시그니처 메뉴를 최신 finalized 공유 번들에서 구성한다(빈 값 = 미사용).
+-- 형식·존재 검증은 API(normalizeTeamCode·폴백)가 수행 — DB 제약 없음(additive).
+alter table public.bbbb_streamer_pages add column if not exists team_code text;
+comment on column public.bbbb_streamer_pages.team_code is
+  '팀코드 = 프로그램 공유 코드(시그니처 메뉴 소스). 검증은 API가 수행.';
+
 create table if not exists public.bbbb_page_follows (
   viewer_user_id uuid not null references auth.users(id) on delete cascade,
   page_id uuid not null references public.bbbb_streamer_pages(id) on delete cascade,

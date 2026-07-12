@@ -197,6 +197,141 @@ export type PublicPageView = {
   accountInfo: { bank: string; number: string; holder: string } | null;
 };
 
+// ---------------------------------------------------------------------------
+// 팀코드 (프로그램 공유 코드 → 시그니처 메뉴 소스)
+// 형식은 api/shared-profile.ts normalizeCode와 동일해야 한다: trim → 대문자
+// 정규화 → ^[A-Z0-9][A-Z0-9-]{2,63}$. 위반 시 throw 대신 null을 반환하고
+// 호출자가 WebErrorCode 봉투(validation-failed 등)로 매핑한다.
+// ---------------------------------------------------------------------------
+
+export const TEAM_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{2,63}$/;
+
+export function normalizeTeamCode(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const code = input.trim().toUpperCase();
+  if (!TEAM_CODE_PATTERN.test(code)) return null;
+  return code;
+}
+
+/** bbbb_shared_profile_versions.bundle.rules 항목(프로그램 DonationRule) 중 웹이 쓰는 필드 */
+export type SharedBundleRule = {
+  key?: unknown;
+  title?: unknown;
+  minAmount?: unknown;
+  enabled?: unknown;
+  image?: unknown;
+  video?: unknown;
+  sound?: unknown;
+};
+
+/** bbbb_shared_profile_versions.media_files 항목 중 웹이 쓰는 필드 */
+export type SharedMediaFile = {
+  kind?: unknown;
+  filename?: unknown;
+  storagePath?: unknown;
+};
+
+type EligibleBundleRule = {
+  key: string;
+  title: string;
+  amount: number;
+  image: string | null;
+  video: string | null;
+  sound: string | null;
+};
+
+function bundleString(value: unknown): string | null {
+  return typeof value === "string" && value ? value : null;
+}
+
+/** bundle.rules에서 웹 노출 대상(enabled && minAmount>0 && key 有)만 추출 */
+function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
+  if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) return [];
+  const rules = (bundle as Record<string, unknown>).rules;
+  if (!Array.isArray(rules)) return [];
+  const eligible: EligibleBundleRule[] = [];
+  for (const raw of rules as SharedBundleRule[]) {
+    if (!raw || typeof raw !== "object") continue;
+    if (raw.enabled !== true) continue;
+    const amount = typeof raw.minAmount === "number" && Number.isFinite(raw.minAmount) ? raw.minAmount : 0;
+    if (amount <= 0) continue;
+    const key = bundleString(raw.key);
+    if (!key) continue;
+    const title = typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : key;
+    eligible.push({
+      key,
+      title,
+      amount,
+      image: bundleString(raw.image),
+      video: bundleString(raw.video),
+      sound: bundleString(raw.sound)
+    });
+  }
+  return eligible;
+}
+
+/** rule.image(파일명) → media_files의 storagePath (kind='images' 우선) */
+function imageStoragePath(image: string, mediaFiles: unknown): string | null {
+  if (!Array.isArray(mediaFiles)) return null;
+  let fallback: string | null = null;
+  for (const raw of mediaFiles as SharedMediaFile[]) {
+    if (!raw || typeof raw !== "object" || raw.filename !== image) continue;
+    const storagePath = bundleString(raw.storagePath);
+    if (!storagePath) continue;
+    if (raw.kind === "images") return storagePath;
+    if (!fallback) fallback = storagePath;
+  }
+  return fallback;
+}
+
+/** 썸네일 서명 URL 일괄 발급에 필요한 storagePath 목록(중복 제거, 순수 함수) */
+export function teamCodeThumbPaths(bundle: unknown, mediaFiles: unknown): string[] {
+  const paths = new Set<string>();
+  for (const rule of eligibleBundleRules(bundle)) {
+    if (!rule.image) continue;
+    const path = imageStoragePath(rule.image, mediaFiles);
+    if (path) paths.add(path);
+  }
+  return [...paths];
+}
+
+/**
+ * 공유 번들(rules) → 공개 시그니처 카드 목록(순수 함수 — Supabase 미접촉).
+ * enabled && minAmount>0 규칙만, minAmount 오름차순.
+ * mediaType: video 우선 → image(.gif=gif) → sound=audio → 기본 image.
+ * thumbUrl은 이미지 규칙만: media_files에서 filename 일치 항목의 storagePath로
+ * signedUrlByPath를 조회(없으면 null). 서명 URL 발급(비공개 버킷)은 호출자 책임.
+ * 카드 형태는 PublicSignatureCard 그대로 — bbbb_page_signatures 경로와 동일 계약.
+ */
+export function sharedBundleToSignatureCards(
+  bundle: unknown,
+  mediaFiles: unknown,
+  signedUrlByPath: Readonly<Record<string, string>>
+): PublicSignatureCard[] {
+  const cards: PublicSignatureCard[] = eligibleBundleRules(bundle).map((rule) => {
+    const mediaType: PublicSignatureCard["mediaType"] = rule.video
+      ? "video"
+      : rule.image
+        ? /\.gif$/i.test(rule.image)
+          ? "gif"
+          : "image"
+        : rule.sound
+          ? "audio"
+          : "image";
+    const storagePath = rule.image ? imageStoragePath(rule.image, mediaFiles) : null;
+    return {
+      id: `tc-${rule.key}`,
+      title: rule.title,
+      amount: rule.amount,
+      mediaType,
+      thumbUrl: storagePath ? (signedUrlByPath[storagePath] ?? null) : null,
+      pinned: false
+    };
+  });
+  cards.sort((a, b) => a.amount - b.amount);
+  return cards;
+}
+
 export type ChannelCard = {
   handle: string;
   displayName: string;
@@ -263,6 +398,8 @@ export type StudioPageSettings = {
   handle: string;
   /** 핸들 마지막 변경 시각(30일 쿨다운 UI용) — 서버가 additive로 내려줌 */
   handleChangedAt?: string | null;
+  /** 팀코드(프로그램 공유 코드) — 설정 시 공개 시그니처 메뉴 소스. null=미사용 */
+  teamCode?: string | null;
   bannerUrl: string | null;
   avatarUrl: string | null;
   bio: string | null;

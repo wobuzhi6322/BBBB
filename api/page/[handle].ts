@@ -5,6 +5,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { PublicPageView, PublicSignatureCard } from "../_webShared.js";
+import { normalizeTeamCode, sharedBundleToSignatureCards, teamCodeThumbPaths } from "../_webShared.js";
 import {
   TABLES,
   applyCors,
@@ -18,7 +19,8 @@ import {
   sendErr,
   sendOk,
   sendServerError,
-  serviceClient
+  serviceClient,
+  type ServiceClient
 } from "../_webServer.js";
 
 type PageRow = {
@@ -36,6 +38,7 @@ type PageRow = {
   account_info: unknown;
   transfer_links: unknown;
   status: string;
+  team_code: string | null;
 };
 
 type SignatureRow = {
@@ -50,7 +53,7 @@ type SignatureRow = {
 
 const pageSelect =
   "id,owner_user_id,handle,banner_url,avatar_url,bio,broadcast_links,preset_amounts," +
-  "min_amount,ticker_public,account_display,account_info,transfer_links,status";
+  "min_amount,ticker_public,account_display,account_info,transfer_links,status,team_code";
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   applyCors(res);
@@ -105,7 +108,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       isDeviceOnline(device.last_heartbeat_at, now)
     );
 
-    const signatures: PublicSignatureCard[] = ((signaturesResult.data ?? []) as SignatureRow[]).map((row) => ({
+    let signatures: PublicSignatureCard[] = ((signaturesResult.data ?? []) as SignatureRow[]).map((row) => ({
       id: row.id,
       title: row.web_title ?? row.title,
       amount: row.amount,
@@ -113,6 +116,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       thumbUrl: row.thumb_url,
       pinned: row.pinned
     }));
+
+    // 팀코드가 설정된 페이지는 프로그램 공유 번들(최신 finalized)이 메뉴의 진실 —
+    // 성공 시 bbbb_page_signatures를 대체(병합 아님), 실패·미발행 시 기존 경로 유지.
+    if (page.team_code) {
+      const teamSignatures = await teamCodeSignatures(supabase, page.team_code);
+      if (teamSignatures) {
+        signatures = teamSignatures;
+      }
+    }
 
     const view: PublicPageView = {
       handle: page.handle,
@@ -132,5 +144,58 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     sendOk(res, view);
   } catch (error) {
     sendServerError(res, error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 팀코드 → 시그니처 메뉴 (bbbb_shared_profile_versions 최신 finalized 번들)
+// ---------------------------------------------------------------------------
+
+const SHARED_VERSIONS_TABLE = "bbbb_shared_profile_versions";
+// api/shared-profile.ts와 동일 규칙(비공개 버킷 — 서명 URL 필수)
+const SHARED_MEDIA_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "bbbb-shared-media";
+const SIGNED_URL_TTL_SECONDS = 3600;
+
+/**
+ * 팀코드의 최신 finalized 공유 번들에서 시그니처 카드 목록을 만든다.
+ * - 팀코드 문제(형식 위반·미발행·쿼리 실패)는 절대 500을 내지 않는다 — null을
+ *   반환해 호출자가 기존 bbbb_page_signatures 경로로 폴백하게 한다.
+ * - finalized 번들이 있으면 그 목록이 전체 메뉴다(빈 목록 포함, 대체이지 병합 아님).
+ * - 이미지 썸네일 서명 URL은 한 번의 createSignedUrls 배치로 발급하고, 발급 실패는
+ *   썸네일만 포기(null)하며 메뉴 자체는 유지한다.
+ */
+async function teamCodeSignatures(supabase: ServiceClient, teamCode: string): Promise<PublicSignatureCard[] | null> {
+  try {
+    const code = normalizeTeamCode(teamCode);
+    if (!code) return null;
+
+    const result = await supabase
+      .from(SHARED_VERSIONS_TABLE)
+      .select("bundle,media_files")
+      .eq("code", code)
+      .eq("status", "finalized")
+      .order("version", { ascending: false })
+      .limit(1);
+    if (result.error) return null;
+    const row = (result.data?.[0] ?? null) as { bundle: unknown; media_files: unknown } | null;
+    if (!row) return null;
+
+    const paths = teamCodeThumbPaths(row.bundle, row.media_files);
+    const signedUrlByPath: Record<string, string> = {};
+    if (paths.length > 0) {
+      try {
+        const signed = await supabase.storage.from(SHARED_MEDIA_BUCKET).createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+        for (const entry of signed.data ?? []) {
+          if (entry.path && entry.signedUrl && !entry.error) {
+            signedUrlByPath[entry.path] = entry.signedUrl;
+          }
+        }
+      } catch {
+        // 서명 URL 실패 → 썸네일 없이 메뉴 유지
+      }
+    }
+    return sharedBundleToSignatureCards(row.bundle, row.media_files, signedUrlByPath);
+  } catch {
+    return null;
   }
 }

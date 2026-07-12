@@ -16,6 +16,7 @@ import {
 } from "../_handlePolicy.js";
 import {
   LIMITS,
+  normalizeTeamCode,
   type BroadcastLink,
   type StudioPageSettings,
   type TransferLink,
@@ -28,7 +29,7 @@ export { handleChangeBlockedUntil };
 const pagesTable = "bbbb_streamer_pages";
 const pageSelect =
   "id,owner_user_id,handle,banner_url,avatar_url,bio,broadcast_links,preset_amounts,min_amount," +
-  "ticker_public,directory_optin,account_display,account_info,transfer_links,status,handle_changed_at";
+  "ticker_public,directory_optin,account_display,account_info,transfer_links,status,handle_changed_at,team_code";
 
 type PageRow = {
   id: string;
@@ -47,9 +48,10 @@ type PageRow = {
   transfer_links: TransferLink[] | null;
   status: string;
   handle_changed_at: string | null;
+  team_code: string | null;
 };
 
-export type StudioPageResponse = StudioPageSettings & { handleChangedAt: string | null };
+export type StudioPageResponse = StudioPageSettings & { handleChangedAt: string | null; teamCode: string | null };
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   setCors(res);
@@ -250,6 +252,19 @@ export function buildPagePatch(
   if ("accountInfo" in body) patch.account_info = sanitizeAccountInfo(body.accountInfo);
   if ("transferLinks" in body) patch.transfer_links = sanitizeTransferLinks(body.transferLinks);
 
+  // 팀코드(프로그램 공유 코드) — 빈 값은 해제(null), 형식 위반은 400.
+  // 클라이언트 관례는 camelCase(teamCode)지만 snake_case(team_code)도 받아준다.
+  if ("teamCode" in body || "team_code" in body) {
+    const raw = "teamCode" in body ? body.teamCode : body.team_code;
+    if (raw === null || raw === undefined || (typeof raw === "string" && !raw.trim())) {
+      patch.team_code = null;
+    } else {
+      const code = normalizeTeamCode(raw);
+      if (!code) throw new Error("팀코드는 영문 대문자·숫자·하이픈 3~64자입니다.");
+      patch.team_code = code;
+    }
+  }
+
   return patch;
 }
 
@@ -267,7 +282,8 @@ function toSettings(row: PageRow): StudioPageResponse {
     accountDisplay: row.account_display,
     accountInfo: row.account_info,
     transferLinks: row.transfer_links || [],
-    handleChangedAt: row.handle_changed_at
+    handleChangedAt: row.handle_changed_at,
+    teamCode: row.team_code ?? null
   };
 }
 

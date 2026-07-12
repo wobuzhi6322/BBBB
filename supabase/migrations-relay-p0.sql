@@ -10,8 +10,9 @@
 -- 포함 내용 : web-platform.sql 전체(WS0 스키마) + 핸들 이력·예약어 테이블(P1 바로가기).
 --
 -- 롤백 노트 : 이 스크립트는 신규 테이블·인덱스·버킷 생성뿐이며 기존 테이블을 변경하지
---             않는다(bbbb_donation_messages.ip_hash 컬럼 추가 1건 제외 — add column if not
---             exists, 데이터 무손실). 전체 롤백이 필요하면 아래를 역순으로 실행:
+--             않는다(bbbb_donation_messages.ip_hash·bbbb_streamer_pages.team_code 컬럼
+--             추가 2건 제외 — add column if not exists, 데이터 무손실).
+--             전체 롤백이 필요하면 아래를 역순으로 실행:
 --               drop table if exists public.bbbb_handle_history;
 --               drop table if exists public.bbbb_reserved_handles;
 --               drop table if exists public.bbbb_payment_intents;
@@ -74,6 +75,13 @@ create table if not exists public.bbbb_streamer_pages (
 
 create unique index if not exists bbbb_streamer_pages_handle_idx
   on public.bbbb_streamer_pages (lower(handle));
+
+-- 팀코드(= 프로그램 공유 코드, bbbb_shared_profile_versions.code). 설정 시 공개
+-- 페이지 시그니처 메뉴를 최신 finalized 공유 번들에서 구성한다(빈 값 = 미사용).
+-- 형식·존재 검증은 API(normalizeTeamCode·폴백)가 수행 — DB 제약 없음(additive).
+alter table public.bbbb_streamer_pages add column if not exists team_code text;
+comment on column public.bbbb_streamer_pages.team_code is
+  '팀코드 = 프로그램 공유 코드(시그니처 메뉴 소스). 검증은 API가 수행.';
 
 create table if not exists public.bbbb_page_follows (
   viewer_user_id uuid not null references auth.users(id) on delete cascade,
