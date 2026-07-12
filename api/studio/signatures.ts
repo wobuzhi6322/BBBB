@@ -160,6 +160,7 @@ function toResponse(rows: SignatureDbRow[]): StudioSignaturesResponse {
       amount: row.amount,
       mediaType: row.media_type,
       thumbUrl: row.thumb_url,
+      mediaUrl: null,
       pinned: row.pinned,
       localSignatureId: row.local_signature_id,
       webTitle: row.web_title,

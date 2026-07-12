@@ -128,6 +128,38 @@ describe("sharedBundleToSignatureCards", () => {
     expect(cards.find((card) => card.id === "tc-winpath")?.mediaType).toBe("gif");
   });
 
+  it("퍼센트 인코딩된 rule 참조를 디코딩해 매칭하고, 영상은 mediaUrl로 서명 URL을 싣는다 (BBBB-003 실측)", () => {
+    // 실번들: rule.video='/assets/user/videos/%EC%86%8C%EC%A4%91...mp4'(인코딩),
+    //         media_files.filename='소중한후원-obs.mp4'(디코딩 한글)
+    const bundle = {
+      rules: [
+        {
+          key: "kr",
+          title: "소중한 후원",
+          minAmount: 1000,
+          enabled: true,
+          video: "/assets/user/videos/" + encodeURIComponent("소중한후원-obs.mp4")
+        }
+      ]
+    };
+    const mediaFiles = [
+      {
+        kind: "videos",
+        filename: "소중한후원-obs.mp4",
+        size: 10,
+        updatedAt: "t",
+        storagePath: "BBBB-003/v44/videos/sanitized-abc.mp4"
+      }
+    ];
+    expect(teamCodeThumbPaths(bundle, mediaFiles)).toContain("BBBB-003/v44/videos/sanitized-abc.mp4");
+    const cards = sharedBundleToSignatureCards(bundle, mediaFiles, {
+      "BBBB-003/v44/videos/sanitized-abc.mp4": "https://signed/kr-video"
+    });
+    expect(cards[0]?.mediaType).toBe("video");
+    expect(cards[0]?.mediaUrl).toBe("https://signed/kr-video");
+    expect(cards[0]?.thumbUrl).toBeNull();
+  });
+
   it("카드 계약 형태 유지: id는 tc- 접두, pinned는 항상 false, 제목 폴백=key", () => {
     const bundle = { rules: [{ key: "sig1", title: "  ", minAmount: 1000, enabled: true }] };
     const [card] = sharedBundleToSignatureCards(bundle, [], {});
@@ -137,6 +169,7 @@ describe("sharedBundleToSignatureCards", () => {
       amount: 1000,
       mediaType: "image",
       thumbUrl: null,
+      mediaUrl: null,
       pinned: false
     });
   });

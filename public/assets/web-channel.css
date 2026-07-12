@@ -1050,3 +1050,12 @@ body.gw-modal-open {
     flex: 1;
   }
 }
+
+/* 영상 시그니처 미리보기 — 썸네일 <img>와 동일 박스, 클릭은 카드 버튼으로 통과 */
+.sig-thumb-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}

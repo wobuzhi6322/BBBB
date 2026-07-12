@@ -114,6 +114,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       amount: row.amount,
       mediaType: row.media_type,
       thumbUrl: row.thumb_url,
+      mediaUrl: null,
       pinned: row.pinned
     }));
 

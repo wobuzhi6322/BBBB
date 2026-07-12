@@ -177,6 +177,8 @@ export type PublicSignatureCard = {
   amount: number;
   mediaType: "image" | "gif" | "video" | "audio";
   thumbUrl: string | null;
+  /** 영상 룰의 원본 미디어 서명 URL (팀코드 메뉴 전용, 그 외 null) */
+  mediaUrl: string | null;
   pinned: boolean;
 };
 
@@ -270,17 +272,26 @@ function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
   return eligible;
 }
 
-/** 경로/파일명 혼재 대응 — 마지막 세그먼트만 비교 (rule.image는 '/assets/user/images/x.png' 형태 실측) */
+/**
+ * 경로/파일명 혼재 대응 — 마지막 세그먼트를 퍼센트 디코딩해 비교.
+ * 실측: rule.video='/assets/user/videos/%EC%86%8C...-obs.mp4'(인코딩)인데
+ * media_files.filename='소중한후원-obs.mp4'(디코딩 한글) — 디코딩 없이는 불일치.
+ */
 function mediaBasename(value: string): string {
   const norm = value.replace(/\\/g, "/");
   const idx = norm.lastIndexOf("/");
-  return idx === -1 ? norm : norm.slice(idx + 1);
+  const base = idx === -1 ? norm : norm.slice(idx + 1);
+  try {
+    return decodeURIComponent(base);
+  } catch {
+    return base; // 잘못된 인코딩은 원문 그대로 비교
+  }
 }
 
 /** rule.image(경로 또는 파일명) → media_files의 storagePath (kind='images' 우선, 베이스네임 매칭) */
-function imageStoragePath(image: string, mediaFiles: unknown): string | null {
+function mediaStoragePath(name: string, mediaFiles: unknown, preferKind: string): string | null {
   if (!Array.isArray(mediaFiles)) return null;
-  const target = mediaBasename(image);
+  const target = mediaBasename(name);
   if (!target) return null;
   let fallback: string | null = null;
   for (const raw of mediaFiles as SharedMediaFile[]) {
@@ -289,16 +300,28 @@ function imageStoragePath(image: string, mediaFiles: unknown): string | null {
     if (!filename || mediaBasename(filename) !== target) continue;
     const storagePath = bundleString(raw.storagePath);
     if (!storagePath) continue;
-    if (raw.kind === "images") return storagePath;
+    if (raw.kind === preferKind) return storagePath;
     if (!fallback) fallback = storagePath;
   }
   return fallback;
 }
 
-/** 썸네일 서명 URL 일괄 발급에 필요한 storagePath 목록(중복 제거, 순수 함수) */
+function imageStoragePath(image: string, mediaFiles: unknown): string | null {
+  return mediaStoragePath(image, mediaFiles, "images");
+}
+
+function videoStoragePath(video: string, mediaFiles: unknown): string | null {
+  return mediaStoragePath(video, mediaFiles, "videos");
+}
+
+/** 서명 URL 일괄 발급에 필요한 storagePath 목록 — 이미지 썸네일 + 영상 원본 (중복 제거, 순수 함수) */
 export function teamCodeThumbPaths(bundle: unknown, mediaFiles: unknown): string[] {
   const paths = new Set<string>();
   for (const rule of eligibleBundleRules(bundle)) {
+    if (rule.video) {
+      const videoPath = videoStoragePath(rule.video, mediaFiles);
+      if (videoPath) paths.add(videoPath);
+    }
     if (!rule.image) continue;
     const path = imageStoragePath(rule.image, mediaFiles);
     if (path) paths.add(path);
@@ -330,12 +353,14 @@ export function sharedBundleToSignatureCards(
           ? "audio"
           : "image";
     const storagePath = rule.image ? imageStoragePath(rule.image, mediaFiles) : null;
+    const videoPath = rule.video ? videoStoragePath(rule.video, mediaFiles) : null;
     return {
       id: `tc-${rule.key}`,
       title: rule.title,
       amount: rule.amount,
       mediaType,
       thumbUrl: storagePath ? (signedUrlByPath[storagePath] ?? null) : null,
+      mediaUrl: videoPath ? (signedUrlByPath[videoPath] ?? null) : null,
       pinned: false
     };
   });

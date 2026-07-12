@@ -216,11 +216,11 @@
       { id: "tc-02", title: "짝짝짝 박수", amount: 2000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-03", title: "박수 갈채 GIF", amount: 3000, mediaType: "gif", thumbUrl: "/assets/product-signatures.png", pinned: false },
       { id: "tc-04", title: "야유 부저", amount: 3000, mediaType: "audio", thumbUrl: null, pinned: false },
-      { id: "tc-05", title: "풀콤보 리액션", amount: 5000, mediaType: "video", thumbUrl: "/assets/gyeideuk-hero.png", pinned: true },
+      { id: "tc-05", title: "풀콤보 리액션", amount: 5000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-operation-demo.mp4", pinned: true },
       { id: "tc-06", title: "노래 한 곡 신청", amount: 5000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-07", title: "환호성 폭발", amount: 7000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-08", title: "벽지 5분 교체", amount: 10000, mediaType: "image", thumbUrl: "/assets/gyeideuk-product-visual.png", pinned: true },
-      { id: "tc-09", title: "하이라이트 리플레이", amount: 15000, mediaType: "video", thumbUrl: null, pinned: false },
+      { id: "tc-09", title: "하이라이트 리플레이", amount: 15000, mediaType: "video", thumbUrl: null, mediaUrl: "/assets/videos/gyeideuk-ranking-board-preview.mp4", pinned: false },
       { id: "tc-10", title: "등장 브금 교체 (10분)", amount: 15000, mediaType: "audio", thumbUrl: null, pinned: false },
       { id: "tc-11", title: "놀람 리액션 모음집 연속 재생", amount: 20000, mediaType: "video", thumbUrl: null, pinned: false },
       { id: "tc-12", title: "시그니처 댄스 타임", amount: 25000, mediaType: "video", thumbUrl: "/assets/product-media.png", pinned: false },
@@ -440,17 +440,21 @@
     els.sigGrid.innerHTML = visible
       .map(function (sig) {
         var thumbUrl = safeUrl(sig.thumbUrl);
+        var mediaUrl = sig.mediaType === "video" ? safeUrl(sig.mediaUrl) : null;
         // 팀코드 메뉴는 영상·사운드 룰의 thumb_url이 null인 경우가 많다 —
-        // 미디어 종류 아이콘 + 캡션의 폴백 타일로 렌더링(모르는 타입은 image 취급).
+        // 영상은 서명 URL이 있으면 실제 영상 미리보기(뷰포트 게이팅 재생),
+        // 그 외에는 미디어 종류 아이콘 + 캡션의 폴백 타일(모르는 타입은 image 취급).
         var mediaType = TYPE_ICON[sig.mediaType] ? sig.mediaType : "image";
-        var thumb = thumbUrl
+        var thumb = mediaUrl
+          ? '<video class="sig-thumb-video" muted loop playsinline preload="none" data-media-src="' + esc(mediaUrl) + '"></video>'
+          : thumbUrl
           ? '<img src="' + esc(thumbUrl) + '" alt="" loading="lazy" />'
           : '<span class="sig-thumb-fallback">' +
             '<span class="sig-fallback-icon" aria-hidden="true">' + TYPE_ICON[mediaType] + "</span>" +
             '<span class="sig-fallback-label">' + TYPE_FALLBACK_LABEL[mediaType] + "</span>" +
             "</span>";
-        // 타입 배지는 실제 썸네일 위에서만 — 폴백 타일은 캡션이 이미 종류를 말해 준다.
-        var typeBadge = thumbUrl && TYPE_LABEL[sig.mediaType]
+        // 타입 배지는 실제 미디어(썸네일·영상) 위에서만 — 폴백 타일은 캡션이 종류를 말해 준다.
+        var typeBadge = (thumbUrl || mediaUrl) && TYPE_LABEL[sig.mediaType]
           ? '<span class="sig-type">' + TYPE_LABEL[sig.mediaType] + "</span>"
           : "";
         return (
@@ -477,6 +481,44 @@
     } else {
       hide(els.sigMore);
     }
+
+    observeSigVideos();
+  }
+
+  // 영상 타일은 화면에 보일 때만 로드·재생 — Supabase 전송량 보호(보이는 6~8개만
+  // 로드, 벗어나면 pause). IntersectionObserver 미지원 환경은 처음 4개만 로드.
+  var sigVideoObserver = null;
+  function observeSigVideos() {
+    var videos = els.sigGrid.querySelectorAll("video[data-media-src]");
+    if (!videos.length) {
+      if (sigVideoObserver) sigVideoObserver.disconnect();
+      return;
+    }
+    if (typeof IntersectionObserver === "undefined") {
+      for (var i = 0; i < videos.length && i < 4; i++) {
+        videos[i].src = videos[i].dataset.mediaSrc;
+      }
+      return;
+    }
+    if (sigVideoObserver) sigVideoObserver.disconnect();
+    sigVideoObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var video = entry.target;
+          if (entry.isIntersecting) {
+            if (!video.src) video.src = video.dataset.mediaSrc;
+            var played = video.play();
+            if (played && played.catch) played.catch(function () {});
+          } else if (video.src) {
+            video.pause();
+          }
+        });
+      },
+      { rootMargin: "120px 0px" }
+    );
+    Array.prototype.forEach.call(videos, function (video) {
+      sigVideoObserver.observe(video);
+    });
   }
 
   function selectSignature(sigId, amount) {
