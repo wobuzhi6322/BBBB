@@ -1050,6 +1050,30 @@
   flex-wrap: wrap;
 }
 
+/* 웹 채널 등록 카드 (관리자 대행 스트리머 페이지) */
+.web-page-card .web-page-lookup-form {
+  margin-bottom: 18px;
+}
+
+.web-page-card .web-page-lookup-form .search-row {
+  grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.web-page-card .feedback-msg[aria-live] {
+  margin-top: 12px;
+}
+
+.web-page-card input[readonly] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background-color: rgba(23, 38, 92, 0.08);
+}
+
+.web-page-card select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .full-span {
   grid-column: 1 / -1;
 }

@@ -314,6 +314,46 @@
                 </div>
               </article>
             </section>
+
+            <section class="admin-card web-page-card">
+              <div class="card-heading">
+                <div>
+                  <h3>웹 채널 등록</h3>
+                  <p>라이선스 계정을 후원 페이지(웹 채널)로 대신 등록하고 팀코드(공유 코드)를 연결합니다.</p>
+                </div>
+              </div>
+              <form id="web-page-lookup-form" class="admin-search-form web-page-lookup-form">
+                <label for="web-page-email">회원 이메일</label>
+                <div class="search-row">
+                  <input id="web-page-email" type="email" placeholder="user@example.com" autocomplete="off" required />
+                  <button id="web-page-lookup-btn" class="button primary" type="submit">조회</button>
+                </div>
+                <div id="web-page-lookup-result" class="feedback-msg" style="display: none;" aria-live="polite"></div>
+              </form>
+              <form id="web-page-form" class="admin-form-grid">
+                <label>핸들
+                  <input id="web-page-handle" type="text" placeholder="소문자·숫자·하이픈 3~20자" autocomplete="off" />
+                </label>
+                <label>닉네임
+                  <input id="web-page-nickname" type="text" maxlength="20" placeholder="비우면 이메일 앞부분" autocomplete="off" />
+                </label>
+                <label>팀코드 (공유 코드)
+                  <input id="web-page-team-code" type="text" placeholder="예: TEAM-CODE-01" autocomplete="off" />
+                </label>
+                <label class="checkbox-line">
+                  <input id="web-page-directory-optin" type="checkbox" checked />
+                  채널 목록에 공개
+                </label>
+                <label>페이지 상태
+                  <select id="web-page-status" disabled>
+                    <option value="active">공개 (active)</option>
+                    <option value="hidden">숨김 (hidden)</option>
+                  </select>
+                </label>
+                <div id="web-page-feedback" class="feedback-msg full-span" style="display: none;" aria-live="polite"></div>
+                <button id="web-page-submit-btn" class="button primary full-width full-span" type="submit" disabled>웹 채널 등록</button>
+              </form>
+            </section>
           </section>
 
           <section id="codes-tab" class="tab-panel">

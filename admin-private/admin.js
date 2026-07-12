@@ -19,7 +19,8 @@
     selectedFolderEmail: "",
     folderLoadRequestId: 0,
     folderProfiles: [],
-    selectedFolderUserIds: new Set()
+    selectedFolderUserIds: new Set(),
+    webPageLookup: null
   };
 
   // DOM Elements Selector Cache
@@ -111,6 +112,20 @@
     adminDeviceClearAll: document.getElementById("admin-device-clear-all"),
     adminDeviceMessage: document.getElementById("admin-device-message"),
     adminDeviceResult: document.getElementById("admin-device-result"),
+
+    // Web Channel Registration Card
+    webPageLookupForm: document.getElementById("web-page-lookup-form"),
+    webPageEmail: document.getElementById("web-page-email"),
+    webPageLookupBtn: document.getElementById("web-page-lookup-btn"),
+    webPageLookupResult: document.getElementById("web-page-lookup-result"),
+    webPageForm: document.getElementById("web-page-form"),
+    webPageHandle: document.getElementById("web-page-handle"),
+    webPageNickname: document.getElementById("web-page-nickname"),
+    webPageTeamCode: document.getElementById("web-page-team-code"),
+    webPageDirectoryOptin: document.getElementById("web-page-directory-optin"),
+    webPageStatus: document.getElementById("web-page-status"),
+    webPageFeedback: document.getElementById("web-page-feedback"),
+    webPageSubmitBtn: document.getElementById("web-page-submit-btn"),
 
     // Code Generator Tab Elements
     codeForm: document.getElementById("create-code-form"),
@@ -489,6 +504,21 @@
         deleteAdminDevice(button.dataset.adminDeviceDelete);
       });
     }
+
+    // J. Web channel registration card (admin-driven streamer page)
+    if (els.webPageLookupForm) {
+      els.webPageLookupForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await lookupWebPageAccount();
+      });
+    }
+
+    if (els.webPageForm) {
+      els.webPageForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await submitWebPageForm();
+      });
+    }
   }
 
   // API Call Wrapper with Authorization Bearer header
@@ -842,6 +872,160 @@
         </div>
       `;
     }).join("");
+  }
+
+  // -------------------------------------------------------------------------
+  // Web Channel Registration Card (admin-driven streamer page)
+  // -------------------------------------------------------------------------
+
+  // 서버 계약과 동일 규칙 (api/_webShared handle · api/shared-profile 공유 코드)
+  const WEB_HANDLE_PATTERN = /^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$/;
+  const WEB_TEAM_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{2,63}$/;
+
+  function applyWebPageMode() {
+    const lookup = state.webPageLookup;
+    clearFeedback(els.webPageFeedback);
+
+    if (!lookup || !lookup.found) {
+      if (els.webPageSubmitBtn) {
+        els.webPageSubmitBtn.disabled = true;
+        els.webPageSubmitBtn.textContent = "웹 채널 등록";
+      }
+      if (els.webPageHandle) els.webPageHandle.readOnly = false;
+      if (els.webPageStatus) {
+        els.webPageStatus.disabled = true;
+        els.webPageStatus.value = "active";
+      }
+      if (lookup && !lookup.found) {
+        showFeedback(els.webPageLookupResult, "해당 이메일의 가입 계정이 없습니다. 사용자가 먼저 회원가입해야 합니다.", "error");
+      }
+      return;
+    }
+
+    if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = false;
+
+    if (lookup.hasPage && lookup.page) {
+      // 수정 모드: handle이 대상 식별자 — 기존 값 프리필, 핸들은 잠금
+      showFeedback(els.webPageLookupResult, `기존 웹 채널 @${lookup.page.handle} — 팀코드·공개 여부·상태를 수정합니다.`, "info");
+      if (els.webPageHandle) {
+        els.webPageHandle.value = lookup.page.handle;
+        els.webPageHandle.readOnly = true;
+      }
+      if (els.webPageNickname) els.webPageNickname.value = "";
+      if (els.webPageTeamCode) els.webPageTeamCode.value = lookup.page.team_code || "";
+      if (els.webPageDirectoryOptin) els.webPageDirectoryOptin.checked = lookup.page.directory_optin !== false;
+      if (els.webPageStatus) {
+        els.webPageStatus.disabled = false;
+        els.webPageStatus.value = lookup.page.status === "hidden" ? "hidden" : "active";
+      }
+      if (els.webPageSubmitBtn) els.webPageSubmitBtn.textContent = "웹 채널 수정";
+      return;
+    }
+
+    // 신규 등록 모드
+    showFeedback(els.webPageLookupResult, "계정을 확인했습니다. 새 웹 채널을 등록합니다.", "success");
+    if (els.webPageHandle) els.webPageHandle.readOnly = false;
+    if (els.webPageDirectoryOptin) els.webPageDirectoryOptin.checked = true;
+    if (els.webPageStatus) {
+      els.webPageStatus.disabled = true;
+      els.webPageStatus.value = "active";
+    }
+    if (els.webPageSubmitBtn) els.webPageSubmitBtn.textContent = "웹 채널 등록";
+  }
+
+  async function lookupWebPageAccount() {
+    const email = els.webPageEmail ? els.webPageEmail.value.trim().toLowerCase() : "";
+    clearFeedback(els.webPageFeedback);
+    if (!email) {
+      showFeedback(els.webPageLookupResult, "회원 이메일을 입력해 주세요.", "error");
+      return;
+    }
+
+    if (els.webPageLookupBtn) els.webPageLookupBtn.disabled = true;
+    showFeedback(els.webPageLookupResult, "계정을 조회하는 중입니다...", "info");
+
+    try {
+      const result = await callApi(`/api/admin-web-page?email=${encodeURIComponent(email)}`);
+      if (!result.ok || !result.data) {
+        throw new Error(result.error || "계정 조회에 실패했습니다.");
+      }
+      state.webPageLookup = { email, ...result.data };
+      applyWebPageMode();
+    } catch (err) {
+      state.webPageLookup = null;
+      applyWebPageMode();
+      showFeedback(els.webPageLookupResult, err.message, "error");
+    } finally {
+      if (els.webPageLookupBtn) els.webPageLookupBtn.disabled = false;
+    }
+  }
+
+  async function submitWebPageForm() {
+    const lookup = state.webPageLookup;
+    clearFeedback(els.webPageFeedback);
+
+    if (!lookup || !lookup.found) {
+      showFeedback(els.webPageFeedback, "먼저 회원 이메일을 조회해 주세요.", "error");
+      return;
+    }
+
+    const handle = els.webPageHandle ? els.webPageHandle.value.trim().toLowerCase() : "";
+    if (!WEB_HANDLE_PATTERN.test(handle)) {
+      showFeedback(els.webPageFeedback, "핸들은 소문자 영문·숫자·하이픈 3~20자입니다. 하이픈은 처음과 끝에 올 수 없어요.", "error");
+      return;
+    }
+
+    const teamCode = els.webPageTeamCode ? els.webPageTeamCode.value.trim().toUpperCase() : "";
+    if (teamCode && !WEB_TEAM_CODE_PATTERN.test(teamCode)) {
+      showFeedback(els.webPageFeedback, "공유 코드는 영문 대문자, 숫자, 하이픈 3~64자로 입력하세요.", "error");
+      return;
+    }
+    if (els.webPageTeamCode) els.webPageTeamCode.value = teamCode;
+
+    const directoryOptin = els.webPageDirectoryOptin ? els.webPageDirectoryOptin.checked : true;
+    const isUpdate = lookup.hasPage === true;
+
+    let payload;
+    if (isUpdate) {
+      payload = {
+        handle,
+        team_code: teamCode || null,
+        directory_optin: directoryOptin,
+        status: els.webPageStatus && els.webPageStatus.value === "hidden" ? "hidden" : "active"
+      };
+    } else {
+      payload = {
+        email: lookup.email,
+        handle,
+        directory_optin: directoryOptin
+      };
+      const nickname = els.webPageNickname ? els.webPageNickname.value.trim() : "";
+      if (nickname) payload.nickname = nickname;
+      if (teamCode) payload.team_code = teamCode;
+    }
+
+    if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = true;
+    showFeedback(els.webPageFeedback, isUpdate ? "웹 채널을 수정하는 중입니다..." : "웹 채널을 등록하는 중입니다...", "info");
+
+    try {
+      const result = await callApi("/api/admin-web-page", isUpdate ? "PATCH" : "POST", payload);
+      if (!result.ok || !result.data?.page) {
+        throw new Error(result.error || "요청 처리에 실패했습니다.");
+      }
+      const page = result.data.page;
+      const teamCodeLabel = page.team_code ? ` · 팀코드 ${page.team_code}` : "";
+      // 최신 페이지 상태로 카드 모드를 갱신한 뒤 결과 메시지를 표시 (갱신이 feedback을 지우므로 순서 유지)
+      await lookupWebPageAccount();
+      showFeedback(
+        els.webPageFeedback,
+        `${isUpdate ? "수정 완료" : "등록 완료"}: @${page.handle}${teamCodeLabel} · ${page.status === "hidden" ? "숨김" : "공개"}`,
+        "success"
+      );
+    } catch (err) {
+      showFeedback(els.webPageFeedback, err.message, "error");
+    } finally {
+      if (els.webPageSubmitBtn) els.webPageSubmitBtn.disabled = false;
+    }
   }
 
   // Submit handler: Create (POST) or Edit (PATCH) license
