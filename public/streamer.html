@@ -27,6 +27,11 @@
     <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="/assets/site.js?v=20260706-design-d1"></script>
+    <style>
+      /* 웹 후원 페이지 진입 노트 (streamer 전용) */
+      .hero-web-note { margin-top: 14px; font-size: 14px; color: var(--muted); word-break: keep-all; }
+      .hero-web-note a { color: var(--blue); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; padding: 10px 2px; display: inline-block; }
+    </style>
   </head>
   <body>
     <header class="site-header">
@@ -40,6 +45,7 @@
         <a href="#screens">작동 화면</a>
         <a href="#pricing">요금</a>
         <a href="#download">다운로드</a>
+        <a href="/signup?role=streamer">후원 페이지</a>
         <a id="nav-account" href="/login.html">계정</a>
       </nav>
       <div class="header-actions">
@@ -72,6 +78,11 @@
               <a class="button primary" href="#download">무료로 시작하기</a>
               <a class="button secondary" href="#screens">방송 화면 보기</a>
             </div>
+            <p class="hero-web-note">
+              시청자가 계좌이체로 후원 메시지를 보내는 <strong>웹 후원 페이지</strong>도 열 수 있어요.
+              <a href="/signup?role=streamer">후원 페이지 만들기</a> ·
+              <a href="/studio">스튜디오 열기</a>
+            </p>
           </div>
           <div class="hero-stage">
             <figure class="hero-screen" aria-hidden="true">
