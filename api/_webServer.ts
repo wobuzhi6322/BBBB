@@ -368,6 +368,20 @@ export function sendServerError(res: ServerResponse, error: unknown): void {
 }
 
 export async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  // Vercel 런타임(특히 vercel dev)은 JSON 바디를 미리 소비해 req.body 로 제공한다 —
+  // req.body 우선, 없으면 스트림 폴백(단위 테스트의 합성 스트림 경로 유지).
+  const pre = (req as IncomingMessage & { body?: unknown }).body;
+  if (pre !== undefined) {
+    if (typeof pre === "string") {
+      try {
+        const parsed = JSON.parse(pre) as unknown;
+        return (parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}) as Record<string, unknown>;
+      } catch {
+        return {} as Record<string, unknown>;
+      }
+    }
+    return (pre && typeof pre === "object" && !Array.isArray(pre) ? pre : {}) as Record<string, unknown>;
+  }
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));

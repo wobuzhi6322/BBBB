@@ -265,6 +265,19 @@ function headerValue(value: string | string[] | undefined): string | undefined {
 }
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
+  // vercel dev는 바디를 req.body로만 제공 — 우선 사용 후 스트림 폴백
+  const pre = (req as IncomingMessage & { body?: unknown }).body;
+  if (pre !== undefined) {
+    if (typeof pre === "string") {
+      try {
+        const parsed = JSON.parse(pre) as unknown;
+        return (parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}) as Record<string, unknown>;
+      } catch {
+        return {} as Record<string, unknown>;
+      }
+    }
+    return (pre && typeof pre === "object" && !Array.isArray(pre) ? pre : {}) as Record<string, unknown>;
+  }
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
