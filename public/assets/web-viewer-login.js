@@ -231,6 +231,13 @@
       var target = GW.safeNext("/me");
 
       say("로그인되었습니다. 이동 중입니다…");
+      try {
+        // 마지막 로그인 역할 마커(site.js와 같은 키) — /login 재방문 시 site.js가
+        // 시청자 세션을 /profile.html 대신 /me로 보내는 근거.
+        window.localStorage.setItem("gw-last-login-role", "viewer");
+      } catch (err) {
+        /* 저장 실패(프라이빗 모드 등)는 무시 — 랜딩 자체는 그대로 진행 */
+      }
       await persistSession(session);
       window.location.href = target;
     } catch (err) {

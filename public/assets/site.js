@@ -454,6 +454,27 @@ function isLoginPage() {
   return window.location.pathname.endsWith("/login.html") || window.location.pathname.endsWith("/login");
 }
 
+// 마지막 로그인 역할 마커 — 스트리머 로그인(site.js)과 시청자 로그인
+// (web-viewer-login.js, 같은 키)이 각자 성공 시점에 기록한다. /login 재방문 시
+// 복원된 세션을 역할에 맞는 페이지로 보내는 용도로만 읽는다.
+const LAST_LOGIN_ROLE_KEY = "gw-last-login-role";
+
+function readLastLoginRole() {
+  try {
+    return window.localStorage.getItem(LAST_LOGIN_ROLE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveLastLoginRole(role) {
+  try {
+    window.localStorage.setItem(LAST_LOGIN_ROLE_KEY, role);
+  } catch {
+    // 프라이빗 모드 등 저장 실패 시 마커 없이 기존 흐름 유지
+  }
+}
+
 function setupAuth() {
   setupAuthFormEvents();
   if (!state.config?.supabase?.enabled || !window.supabase?.createClient) {
@@ -768,6 +789,7 @@ async function signIn() {
   }
   setText(els.authMessage, "로그인되었습니다.");
   if (data.session) {
+    saveLastLoginRole("streamer");
     state.session = data.session;
     state.authReady = true;
     renderSession();
@@ -808,6 +830,7 @@ async function signUp() {
     return;
   }
   if (data.session) {
+    saveLastLoginRole("streamer");
     state.session = data.session;
     state.authReady = true;
     renderSession();
@@ -906,6 +929,13 @@ function renderSession() {
     return;
   }
   if (isLoginPage()) {
+    // 시청자로 마지막 로그인한 세션은 /me로 — 역할 무관 /profile.html 강제 이동이
+    // 시청자를 스트리머 계정 페이지로 던지던 버그의 수정. 스트리머 로그인은
+    // signIn/signUp이 마커를 "streamer"로 갱신하므로 기존 흐름 그대로다.
+    if (readLastLoginRole() === "viewer") {
+      window.location.href = "/me";
+      return;
+    }
     navigateToProfile();
     return;
   }
