@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="계이득 이용 가이드 — 계좌이체로 3초 만에 방송에 후원 메시지를 보내는 방법, 입금자명 규칙, 자주 묻는 질문을 정리했어요."
+      content="계이득 이용 가이드 — 시청자 후원 4단계와 입금자명 규칙, 스트리머 후원 페이지 만들기·프로그램 연동까지 한 번에 정리한 사용법."
     />
     <title>이용 가이드 - 계이득</title>
     <link rel="icon" type="image/png" href="/assets/gyeideuk-logo.png" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="이용 가이드 - 계이득" />
     <meta
       property="og:description"
-      content="계좌이체로 3초 만에 방송에 후원 메시지. 후원하는 법 4단계와 입금자명 규칙, 자주 묻는 질문."
+      content="계좌이체로 3초 만에 방송에 후원 메시지. 시청자 후원 4단계·입금자명 규칙과 스트리머 페이지·프로그램 연동 사용법."
     />
     <meta property="og:url" content="https://www.gaeideuk.com/guide" />
     <meta property="og:image" content="https://www.gaeideuk.com/assets/gyeideuk-logo.png" />
@@ -24,7 +24,7 @@
     <meta name="twitter:title" content="이용 가이드 - 계이득" />
     <meta
       name="twitter:description"
-      content="계좌이체로 3초 만에 방송에 후원 메시지. 후원하는 법 4단계와 입금자명 규칙, 자주 묻는 질문."
+      content="계좌이체로 3초 만에 방송에 후원 메시지. 시청자 후원 4단계·입금자명 규칙과 스트리머 페이지·프로그램 연동 사용법."
     />
     <meta name="twitter:image" content="https://www.gaeideuk.com/assets/gyeideuk-logo.png" />
 
@@ -86,12 +86,18 @@
       <section class="gd-hero">
         <p class="eyebrow">처음이신가요?</p>
         <h1>이용 가이드</h1>
-        <p class="gd-lead">계좌이체 한 번이면 3초 만에 방송 화면에 후원 메시지가 나타나요. 가입 없이, 앱 설치 없이 바로 시작할 수 있어요.</p>
+        <p class="gd-lead">계좌이체 한 번이면 3초 만에 방송 화면에 후원 메시지가 나타나요. 시청자 후원부터 스트리머 후원 페이지 만들기까지, 순서대로 정리했어요.</p>
+
+        <nav class="gd-toc" aria-label="이 페이지 목차">
+          <a href="#viewer">시청자 사용법</a>
+          <a href="#streamer-guide">스트리머 사용법</a>
+          <a href="#faq">자주 묻는 질문</a>
+        </nav>
       </section>
 
-      <section class="gd-how" id="how" aria-labelledby="how-title">
+      <section class="gd-how" id="viewer" aria-labelledby="how-title">
         <div class="gd-section-head">
-          <p class="eyebrow">시청자: 후원하는 법</p>
+          <p class="eyebrow">시청자 사용법</p>
           <h2 id="how-title">딱 4단계면 끝나요</h2>
           <p>채널을 열고, 메시지를 쓰고, 안내대로 이체하면 방송에 팡! 순서대로 따라와 보세요.</p>
         </div>
@@ -109,13 +115,13 @@
           </li>
           <li class="gd-step">
             <span class="gd-step-no" aria-hidden="true">3</span>
-            <h3>안내된 입금자명 그대로 계좌이체</h3>
-            <p>작성 완료 화면에 나오는 계좌번호로, <strong>안내된 입금자명을 한 글자도 바꾸지 말고</strong> 이체해요.</p>
+            <h3>안내된 입금자명으로 이체</h3>
+            <p>작성 완료 화면의 계좌번호로, <strong>안내된 입금자명 코드를 한 글자도 바꾸지 말고</strong> 이체해요.</p>
           </li>
           <li class="gd-step">
             <span class="gd-step-no" aria-hidden="true">4</span>
             <h3>방송에 표시</h3>
-            <p>입금이 확인되면 메시지가 방송 화면에 나타나요. 완료 화면의 <strong>진행 상태 링크</strong>에서 어디까지 왔는지 확인할 수 있어요.</p>
+            <p>입금이 확인되면 메시지가 방송 화면에 나타나요. 완료 화면의 <strong>진행 상태 확인 링크</strong>를 저장하면 창을 닫아도 다시 확인할 수 있어요.</p>
           </li>
         </ol>
 
@@ -124,9 +130,33 @@
           <div class="gd-key-body">
             <strong>입금자명 코드가 매칭 열쇠예요</strong>
             <p>
-              예를 들어 <code>계이득B7</code>이라고 안내되면 — 닉네임 앞부분 + 코드 2자 조합이에요.
-              이 코드로 내 입금과 내 메시지를 연결하니, 은행 앱에서 입금자명(받는 분 통장 표시)을 <strong>반드시 안내된 그대로</strong> 입력해 주세요.
+              예를 들어 <code>계이득B7</code>이라고 안내되면 — 닉네임 앞부분 + 영숫자 2자 조합이에요.
+              은행 앱에서 <strong>‘보내는 분 이름’</strong>(받는 분 통장에 찍힐 내 이름)을 이 코드로 바꿔서 이체하면, 내 입금과 내 메시지가 자동으로 연결돼요.
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="gd-signature" id="signature" aria-labelledby="signature-title">
+        <div class="gd-section-head">
+          <p class="eyebrow">시청자 사용법</p>
+          <h2 id="signature-title">시그니처로 더 특별하게</h2>
+          <p>스트리머가 준비한 시그니처(후원 연출)를 고르면 금액이 자동으로 채워져요.</p>
+        </div>
+
+        <div class="gd-panel">
+          <span class="gd-panel-icon" aria-hidden="true">✨</span>
+          <div class="gd-panel-body">
+            <p>시그니처를 누르면 정해진 금액이 자동으로 입력돼요. 영상 시그니처는 <strong>▶ 미리보기</strong>로 어떤 연출인지 확인한 뒤 <strong>[이 시그니처로 후원하기]</strong>를 누르면 끝이에요.</p>
+            <div class="gd-flow">
+              <span class="chip">시그니처 선택</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="chip">금액 자동 입력</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="chip">▶ 미리보기</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="chip">후원하기</span>
+            </div>
           </div>
         </div>
       </section>
@@ -134,15 +164,36 @@
       <section class="gd-tips" id="tips" aria-labelledby="tips-title">
         <div class="gd-section-head">
           <p class="eyebrow">알아두면 좋아요</p>
-          <h2 id="tips-title">작은 규칙 네 가지</h2>
+          <h2 id="tips-title">작은 규칙 여섯 가지</h2>
         </div>
 
         <div class="gd-tip-grid">
           <article class="gd-tip">
+            <span class="gd-tip-icon" aria-hidden="true">✍️</span>
+            <div>
+              <h3>메시지는 200자까지</h3>
+              <p>방송 화면에서 잘 읽히도록 후원 메시지는 200자 이내로 쓸 수 있어요.</p>
+            </div>
+          </article>
+          <article class="gd-tip">
+            <span class="gd-tip-icon" aria-hidden="true">🙋</span>
+            <div>
+              <h3>닉네임은 20자까지</h3>
+              <p>방송에 표시될 닉네임은 최대 20자까지 자유롭게 정할 수 있어요.</p>
+            </div>
+          </article>
+          <article class="gd-tip">
+            <span class="gd-tip-icon" aria-hidden="true">💰</span>
+            <div>
+              <h3>최소 1,000원부터</h3>
+              <p>후원은 1,000원부터 보낼 수 있어요. 채널마다 최소 금액이 다를 수 있어요(스트리머가 설정).</p>
+            </div>
+          </article>
+          <article class="gd-tip">
             <span class="gd-tip-icon" aria-hidden="true">⏰</span>
             <div>
               <h3>24시간 안에 입금해 주세요</h3>
-              <p>메시지 작성 후 24시간이 지나면 예약이 만료돼요. 만료 후에 입금하면 메시지 없이 일반 후원으로만 재생됩니다.</p>
+              <p>메시지 작성 후 24시간이 지나면 예약이 만료돼요. 만료 후 입금은 메시지 없이 일반 후원으로만 재생됩니다.</p>
             </div>
           </article>
           <article class="gd-tip">
@@ -153,20 +204,64 @@
             </div>
           </article>
           <article class="gd-tip">
-            <span class="gd-tip-icon" aria-hidden="true">✍️</span>
-            <div>
-              <h3>메시지는 120자까지</h3>
-              <p>방송 화면에서 잘 읽히도록 후원 메시지는 120자 이내로 작성할 수 있어요.</p>
-            </div>
-          </article>
-          <article class="gd-tip">
             <span class="gd-tip-icon" aria-hidden="true">🔗</span>
             <div>
               <h3>상태 링크를 저장해 두세요</h3>
-              <p>작성 완료 화면의 진행 상태 링크를 저장해 두면 입금 확인·방송 표시까지 언제든 다시 확인할 수 있어요.</p>
+              <p>완료 화면의 진행 상태 확인 링크를 저장하면 창을 닫아도 입금 확인·방송 표시까지 다시 확인할 수 있어요.</p>
             </div>
           </article>
         </div>
+      </section>
+
+      <section class="gd-channels" id="channels" aria-labelledby="channels-title">
+        <div class="gd-section-head">
+          <p class="eyebrow">채널 찾기</p>
+          <h2 id="channels-title">채널·엔터로 찾아보기</h2>
+          <p>주소를 몰라도 채널 탐색에서 직접 찾을 수 있어요.</p>
+        </div>
+
+        <div class="gd-panel">
+          <span class="gd-panel-icon" aria-hidden="true">🔎</span>
+          <div class="gd-panel-body">
+            <p><a href="/channels">채널 탐색</a>에서 채널명이나 핸들로 검색해 후원 페이지로 바로 들어갈 수 있어요. <strong>엔터(소속) 필터 칩</strong>과 채널에 붙은 <strong>엔터 뱃지</strong>로 같은 소속의 채널을 모아 볼 수도 있어요.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="gd-streamer-guide" id="streamer-guide" aria-labelledby="streamer-guide-title">
+        <div class="gd-section-head">
+          <p class="eyebrow">스트리머 사용법</p>
+          <h2 id="streamer-guide-title">내 후원 페이지, 네 단계면 열려요</h2>
+          <p>로그인부터 방송 연동까지 순서대로 따라오면 몇 분이면 끝나요. 계좌이체로 후원금이 내 계좌에 바로 들어가 수수료는 0%예요.</p>
+        </div>
+
+        <ol class="gd-steps gd-steps--duo">
+          <li class="gd-step">
+            <span class="gd-step-no" aria-hidden="true">1</span>
+            <h3>후원 페이지 만들기</h3>
+            <p><a href="/login#streamer">스트리머 탭으로 로그인</a>(또는 스트리머로 가입)한 뒤 핸들을 정하면 내 후원 페이지 주소 <strong>/@핸들</strong>이 생겨요. 핸들은 <strong>30일에 한 번만</strong> 바꿀 수 있으니 신중히 정해 주세요. 이후 모든 설정은 스튜디오에서 관리해요.</p>
+          </li>
+          <li class="gd-step">
+            <span class="gd-step-no" aria-hidden="true">2</span>
+            <h3>계이득 프로그램과 연동하기</h3>
+            <p>스튜디오 <strong>‘프로그램 연동’</strong> 탭에서 연결 코드를 발급받아, 계이득 프로그램 관리자의 <strong>‘웹 후원 릴레이’</strong> 카드에서 <strong>릴레이 서버 주소</strong>에 <strong>https://www.gaeideuk.com</strong>, <strong>연결 코드</strong>에 발급받은 코드를 입력하면 <strong>‘연결됨’</strong>으로 바뀌어요. 연동되면 은행 입금이 자동으로 웹 메시지와 매칭돼 방송 오버레이에 표시돼요. 매칭되지 않은 입금은 평소처럼 재생돼 기존 후원 흐름은 그대로예요.</p>
+          </li>
+          <li class="gd-step">
+            <span class="gd-step-no" aria-hidden="true">3</span>
+            <h3>시그니처 메뉴 채우기</h3>
+            <p>스튜디오 설정에 <strong>팀코드(프로그램 공유 코드)</strong>를 입력하면 프로그램의 모든 시그니처가 웹 후원 메뉴에 자동으로 표시돼요. 비워 두면 릴레이로 동기화된 시그니처만 노출돼요.</p>
+          </li>
+          <li class="gd-step">
+            <span class="gd-step-no" aria-hidden="true">4</span>
+            <h3>계좌·공개 설정</h3>
+            <p>은행·계좌번호·예금주를 등록하고 노출 방식(<strong>계좌번호 직접 노출 / 송금 링크만 보여주기</strong>)을 골라요. <strong>‘채널 탐색에 노출’</strong>을 켜면 <a href="/channels">채널 탐색</a> 목록에 등재돼 새로운 시청자가 찾아올 수 있어요(공개 시그니처가 1개 이상이거나 팀코드가 연동돼 있어야 목록에 떠요).</p>
+          </li>
+        </ol>
+
+        <p class="gd-note">
+          <span aria-hidden="true">📎</span>
+          스튜디오에서 페이지 주소 복사·QR 코드로 방송 설명란이나 오프라인 홍보에 바로 붙여 넣을 수 있어요.
+        </p>
       </section>
 
       <section class="gd-faq" id="faq" aria-labelledby="faq-title">
@@ -182,10 +277,10 @@
               <p>대부분 아래 셋 중 하나예요. 순서대로 확인해 보세요.</p>
               <ul>
                 <li><strong>시간창</strong> — 메시지 작성 후 24시간 안에 입금했는지 확인해 주세요. 만료 후 입금은 일반 후원으로만 재생돼요.</li>
-                <li><strong>입금자명</strong> — 안내된 입금자명과 한 글자라도 다르면 매칭되지 않아요. 이체 내역의 표시 이름을 확인해 주세요.</li>
+                <li><strong>입금자명</strong> — 안내된 입금자명 코드와 한 글자라도 다르면 매칭되지 않아요. 이체 내역의 표시 이름을 확인해 주세요.</li>
                 <li><strong>스트리머 프로그램</strong> — 스트리머가 계이득 프로그램을 켜 두어야 방송에 표시돼요. 방송 중인지, 프로그램이 실행 중인지에 따라 표시 시점이 달라질 수 있어요.</li>
               </ul>
-              <p>진행 상태 링크에서 내 후원이 어느 단계인지 바로 확인할 수 있어요.</p>
+              <p>완료 화면의 진행 상태 확인 링크에서 내 후원이 어느 단계인지 바로 볼 수 있어요.</p>
             </div>
           </details>
 
@@ -204,9 +299,43 @@
           </details>
 
           <details class="gd-faq-item">
+            <summary>최소 후원 금액을 바꿀 수 있나요?</summary>
+            <div class="gd-faq-body">
+              <p>기본 최소 금액은 1,000원이에요. 스트리머는 스튜디오 설정에서 자기 채널의 최소 후원 금액을 조정할 수 있어요.</p>
+            </div>
+          </details>
+
+          <details class="gd-faq-item">
             <summary>환불은 어떻게 하나요?</summary>
             <div class="gd-faq-body">
               <p>후원금은 계이득을 거치지 않고 스트리머 계좌로 직접 이체돼요. 그래서 환불도 해당 스트리머에게 직접 문의해 주셔야 해요.</p>
+            </div>
+          </details>
+
+          <details class="gd-faq-item">
+            <summary>핸들을 바꾸면 이전 주소는 어떻게 되나요?</summary>
+            <div class="gd-faq-body">
+              <p>핸들(내 주소 /@핸들)은 30일에 한 번 바꿀 수 있어요. 주소가 바뀌면 이전 주소로는 접속되지 않으니, 방송 설명란·SNS의 링크를 새 주소로 업데이트하고 이전 주소로 찾아온 시청자에게 새 주소를 안내해 주세요.</p>
+            </div>
+          </details>
+
+          <details class="gd-faq-item">
+            <summary>엔터(소속)는 어떻게 붙나요?</summary>
+            <div class="gd-faq-body">
+              <p>엔터(소속)는 운영 관리자가 배정해요. 소속이 생기면 채널에 엔터 뱃지가 붙고, 시청자는 채널 탐색의 엔터 필터로 같은 소속 채널을 모아 볼 수 있어요.</p>
+            </div>
+          </details>
+
+          <details class="gd-faq-item">
+            <summary>연동했는데 매칭이 안 돼요</summary>
+            <div class="gd-faq-body">
+              <p>아래 네 가지를 확인해 주세요.</p>
+              <ul>
+                <li><strong>금액</strong> — 입금 금액이 후원 금액과 정확히 일치해야 해요.</li>
+                <li><strong>입금자명</strong> — ‘보내는 분 이름’이 안내된 입금자명 코드와 같아야 해요.</li>
+                <li><strong>시간창</strong> — 메시지 작성 후 24시간 안에 입금해야 해요.</li>
+                <li><strong>프로그램 실행</strong> — 계이득 프로그램이 실행 중이어야 릴레이가 입금을 감지해 방송에 표시해요.</li>
+              </ul>
             </div>
           </details>
 
@@ -226,12 +355,12 @@
             <p class="eyebrow">스트리머라면</p>
             <h2 id="streamer-title">내 후원 페이지를 만들어 보세요</h2>
             <p>
-              <a href="/login#streamer">스트리머 로그인</a> 후 스튜디오에서 몇 분 만에 내 채널 페이지를 만들 수 있어요.
-              방송 표시는 계이득 프로그램과 페어링 한 번이면 끝이에요.
+              위 <a href="#streamer-guide">스트리머 사용법</a>을 그대로 따라 하면 몇 분 만에 내 채널 페이지가 완성돼요.
+              방송 표시는 계이득 프로그램과 연동 한 번이면 끝이에요.
             </p>
           </div>
           <div class="gd-streamer-actions">
-            <a class="button primary" href="/streamer">스트리머 안내 페이지</a>
+            <a class="button primary" href="/login#streamer">스트리머로 시작하기</a>
           </div>
         </div>
       </section>

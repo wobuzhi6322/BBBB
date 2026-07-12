@@ -83,6 +83,62 @@
   color: var(--ink-fix);
 }
 
+.gd-signature .eyebrow {
+  background: var(--mint);
+  color: var(--ink-fix);
+}
+
+.gd-channels .eyebrow {
+  background: var(--lav);
+  color: var(--ink-fix);
+}
+
+.gd-streamer-guide .eyebrow {
+  background: var(--yellow-soft);
+  color: var(--ink-fix);
+}
+
+/* 목차(앵커 내비) — 히어로 아래 점프 링크 칩 --------------------------- */
+
+.gd-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  min-width: 0;
+}
+
+.gd-toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 44px+ */
+  padding: 8px 18px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  word-break: keep-all;
+  box-shadow: 2px 2px 0 var(--hard-soft);
+}
+
+.gd-toc a:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--hard-soft);
+}
+
+.gd-toc a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* 앵커 점프 시 고정 헤더에 가리지 않도록 */
+.gd-main section[id] {
+  scroll-margin-top: 84px;
+}
+
 /* 후원 4단계 카드 -------------------------------------------------------- */
 
 .gd-steps {
@@ -104,6 +160,11 @@
 @media (min-width: 1000px) {
   .gd-steps {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* 스트리머 스텝은 내용이 길어 넓은 화면에서도 2단으로 캡 */
+  .gd-steps.gd-steps--duo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -203,6 +264,107 @@
   border: 2px solid var(--ink-fix);
   background: #fffdf7;
   color: var(--ink-fix);
+}
+
+/* 설명 패널(시그니처·채널 안내) ----------------------------------------- */
+
+.gd-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+  min-width: 0;
+  padding: 20px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.gd-panel-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gd-panel-body {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.gd-panel p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-panel a {
+  color: var(--blue-deep);
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+/* 흐름 칩(시그니처 A → B → C) */
+.gd-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  min-width: 0;
+}
+
+.gd-flow .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+  word-break: keep-all;
+}
+
+.gd-flow .arrow {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+/* 한 줄 안내 노트(스트리머 공유 등) ------------------------------------- */
+
+.gd-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 14px 18px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-note span {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1.4;
 }
 
 /* 알아두면 좋아요 -------------------------------------------------------- */
