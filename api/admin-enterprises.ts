@@ -43,7 +43,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  if (!["GET", "POST", "PATCH"].includes(req.method || "")) {
+  if (!["GET", "POST", "PATCH", "DELETE"].includes(req.method || "")) {
     sendJson(res, 405, { ok: false, error: "허용되지 않은 요청입니다.", code: "method-not-allowed" });
     return;
   }
@@ -60,6 +60,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const body = await readJson(req);
     if (req.method === "POST") {
       await createEnterprise(res, body, supabase);
+      return;
+    }
+    if (req.method === "DELETE") {
+      await deleteEnterprise(res, body, supabase);
       return;
     }
     await renameEnterprise(res, body, supabase);
@@ -168,6 +172,32 @@ async function renameEnterprise(res: ServerResponse, body: AdminEnterprisesBody,
       enterprise: { id: row.id, slug: row.slug, name: row.name, pageCount: counts.get(row.id) || 0 }
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// DELETE {slug} — 엔터 삭제
+// bbbb_enterprises 행만 삭제한다. bbbb_streamer_pages.enterprise_id FK가
+// on delete set null이라 소속 페이지는 보존되고 소속만 해제된다(무소속).
+// ---------------------------------------------------------------------------
+
+async function deleteEnterprise(res: ServerResponse, body: AdminEnterprisesBody, supabase: Supa): Promise<void> {
+  const slug = requireSlug(body.slug);
+
+  const found = await supabase.from(enterprisesTable).select("id,slug").ilike("slug", slug).limit(1);
+  if (found.error) {
+    throw new Error(found.error.message);
+  }
+  const row = (found.data?.[0] ?? null) as { id: string; slug: string } | null;
+  if (!row) {
+    throw new ApiError(404, "not-found", "등록되지 않은 엔터입니다.");
+  }
+
+  const del = await supabase.from(enterprisesTable).delete().eq("id", row.id);
+  if (del.error) {
+    throw new Error(del.error.message);
+  }
+
+  sendJson(res, 200, { ok: true, data: { deleted: true, slug: row.slug } });
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +318,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
@@ -296,6 +326,6 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 
 function setCors(res: ServerResponse): void {
   res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
+  res.setHeader("access-control-allow-methods", "GET,POST,PATCH,DELETE,OPTIONS");
   res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

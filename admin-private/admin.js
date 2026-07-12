@@ -557,9 +557,15 @@
 
     if (els.enterpriseTable) {
       els.enterpriseTable.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-enterprise-rename]");
-        if (!button) return;
-        beginEnterpriseRename(button.dataset.enterpriseRename);
+        const renameBtn = event.target.closest("[data-enterprise-rename]");
+        if (renameBtn) {
+          beginEnterpriseRename(renameBtn.dataset.enterpriseRename);
+          return;
+        }
+        const deleteBtn = event.target.closest("[data-enterprise-delete]");
+        if (deleteBtn) {
+          deleteEnterprise(deleteBtn.dataset.enterpriseDelete);
+        }
       });
     }
   }
@@ -1168,6 +1174,7 @@
         <td>
           <div class="enterprise-row-actions">
             <button class="button secondary" type="button" data-enterprise-rename="${escapeHtml(ent.slug)}">이름 수정</button>
+            <button class="button danger-action" type="button" data-enterprise-delete="${escapeHtml(ent.slug)}">삭제</button>
           </div>
         </td>
       </tr>
@@ -1250,6 +1257,36 @@
       showFeedback(els.enterpriseListFeedback, `엔터 이름을 수정했습니다: ${slug} → ${name}`, "success");
     } catch (err) {
       if (saveBtn) saveBtn.disabled = false;
+      showFeedback(els.enterpriseListFeedback, err.message, "error");
+    }
+  }
+
+  async function deleteEnterprise(slug) {
+    const target = (state.enterprises || []).find((ent) => ent.slug === slug);
+    if (!target) return;
+
+    const pageNote =
+      Number(target.pageCount || 0) > 0
+        ? `\n\n소속된 채널 ${Number(target.pageCount).toLocaleString()}개는 삭제되지 않고 무소속으로 바뀝니다.`
+        : "";
+    if (!window.confirm(`엔터 "${target.name}" (${slug})를 삭제할까요?${pageNote}\n\n되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    clearFeedback(els.enterpriseListFeedback);
+    const row = findEnterpriseRow(slug);
+    const deleteBtn = row ? row.querySelector("[data-enterprise-delete]") : null;
+    if (deleteBtn) deleteBtn.disabled = true;
+
+    try {
+      const result = await callApi("/api/admin-enterprises", "DELETE", { slug });
+      if (!result.ok || !result.data?.deleted) {
+        throw new Error(result.error || "엔터 삭제에 실패했습니다.");
+      }
+      await loadEnterprises();
+      showFeedback(els.enterpriseListFeedback, `엔터를 삭제했습니다: ${slug}`, "success");
+    } catch (err) {
+      if (deleteBtn) deleteBtn.disabled = false;
       showFeedback(els.enterpriseListFeedback, err.message, "error");
     }
   }

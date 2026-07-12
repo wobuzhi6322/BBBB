@@ -447,7 +447,7 @@ describe("/api/admin-enterprises", () => {
     expect(unauth.sent.status).toBe(401);
 
     const wrongMethod = fakeRes();
-    await adminEnterprisesHandler(fakeReq("DELETE", "/api/admin-enterprises", { headers: adminHeaders }), wrongMethod.res);
+    await adminEnterprisesHandler(fakeReq("PUT", "/api/admin-enterprises", { headers: adminHeaders }), wrongMethod.res);
     expect(wrongMethod.sent.status).toBe(405);
   });
 });
