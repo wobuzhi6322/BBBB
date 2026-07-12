@@ -270,12 +270,23 @@ function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
   return eligible;
 }
 
-/** rule.image(파일명) → media_files의 storagePath (kind='images' 우선) */
+/** 경로/파일명 혼재 대응 — 마지막 세그먼트만 비교 (rule.image는 '/assets/user/images/x.png' 형태 실측) */
+function mediaBasename(value: string): string {
+  const norm = value.replace(/\\/g, "/");
+  const idx = norm.lastIndexOf("/");
+  return idx === -1 ? norm : norm.slice(idx + 1);
+}
+
+/** rule.image(경로 또는 파일명) → media_files의 storagePath (kind='images' 우선, 베이스네임 매칭) */
 function imageStoragePath(image: string, mediaFiles: unknown): string | null {
   if (!Array.isArray(mediaFiles)) return null;
+  const target = mediaBasename(image);
+  if (!target) return null;
   let fallback: string | null = null;
   for (const raw of mediaFiles as SharedMediaFile[]) {
-    if (!raw || typeof raw !== "object" || raw.filename !== image) continue;
+    if (!raw || typeof raw !== "object") continue;
+    const filename = typeof raw.filename === "string" ? raw.filename : "";
+    if (!filename || mediaBasename(filename) !== target) continue;
     const storagePath = bundleString(raw.storagePath);
     if (!storagePath) continue;
     if (raw.kind === "images") return storagePath;

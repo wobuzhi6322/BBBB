@@ -107,6 +107,27 @@ describe("sharedBundleToSignatureCards", () => {
     expect(cards.find((card) => card.id === "tc-audio")?.thumbUrl).toBeNull();
   });
 
+  it("rule.image가 경로형이어도 베이스네임으로 media_files와 매칭한다 (프로그램 번들 실측 형태)", () => {
+    // 실번들: rule.image='/assets/user/images/x.png', media_files.filename='x.png'
+    const bundle = {
+      rules: [
+        { key: "path", title: "경로형", minAmount: 500, enabled: true, image: "/assets/user/images/balloon.png" },
+        { key: "winpath", title: "역슬래시", minAmount: 600, enabled: true, image: "assets\\user\\images\\party.gif" }
+      ]
+    };
+    const mediaFiles = [
+      { kind: "images", filename: "balloon.png", size: 10, updatedAt: "t", storagePath: "T/v1/images/balloon.png" },
+      { kind: "images", filename: "party.gif", size: 10, updatedAt: "t", storagePath: "T/v1/images/party.gif" }
+    ];
+    const cards = sharedBundleToSignatureCards(bundle, mediaFiles, {
+      "T/v1/images/balloon.png": "https://signed/balloon",
+      "T/v1/images/party.gif": "https://signed/party"
+    });
+    expect(cards.find((card) => card.id === "tc-path")?.thumbUrl).toBe("https://signed/balloon");
+    expect(cards.find((card) => card.id === "tc-winpath")?.thumbUrl).toBe("https://signed/party");
+    expect(cards.find((card) => card.id === "tc-winpath")?.mediaType).toBe("gif");
+  });
+
   it("카드 계약 형태 유지: id는 tc- 접두, pinned는 항상 false, 제목 폴백=key", () => {
     const bundle = { rules: [{ key: "sig1", title: "  ", minAmount: 1000, enabled: true }] };
     const [card] = sharedBundleToSignatureCards(bundle, [], {});
