@@ -4,6 +4,7 @@
 // 명세: donation-system/docs/WEB_PAGE_SPECS.md §3·§3.1, WEB_TECH_SPEC.md §2.1
 // 목 모드: ?mock=1 — 백엔드 없이 화면 검증.
 //   보조 파라미터: &offline=1(방송 준비 중) &nobanner=1(배너 없음) &many=1(13개+ 아코디언)
+//                 &noent=1(엔터 무소속 — 배지 없음)
 //                 &teamcode=1(팀코드 전체 메뉴 18개 — 영상·사운드 no-thumb 다수 포함)
 //                 &account=full(계좌 직노출) &outcome=pending|expired(모달 상태 시나리오)
 //                 &handle=xxx(핸들 지정) &d=xxx(/d/:messageId 재진입 시뮬레이션)
@@ -277,6 +278,8 @@
       minAmount: 1000,
       tickerPublic: false,
       online: !offline,
+      // 엔터 배지 검증용 — &noent=1이면 무소속(null) 경로
+      enterprise: params.get("noent") === "1" ? null : { slug: "mint-ent", name: "민트엔터" },
       signatures: mockSignatures(),
       transferLinks: [
         { type: "toss", url: "https://toss.me/demo" },
@@ -373,6 +376,11 @@
 
     var live = page.online ? '<span class="live-badge"><i aria-hidden="true"></i>LIVE</span>' : "";
 
+    // 엔터(소속 엔터테인먼트) 배지 — 이름 아래, 무소속(null·미배포 서버)이면 없음
+    var entBadge = page.enterprise && page.enterprise.name
+      ? '<div class="ch-ent-row"><span class="ch-ent-badge">' + esc(page.enterprise.name) + "</span></div>"
+      : "";
+
     var links = (page.broadcastLinks || [])
       .map(function (link) {
         var url = safeUrl(link.url);
@@ -395,6 +403,7 @@
       live +
       '<span class="ch-handle">@' + esc(page.handle) + "</span>" +
       "</div>" +
+      entBadge +
       (page.bio ? '<p class="ch-bio">' + esc(page.bio) + "</p>" : "") +
       (links ? '<div class="bcast-links">' + links + "</div>" : "") +
       "</div></div>";

@@ -234,6 +234,23 @@
   background: #fff;
 }
 
+/* 엔터(소속 엔터테인먼트) 배지 — 채널 이름 아래, 카드 칩과 동일 스타일의 소형판 */
+.ch-ent-row {
+  margin-top: 6px;
+}
+
+.ch-ent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--yellow);
+  border-radius: 999px;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 850;
+  word-break: keep-all;
+}
+
 .ch-bio {
   margin: 8px 0 0;
   color: var(--secondary);

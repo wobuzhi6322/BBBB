@@ -151,6 +151,16 @@
             </div>
           </article>
 
+          <!-- 소속 엔터 (읽기 전용) — 배정·해제는 관리자 전용, 무소속이면 통째로 숨김 -->
+          <article class="panel" id="ent-panel" hidden>
+            <div class="panel-head">
+              <h2>소속</h2>
+              <span class="panel-sub">읽기 전용</span>
+            </div>
+            <p>소속: <strong id="ent-name"></strong></p>
+            <p class="field-hint">소속 변경은 관리자에게 문의해 주세요.</p>
+          </article>
+
           <form id="page-form" class="settings-form" novalidate>
             <fieldset class="panel">
               <legend>팀코드 (프로그램 공유 코드)</legend>

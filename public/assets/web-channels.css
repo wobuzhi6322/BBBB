@@ -78,6 +78,60 @@
   outline-offset: 2px;
 }
 
+/* 엔터 필터 칩 --------------------------------------------------------- */
+/* 결과에 엔터 소속 채널이 있을 때만 JS가 표시. 360px에서 줄바꿈으로 수용 */
+
+.ch-ent-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  min-width: 0;
+}
+
+.ch-ent-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 44px+ */
+  padding: 8px 16px;
+  border: 1px solid var(--gw-border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--secondary);
+  font-size: 14px;
+  font-weight: 850;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.ch-ent-chip:hover {
+  border-color: var(--yellow);
+}
+
+.ch-ent-chip:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.ch-ent-chip.is-active {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--ink-fix); /* 옐로 위 텍스트 전용 네이비 (site.css 스티커 규약) */
+}
+
+/* 카드 엔터 배지 — D 스티커 칩(노란 테두리) */
+.ch-ent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--yellow);
+  border-radius: 999px;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 850;
+  word-break: keep-all;
+}
+
 /* 카드 그리드 ---------------------------------------------------------- */
 
 /* 모바일 퍼스트: 1열(360px 기준) → 2열(768px) → 넓은 화면 auto-fill */

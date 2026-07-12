@@ -43,7 +43,9 @@
     feedLoaded: false,
     feedTimer: null,
     codeTimer: null,
-    mmMatchId: null
+    mmMatchId: null,
+    entLoaded: false, // 공개 페이지 API 폴백을 1회만 조회
+    entCache: null
   };
 
   function $(sel) {
@@ -406,9 +408,45 @@
       });
   }
 
+  // 소속 엔터 (읽기 전용 표시) — v1 정책: 배정·해제는 관리자 전용.
+  // 1순위: /api/studio/page 페이로드의 enterprise({slug,name}|null).
+  // 필드 자체가 없으면(서버 레인 배포 전) 공개 GET /api/page/:handle의
+  // enterprise를 1회 조회해 캐시한다. 무소속(null)이면 행을 통째로 숨긴다.
+  function renderEnterpriseRow() {
+    var panel = $("#ent-panel");
+    if (!panel) return;
+    var apply = function (ent) {
+      if (ent && ent.name) {
+        $("#ent-name").textContent = ent.name;
+        panel.hidden = false;
+      } else {
+        panel.hidden = true;
+      }
+    };
+    if (S.page && S.page.enterprise !== undefined) {
+      apply(S.page.enterprise);
+      return;
+    }
+    if (S.entLoaded) {
+      apply(S.entCache);
+      return;
+    }
+    panel.hidden = true;
+    call("/api/page/" + encodeURIComponent(S.page.handle))
+      .then(function (data) {
+        S.entLoaded = true;
+        S.entCache = (data && data.enterprise) || null;
+        apply(S.entCache);
+      })
+      .catch(function () {
+        /* 소속은 보조 정보 — 조회 실패 시 표시하지 않는다 */
+      });
+  }
+
   function renderPageForm() {
     var page = S.page;
     renderShortcutCard();
+    renderEnterpriseRow();
     renderTeamCodeField(page);
     $("#ps-handle").value = page.handle;
     var blocked = handleBlockedUntil();
@@ -1023,7 +1061,8 @@
           accountInfo: null,
           transferLinks: [],
           handleChangedAt: null,
-          teamCode: null
+          teamCode: null,
+          enterprise: null
         },
         signatures: [],
         matches: [],
@@ -1047,7 +1086,8 @@
         accountInfo: null,
         transferLinks: [{ type: "toss", url: "https://toss.me/gyeideuk" }],
         handleChangedAt: null,
-        teamCode: null
+        teamCode: null,
+        enterprise: { slug: "mint-ent", name: "민트엔터" }
       },
       signatures: [
         { id: "s1", localSignatureId: "L1", title: "풍선 100개", webTitle: null, amount: 1000, mediaType: "image", thumbUrl: null, published: true, pinned: true, sort: 0, syncedAt: isoAgo(45 * 60000) },
@@ -1210,6 +1250,7 @@
       });
       return clone({
         handle: M.page.handle,
+        enterprise: M.page.enterprise || null,
         signatures: pubSigs.map(function (row) {
           return {
             id: row.id,
