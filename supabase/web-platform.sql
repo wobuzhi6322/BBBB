@@ -251,3 +251,23 @@ insert into public.bbbb_reserved_handles (handle) values
   ('site'), ('static'), ('studio'), ('support'), ('terms'), ('test'),
   ('wallet'), ('ws'), ('www')
 on conflict (handle) do nothing;
+
+-- 1.7 엔터(소속 엔터테인먼트) — VIEWER_MESSAGE_RELAY_PLAN §5 ---------------------
+-- "핸들=매칭 단위, 엔터=묶음". v1 정책: 엔터 생성·페이지 배정은 관리자 전용
+-- (사칭 방지) — 스트리머 자가 배정 없음, 무소속(enterprise_id null) 허용.
+-- RLS 활성 + 정책 없음 = service role 전용(다른 bbbb_* 테이블과 동일).
+
+create table if not exists public.bbbb_enterprises (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null check (slug ~ '^[a-z0-9][a-z0-9-]{0,29}$'),
+  name text not null check (char_length(name) between 1 and 40),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists bbbb_enterprises_slug_idx
+  on public.bbbb_enterprises (lower(slug));
+
+alter table public.bbbb_enterprises enable row level security;
+
+-- 소속 컬럼(additive) — 엔터 삭제 시 소속만 해제(set null), 페이지는 보존.
+alter table public.bbbb_streamer_pages add column if not exists enterprise_id uuid references public.bbbb_enterprises(id) on delete set null;

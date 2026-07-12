@@ -36,9 +36,37 @@ service key 값은 어디에도 붙여넣거나 출력하지 않는다 — 이 �
    - 재실행해도 안전(모든 문장이 `create ... if not exists` / `on conflict do nothing`).
    - 기존 테이블 데이터 변경 없음(신규 생성 + `ip_hash` 컬럼 추가 1건뿐).
    - `bbbb_streamer_pages.team_code` 컬럼(팀코드 → 시그니처 메뉴 소스)도 같은 idempotent 스크립트에 포함된다(`add column if not exists`, nullable, 데이터 무손실).
+   - 엔터(소속 엔터테인먼트) 스키마 — `bbbb_enterprises` 테이블 +
+     `bbbb_streamer_pages.enterprise_id` 컬럼(nullable, on delete set null) — 도
+     같은 스크립트 PART 3에 포함된다. 이미 구본(엔터 이전)을 적용한 프로젝트면
+     아래 "엔터 기능 마이그레이션(증분)"의 4문장만 실행해도 된다(둘 다 idempotent).
 3. 확인: Table Editor에서 `bbbb_streamer_pages`, `bbbb_donation_messages`,
-   `bbbb_relay_devices`, `bbbb_handle_history`, `bbbb_reserved_handles` 존재 +
-   각 테이블 RLS enabled 표시 확인. Storage에 `bbbb-web-thumbs` 버킷(공개) 확인.
+   `bbbb_relay_devices`, `bbbb_handle_history`, `bbbb_reserved_handles`,
+   `bbbb_enterprises` 존재 + 각 테이블 RLS enabled 표시 확인.
+   Storage에 `bbbb-web-thumbs` 버킷(공개) 확인.
+
+### 엔터 기능 마이그레이션(증분)
+
+`migrations-relay-p0.sql` 전체를 이미 적용한 프로젝트에 엔터 기능만 추가할 때는
+아래 4문장만 SQL Editor에서 1회 실행한다(재실행 안전, 기존 데이터 무손실).
+코드는 이 스키마가 없어도 공개 API(`/api/channels`·`/api/page/:handle`)가
+엔터 없이(전부 무소속) 동작하도록 방어돼 있다 — 관리자 엔터 API만 DB 오류를 낸다.
+
+```sql
+create table if not exists public.bbbb_enterprises (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null check (slug ~ '^[a-z0-9][a-z0-9-]{0,29}$'),
+  name text not null check (char_length(name) between 1 and 40),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists bbbb_enterprises_slug_idx
+  on public.bbbb_enterprises (lower(slug));
+
+alter table public.bbbb_enterprises enable row level security;
+
+alter table public.bbbb_streamer_pages add column if not exists enterprise_id uuid references public.bbbb_enterprises(id) on delete set null;
+```
 
 ## 2. Vercel 환경변수 (이름만 — 값 기재·출력 금지)
 
@@ -114,6 +142,9 @@ Production). 프로덕션이 pinned 방식이라 promote가 곧 즉시 롤백이
 에서 역순으로 — PART 2(핸들 이력·예약어)부터, 그다음 PART 1(웹 플랫폼 스키마):
 
 ```sql
+-- PART 3 (엔터) — pages 소속 컬럼을 먼저 지운 뒤 테이블을 지운다(FK 의존)
+alter table public.bbbb_streamer_pages drop column if exists enterprise_id;
+drop table if exists public.bbbb_enterprises;
 -- PART 2 (핸들 바로가기)
 drop table if exists public.bbbb_handle_history;
 drop table if exists public.bbbb_reserved_handles;

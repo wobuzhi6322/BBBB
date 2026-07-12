@@ -1,19 +1,28 @@
 // =============================================================================
-// GET /api/channels?q=&cursor= — 채널 탐색 디렉토리 (WSD, 공개·비로그인)
+// GET /api/channels?q=&cursor=&enterprise= — 채널 탐색 디렉토리 (WSD, 공개·비로그인)
 // 계약: docs/WEB_TECH_SPEC.md §2.1 · docs/WEB_PAGE_SPECS.md §5
 // 노출 조건: directory_optin=true AND status='active' AND (공개 시그니처 ≥ 1 OR 팀코드 설정)
 // 정렬: 최근 활동순(created_at desc) · 커서 페이지네이션 20개
+// enterprise=<slug>: 해당 엔터 소속 채널만(슬러그 미등록·테이블 미생성 → 빈 목록, 500 금지)
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { LIMITS, type ChannelCard, type WebErrorCode } from "./_webShared.js";
+import {
+  LIMITS,
+  enterpriseBadgeMapById,
+  normalizeEnterpriseSlug,
+  type ChannelCard,
+  type EnterpriseBadge,
+  type WebErrorCode
+} from "./_webShared.js";
 
 const pagesTable = "bbbb_streamer_pages";
 const profilesTable = "bbbb_web_profiles";
 const signaturesTable = "bbbb_page_signatures";
 const relayDevicesTable = "bbbb_relay_devices";
+const enterprisesTable = "bbbb_enterprises";
 
 export const CHANNELS_PAGE_SIZE = 20;
 const BATCH_SIZE = 100;
@@ -34,6 +43,8 @@ type PageRow = {
   bio: string | null;
   created_at: string;
   team_code?: string | null;
+  /** additive 컬럼 — 마이그레이션 전 DB(폴백 select)에서는 undefined */
+  enterprise_id?: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -100,7 +111,19 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const supabase = serviceClient();
-    const data = await listChannels(supabase, q, cursor);
+
+    // 엔터 필터: slug → id. 형식 위반·미등록·테이블 미생성 모두 "빈 목록"(500 금지).
+    const enterpriseParam = (url.searchParams.get("enterprise") || "").trim();
+    let enterpriseId: string | null = null;
+    if (enterpriseParam) {
+      enterpriseId = await resolveEnterpriseId(supabase, enterpriseParam);
+      if (!enterpriseId) {
+        sendJson(res, 200, { ok: true, data: { channels: [], nextCursor: null } satisfies ChannelsListData });
+        return;
+      }
+    }
+
+    const data = await listChannels(supabase, q, cursor, enterpriseId);
     sendJson(res, 200, { ok: true, data });
   } catch (error) {
     sendError(res, 500, "validation-failed", error instanceof Error ? error.message : "channels-failed");
@@ -110,7 +133,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 async function listChannels(
   supabase: ReturnType<typeof serviceClient>,
   q: string,
-  cursor: ListCursor | null
+  cursor: ListCursor | null,
+  enterpriseId: string | null
 ): Promise<ChannelsListData> {
   const nowMs = Date.now();
   const channels: ChannelCard[] = [];
@@ -120,22 +144,7 @@ async function listChannels(
   let exhausted = false;
 
   for (let batch = 0; batch < MAX_BATCHES && !filled && !exhausted; batch += 1) {
-    let query = supabase
-      .from(pagesTable)
-      .select("id,owner_user_id,handle,banner_url,avatar_url,bio,created_at,team_code")
-      .eq("directory_optin", true)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(BATCH_SIZE);
-    if (after) {
-      query = query.or(`created_at.lt.${after.createdAt},and(created_at.eq.${after.createdAt},id.lt.${after.id})`);
-    }
-    const result = await query;
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    const rows = (result.data || []) as PageRow[];
+    const rows = await fetchPageBatch(supabase, after, enterpriseId);
     if (!rows.length) {
       exhausted = true;
       break;
@@ -143,10 +152,14 @@ async function listChannels(
 
     const pageIds = rows.map((row) => row.id);
     const ownerIds = rows.map((row) => row.owner_user_id);
-    const [signatureCounts, nicknames, onlinePages] = await Promise.all([
+    const enterpriseIds = [
+      ...new Set(rows.map((row) => row.enterprise_id).filter((id): id is string => typeof id === "string" && id !== ""))
+    ];
+    const [signatureCounts, nicknames, onlinePages, enterpriseBadges] = await Promise.all([
       fetchPublishedSignatureCounts(supabase, pageIds),
       fetchNicknames(supabase, ownerIds),
-      fetchOnlinePages(supabase, pageIds, nowMs)
+      fetchOnlinePages(supabase, pageIds, nowMs),
+      fetchEnterpriseBadges(supabase, enterpriseIds)
     ]);
 
     for (const row of rows) {
@@ -163,7 +176,8 @@ async function listChannels(
         avatarUrl: row.avatar_url,
         bio: row.bio,
         signatureCount,
-        online: onlinePages.has(row.id)
+        online: onlinePages.has(row.id),
+        enterprise: (row.enterprise_id && enterpriseBadges.get(row.enterprise_id)) || null
       });
       if (channels.length >= CHANNELS_PAGE_SIZE) {
         nextCursor = encodeCursor({ createdAt: row.created_at, id: row.id });
@@ -186,6 +200,99 @@ async function listChannels(
     nextCursor = encodeCursor(after);
   }
   return { channels, nextCursor };
+}
+
+// ---------------------------------------------------------------------------
+// 페이지 배치 조회 — enterprise_id는 additive 컬럼이라 마이그레이션 전 DB 허용
+// ---------------------------------------------------------------------------
+
+const PAGE_COLUMNS = "id,owner_user_id,handle,banner_url,avatar_url,bio,created_at,team_code";
+
+/**
+ * 페이지 배치 조회. enterprise_id 포함 select가 실패하면(마이그레이션 전 DB의
+ * unknown column) enterprise_id 없이 1회 재시도해 전부 무소속(null)으로 처리한다.
+ * 엔터 필터가 걸린 상태의 실패는 재시도로 필터를 유지할 수 없으므로 빈 배치를
+ * 반환한다(계약: 미생성 → 빈 목록, 500 금지). 재시도까지 실패하면 원 오류를 던진다.
+ */
+async function fetchPageBatch(
+  supabase: ReturnType<typeof serviceClient>,
+  after: ListCursor | null,
+  enterpriseId: string | null
+): Promise<PageRow[]> {
+  const primary = await pageBatchQuery(supabase, `${PAGE_COLUMNS},enterprise_id`, after, enterpriseId);
+  if (!primary.error) {
+    return (primary.data || []) as unknown as PageRow[];
+  }
+  if (enterpriseId) {
+    return [];
+  }
+  const fallback = await pageBatchQuery(supabase, PAGE_COLUMNS, after, null);
+  if (fallback.error) {
+    throw new Error(primary.error.message);
+  }
+  return (fallback.data || []) as unknown as PageRow[];
+}
+
+function pageBatchQuery(
+  supabase: ReturnType<typeof serviceClient>,
+  columns: string,
+  after: ListCursor | null,
+  enterpriseId: string | null
+) {
+  let query = supabase
+    .from(pagesTable)
+    .select(columns)
+    .eq("directory_optin", true)
+    .eq("status", "active");
+  if (enterpriseId) {
+    query = query.eq("enterprise_id", enterpriseId);
+  }
+  query = query
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(BATCH_SIZE);
+  if (after) {
+    query = query.or(`created_at.lt.${after.createdAt},and(created_at.eq.${after.createdAt},id.lt.${after.id})`);
+  }
+  return query;
+}
+
+// ---------------------------------------------------------------------------
+// 엔터 배지·필터 (테이블 미생성 허용 — 실패는 전부 "무소속/빈 목록", 500 금지)
+// ---------------------------------------------------------------------------
+
+/** ?enterprise= 슬러그 → id. 형식 위반·미등록·테이블 미생성 모두 null */
+async function resolveEnterpriseId(
+  supabase: ReturnType<typeof serviceClient>,
+  raw: string
+): Promise<string | null> {
+  const slug = normalizeEnterpriseSlug(raw);
+  if (!slug) return null;
+  try {
+    // 저장 slug는 check 제약상 항상 소문자지만, lower(slug) 유니크 인덱스와 짝을
+    // 맞춰 대소문자 무시 조회(ilike — 검증된 slug라 와일드카드 문자 없음)로 해석한다.
+    const result = await supabase.from(enterprisesTable).select("id").ilike("slug", slug).limit(1);
+    if (result.error) return null;
+    const row = (result.data?.[0] ?? null) as { id?: unknown } | null;
+    return row && typeof row.id === "string" && row.id ? row.id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** enterprise_id 목록 → id→배지 맵. 조회 실패·테이블 미생성은 빈 맵(전부 무소속 표시) */
+async function fetchEnterpriseBadges(
+  supabase: ReturnType<typeof serviceClient>,
+  enterpriseIds: string[]
+): Promise<Map<string, EnterpriseBadge>> {
+  if (!enterpriseIds.length) return new Map();
+  try {
+    const result = await supabase.from(enterprisesTable).select("id,slug,name").in("id", enterpriseIds);
+    if (result.error) return new Map();
+    return enterpriseBadgeMapById(result.data || []);
+  } catch {
+    return new Map();
+  }
 }
 
 async function fetchPublishedSignatureCounts(

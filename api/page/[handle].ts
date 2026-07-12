@@ -4,8 +4,8 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import type { PublicPageView, PublicSignatureCard } from "../_webShared.js";
-import { normalizeTeamCode, sharedBundleToSignatureCards, teamCodeThumbPaths } from "../_webShared.js";
+import type { EnterpriseBadge, PublicPageView, PublicSignatureCard } from "../_webShared.js";
+import { enterpriseBadgeFromRow, normalizeTeamCode, sharedBundleToSignatureCards, teamCodeThumbPaths } from "../_webShared.js";
 import {
   TABLES,
   applyCors,
@@ -39,6 +39,8 @@ type PageRow = {
   transfer_links: unknown;
   status: string;
   team_code: string | null;
+  /** additive 컬럼 — 마이그레이션 전 DB(폴백 select)에서는 undefined */
+  enterprise_id?: string | null;
 };
 
 type SignatureRow = {
@@ -72,18 +74,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const supabase = serviceClient();
-    const pageResult = await supabase.from(TABLES.pages).select(pageSelect).eq("handle", handle).maybeSingle();
-    if (pageResult.error) {
-      throw new Error(pageResult.error.message);
-    }
-    const page = pageResult.data as PageRow | null;
+    const page = await fetchPageRow(supabase, handle);
     if (!page || page.status !== "active") {
       // hidden/suspended도 404 — 존재 여부를 구분해 주지 않는다 (§5)
       sendErr(res, 404, "not-found");
       return;
     }
 
-    const [profileResult, signaturesResult, devicesResult] = await Promise.all([
+    const [profileResult, signaturesResult, devicesResult, enterprise] = await Promise.all([
       supabase.from(TABLES.profiles).select("nickname").eq("user_id", page.owner_user_id).maybeSingle(),
       supabase
         .from(TABLES.signatures)
@@ -93,7 +91,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .order("pinned", { ascending: false })
         .order("amount", { ascending: true })
         .order("sort", { ascending: true }),
-      supabase.from(TABLES.relayDevices).select("last_heartbeat_at").eq("page_id", page.id).eq("active", true)
+      supabase.from(TABLES.relayDevices).select("last_heartbeat_at").eq("page_id", page.id).eq("active", true),
+      fetchEnterpriseBadge(supabase, page.enterprise_id ?? null)
     ]);
     if (signaturesResult.error) {
       throw new Error(signaturesResult.error.message);
@@ -141,11 +140,51 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       online,
       signatures,
       transferLinks: sanitizeTransferLinks(page.transfer_links),
-      accountInfo: publicAccountInfo(page.account_display, page.account_info)
+      accountInfo: publicAccountInfo(page.account_display, page.account_info),
+      enterprise
     };
     sendOk(res, view);
   } catch (error) {
     sendServerError(res, error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 페이지 조회 — enterprise_id는 additive 컬럼이라 마이그레이션 전 DB 허용
+// ---------------------------------------------------------------------------
+
+const ENTERPRISES_TABLE = "bbbb_enterprises";
+
+/**
+ * enterprise_id 포함 select가 실패하면(마이그레이션 전 DB의 unknown column)
+ * 기존 컬럼만으로 1회 재시도해 무소속(enterprise null)으로 처리한다.
+ * 재시도까지 실패하면 원 오류를 던진다(진짜 DB 장애는 그대로 500).
+ */
+async function fetchPageRow(supabase: ServiceClient, handle: string): Promise<PageRow | null> {
+  const primary = await supabase
+    .from(TABLES.pages)
+    .select(`${pageSelect},enterprise_id`)
+    .eq("handle", handle)
+    .maybeSingle();
+  if (!primary.error) {
+    return (primary.data ?? null) as PageRow | null;
+  }
+  const fallback = await supabase.from(TABLES.pages).select(pageSelect).eq("handle", handle).maybeSingle();
+  if (fallback.error) {
+    throw new Error(primary.error.message);
+  }
+  return (fallback.data ?? null) as PageRow | null;
+}
+
+/** 소속 엔터 배지. 무소속·조회 실패·테이블 미생성 모두 null(500 금지) */
+async function fetchEnterpriseBadge(supabase: ServiceClient, enterpriseId: string | null): Promise<EnterpriseBadge | null> {
+  if (!enterpriseId) return null;
+  try {
+    const result = await supabase.from(ENTERPRISES_TABLE).select("id,slug,name").eq("id", enterpriseId).limit(1);
+    if (result.error) return null;
+    return enterpriseBadgeFromRow(result.data?.[0] ?? null);
+  } catch {
+    return null;
   }
 }
 

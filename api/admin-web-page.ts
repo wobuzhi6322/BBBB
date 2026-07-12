@@ -3,17 +3,19 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { HANDLE_HISTORY_TABLE, validateHandleChange, type HandleHistoryRow } from "./_handlePolicy.js";
 import { isOwnerEmail } from "./_owner.js";
-import { handleRejectCode } from "./_webShared.js";
+import { handleRejectCode, normalizeEnterpriseSlug } from "./_webShared.js";
 import { nicknameFromEmail } from "./me/profile.js";
 import { handleErrorMessage, normalizeHandleInput, rolesWithStreamer } from "./onboard-streamer.js";
 
 // =============================================================================
 // /api/admin-web-page — 관리자 대행 웹 채널(스트리머 페이지) 등록·수정
 // GET   ?email=            : 이메일로 계정·기존 페이지 상태 조회
-// POST  {email, handle, nickname?, team_code?, directory_optin?}
+// POST  {email, handle, nickname?, team_code?, directory_optin?, enterprise_slug?}
 //                          : 기존 라이선스 계정을 웹 채널로 등록 (계정 생성 없음)
-// PATCH {handle, team_code?, directory_optin?, status?}
-//                          : 기존 페이지의 팀코드·공개 여부·상태 수정
+// PATCH {handle, team_code?, directory_optin?, status?, enterprise_slug?}
+//                          : 기존 페이지의 팀코드·공개 여부·상태·엔터 소속 수정
+// enterprise_slug: 등록된 엔터 slug로 소속 지정, null·빈 문자열은 소속 해제,
+//                  미등록 slug는 404. 배정은 관리자 전용(v1 사칭 방지 정책 — §5).
 // 인증: api/admin-devices.ts와 동일(공유 토큰 헤더 또는 관리자 세션 Bearer).
 // =============================================================================
 
@@ -24,6 +26,7 @@ type AdminWebPageBody = {
   team_code?: unknown;
   directory_optin?: unknown;
   status?: unknown;
+  enterprise_slug?: unknown;
 };
 
 type SiteProfileRow = {
@@ -32,7 +35,7 @@ type SiteProfileRow = {
   role: string;
 };
 
-/** bbbb_streamer_pages 행 (team_code는 additive 컬럼 — 마이그레이션 전 배포 허용을 위해 optional) */
+/** bbbb_streamer_pages 행 (team_code·enterprise_id는 additive 컬럼 — 마이그레이션 전 배포 허용을 위해 optional) */
 type PageRow = {
   id: string;
   owner_user_id: string;
@@ -40,6 +43,7 @@ type PageRow = {
   directory_optin: boolean;
   status: string;
   team_code?: string | null;
+  enterprise_id?: string | null;
 };
 
 type PageSummary = {
@@ -47,11 +51,13 @@ type PageSummary = {
   team_code: string | null;
   directory_optin: boolean;
   status: string;
+  enterprise_slug: string | null;
 };
 
 const siteProfilesTable = "bbbb_site_profiles";
 const pagesTable = "bbbb_streamer_pages";
 const webProfilesTable = "bbbb_web_profiles";
+const enterprisesTable = "bbbb_enterprises";
 const siteProfileSelect = "user_id,email,role";
 
 const NICKNAME_MAX = 20;
@@ -117,7 +123,7 @@ async function lookupByEmail(req: IncomingMessage, res: ServerResponse, supabase
       found: true,
       userId: profile.user_id,
       hasPage: page !== null,
-      page: page ? pageSummary(page) : null
+      page: page ? await pageSummary(supabase, page) : null
     }
   });
 }
@@ -179,6 +185,8 @@ async function registerPage(res: ServerResponse, body: AdminWebPageBody, supabas
   }
 
   const teamCode = normalizeTeamCodeInput(body.team_code);
+  const enterpriseId =
+    body.enterprise_slug === undefined ? null : await enterpriseIdFromSlugInput(supabase, body.enterprise_slug);
   const providedNickname = normalizeNicknameInput(body.nickname);
   const nickname = providedNickname || nicknameFromEmail(email);
   const directoryOptin = body.directory_optin === undefined ? true : booleanValue(body.directory_optin, "directory_optin");
@@ -194,6 +202,9 @@ async function registerPage(res: ServerResponse, body: AdminWebPageBody, supabas
   if (teamCode) {
     insertPayload.team_code = teamCode;
   }
+  if (enterpriseId) {
+    insertPayload.enterprise_id = enterpriseId;
+  }
 
   const insert = await supabase.from(pagesTable).insert(insertPayload).select("*").single();
   if (insert.error) {
@@ -203,7 +214,7 @@ async function registerPage(res: ServerResponse, body: AdminWebPageBody, supabas
     throw new Error(insert.error.message);
   }
 
-  sendJson(res, 200, { ok: true, data: { created: true, page: pageSummary(insert.data as PageRow) } });
+  sendJson(res, 200, { ok: true, data: { created: true, page: await pageSummary(supabase, insert.data as PageRow) } });
 }
 
 // ---------------------------------------------------------------------------
@@ -243,6 +254,10 @@ async function updatePage(res: ServerResponse, body: AdminWebPageBody, supabase:
     patch.status = status;
   }
 
+  if (body.enterprise_slug !== undefined) {
+    patch.enterprise_id = await enterpriseIdFromSlugInput(supabase, body.enterprise_slug);
+  }
+
   if (Object.keys(patch).length === 0) {
     throw new ApiError(400, "validation-failed", "변경할 값을 하나 이상 보내 주세요.");
   }
@@ -253,12 +268,42 @@ async function updatePage(res: ServerResponse, body: AdminWebPageBody, supabase:
     throw new Error(update.error.message);
   }
 
-  sendJson(res, 200, { ok: true, data: { created: false, page: pageSummary(update.data as PageRow) } });
+  sendJson(res, 200, { ok: true, data: { created: false, page: await pageSummary(supabase, update.data as PageRow) } });
 }
 
 // ---------------------------------------------------------------------------
 // 입력 정규화
 // ---------------------------------------------------------------------------
+
+/**
+ * enterprise_slug 입력 → bbbb_enterprises.id.
+ * null·빈 문자열 = 소속 해제(null), 형식 위반 400, 미등록 slug 404.
+ * bbbb_enterprises 미생성 DB는 DB 오류를 그대로 노출(관리자 API는 조용히 넘기지 않는다).
+ */
+async function enterpriseIdFromSlugInput(supabase: Supa, input: unknown): Promise<string | null> {
+  if (input === null) {
+    return null;
+  }
+  if (typeof input !== "string") {
+    throw new ApiError(400, "validation-failed", "enterprise_slug 값은 문자열 또는 null이어야 합니다.");
+  }
+  if (!input.trim()) {
+    return null;
+  }
+  const slug = normalizeEnterpriseSlug(input);
+  if (!slug) {
+    throw new ApiError(400, "validation-failed", "엔터 슬러그는 영문 소문자·숫자·하이픈 1~30자입니다(첫 글자는 영문·숫자).");
+  }
+  const found = await supabase.from(enterprisesTable).select("id").ilike("slug", slug).limit(1);
+  if (found.error) {
+    throw new Error(found.error.message);
+  }
+  const id = ((found.data?.[0] ?? null) as { id: string } | null)?.id;
+  if (!id) {
+    throw new ApiError(404, "not-found", "등록되지 않은 엔터입니다.");
+  }
+  return id;
+}
 
 /** 팀코드(공유 코드) 정규화 — api/shared-profile.ts normalizeCode와 동일 규칙 */
 function normalizeTeamCodeInput(input: unknown): string | null {
@@ -348,13 +393,27 @@ async function ensureWebProfile(supabase: Supa, userId: string, nickname: string
   }
 }
 
-function pageSummary(page: PageRow): PageSummary {
+async function pageSummary(supabase: Supa, page: PageRow): Promise<PageSummary> {
   return {
     handle: page.handle,
     team_code: page.team_code ?? null,
     directory_optin: page.directory_optin,
-    status: page.status
+    status: page.status,
+    enterprise_slug: await enterpriseSlugById(supabase, page.enterprise_id ?? null)
   };
+}
+
+/** enterprise_id → slug (요약 표시용). 무소속·조회 실패는 null — 요약 조회는 조용히 폴백 */
+async function enterpriseSlugById(supabase: Supa, enterpriseId: string | null): Promise<string | null> {
+  if (!enterpriseId) return null;
+  try {
+    const result = await supabase.from(enterprisesTable).select("slug").eq("id", enterpriseId).limit(1);
+    if (result.error) return null;
+    const slug = ((result.data?.[0] ?? null) as { slug?: unknown } | null)?.slug;
+    return typeof slug === "string" && slug ? slug : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

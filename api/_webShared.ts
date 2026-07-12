@@ -199,6 +199,8 @@ export type PublicPageView = {
   transferLinks: TransferLink[];
   /** account_display='full'일 때만 채워짐 */
   accountInfo: { bank: string; number: string; holder: string } | null;
+  /** 소속 엔터 배지(무소속·마이그레이션 전 DB는 null) — §5 엔터 */
+  enterprise: EnterpriseBadge | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -377,6 +379,49 @@ export function sharedBundleToSignatureCards(
   return cards;
 }
 
+// ---------------------------------------------------------------------------
+// 엔터(소속 엔터테인먼트) — VIEWER_MESSAGE_RELAY_PLAN §5
+// "핸들=매칭 단위, 엔터=묶음". v1: 생성·배정은 관리자 전용(사칭 방지),
+// 무소속(null) 허용. slug 규칙은 supabase/web-platform.sql §1.7 check와 동일.
+// ---------------------------------------------------------------------------
+
+export type EnterpriseBadge = { slug: string; name: string };
+
+/** bbbb_enterprises.slug check 제약과 동일: 소문자 영숫자 시작, 하이픈 허용, 1~30자 */
+export const ENTERPRISE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,29}$/;
+
+export const ENTERPRISE_NAME_MAX = 40;
+
+/** 엔터 slug 정규화: trim → 소문자화 → 형식 검증. 위반·비문자열은 null */
+export function normalizeEnterpriseSlug(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const slug = input.trim().toLowerCase();
+  if (!ENTERPRISE_SLUG_PATTERN.test(slug)) return null;
+  return slug;
+}
+
+/** bbbb_enterprises 행(unknown) → 배지. slug/name이 비거나 형태 위반이면 null */
+export function enterpriseBadgeFromRow(row: unknown): EnterpriseBadge | null {
+  if (!row || typeof row !== "object") return null;
+  const slug = (row as Record<string, unknown>).slug;
+  const name = (row as Record<string, unknown>).name;
+  if (typeof slug !== "string" || !slug || typeof name !== "string" || !name) return null;
+  return { slug, name };
+}
+
+/** bbbb_enterprises 행 목록(unknown) → id→배지 맵. 오염 행은 건너뛴다 */
+export function enterpriseBadgeMapById(rows: unknown): Map<string, EnterpriseBadge> {
+  const map = new Map<string, EnterpriseBadge>();
+  if (!Array.isArray(rows)) return map;
+  for (const raw of rows) {
+    const badge = enterpriseBadgeFromRow(raw);
+    if (!badge) continue;
+    const id = (raw as Record<string, unknown>).id;
+    if (typeof id === "string" && id && !map.has(id)) map.set(id, badge);
+  }
+  return map;
+}
+
 export type ChannelCard = {
   handle: string;
   displayName: string;
@@ -385,6 +430,8 @@ export type ChannelCard = {
   bio: string | null;
   signatureCount: number;
   online: boolean;
+  /** 소속 엔터 배지(무소속·미확인은 null) */
+  enterprise: EnterpriseBadge | null;
 };
 
 export type CreateDonationMessageBody = {

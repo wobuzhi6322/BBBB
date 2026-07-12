@@ -7,12 +7,17 @@
 --             서비스 키 불필요(대시보드 세션 권한으로 충분). 재실행해도 안전하다 —
 --             모든 문장이 create ... if not exists / on conflict do nothing 이다.
 -- 실행 순서 : ① schema.sql(기적용 확인만) → ② 이 파일. 이 파일 내부는 위→아래 순서 그대로.
--- 포함 내용 : web-platform.sql 전체(WS0 스키마) + 핸들 이력·예약어 테이블(P1 바로가기).
+-- 포함 내용 : web-platform.sql 전체(WS0 스키마) + 핸들 이력·예약어 테이블(P1 바로가기)
+--             + 엔터(bbbb_enterprises·streamer_pages.enterprise_id, §1.7).
 --
 -- 롤백 노트 : 이 스크립트는 신규 테이블·인덱스·버킷 생성뿐이며 기존 테이블을 변경하지
---             않는다(bbbb_donation_messages.ip_hash·bbbb_streamer_pages.team_code 컬럼
---             추가 2건 제외 — add column if not exists, 데이터 무손실).
+--             않는다(bbbb_donation_messages.ip_hash·bbbb_streamer_pages.team_code·
+--             bbbb_streamer_pages.enterprise_id 컬럼 추가 3건 제외 —
+--             add column if not exists, 데이터 무손실).
 --             전체 롤백이 필요하면 아래를 역순으로 실행:
+--               -- 엔터: pages 소속 컬럼을 먼저 지운 뒤 테이블을 지운다(FK 의존).
+--               alter table public.bbbb_streamer_pages drop column if exists enterprise_id;
+--               drop table if exists public.bbbb_enterprises;
 --               drop table if exists public.bbbb_handle_history;
 --               drop table if exists public.bbbb_reserved_handles;
 --               drop table if exists public.bbbb_payment_intents;
@@ -290,6 +295,29 @@ insert into public.bbbb_reserved_handles (handle) values
   ('site'), ('static'), ('studio'), ('support'), ('terms'), ('test'),
   ('wallet'), ('ws'), ('www')
 on conflict (handle) do nothing;
+
+-- =============================================================================
+-- PART 3. 엔터(소속 엔터테인먼트) — VIEWER_MESSAGE_RELAY_PLAN §5
+-- supabase/web-platform.sql §1.7 전문 복사 — 두 파일은 항상 동일해야 한다.
+-- "핸들=매칭 단위, 엔터=묶음". v1 정책: 엔터 생성·페이지 배정은 관리자 전용
+-- (사칭 방지) — 스트리머 자가 배정 없음, 무소속(enterprise_id null) 허용.
+-- RLS 활성 + 정책 없음 = service role 전용(다른 bbbb_* 테이블과 동일).
+-- =============================================================================
+
+create table if not exists public.bbbb_enterprises (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null check (slug ~ '^[a-z0-9][a-z0-9-]{0,29}$'),
+  name text not null check (char_length(name) between 1 and 40),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists bbbb_enterprises_slug_idx
+  on public.bbbb_enterprises (lower(slug));
+
+alter table public.bbbb_enterprises enable row level security;
+
+-- 소속 컬럼(additive) — 엔터 삭제 시 소속만 해제(set null), 페이지는 보존.
+alter table public.bbbb_streamer_pages add column if not exists enterprise_id uuid references public.bbbb_enterprises(id) on delete set null;
 
 -- =============================================================================
 -- 끝. 재실행 안전(idempotent). 기존 데이터 변경 문장 없음.

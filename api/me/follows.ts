@@ -153,6 +153,8 @@ async function listFollows(supabase: ReturnType<typeof serviceClient>, userId: s
     bio: entry.page.bio,
     signatureCount: signatureCounts.get(entry.page.id) || 0,
     online: onlinePages.has(entry.page.id),
+    // 팔로우 목록은 엔터 배지를 해석하지 않는다(v1 — ChannelCard 계약 필드만 채움)
+    enterprise: null,
     followedAt: entry.followedAt
   }));
   return { channels };
