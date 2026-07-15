@@ -1,0 +1,384 @@
+/* ==========================================================================
+   /wallet 지갑·충전 예비 랜딩 — site.css 토큰만 사용, 새 원천 토큰 발명 금지
+   D 스티커/쿠폰 문법(2px 잉크 보더 + 하드섀도 + --radius) 위에서 구성한다.
+   모바일 우선(최소 360px), 가로 오버플로 금지, 한국어 클리핑 금지(keep-all)
+   경계 색은 var(--gw-border)만 사용(site.css --border 는 축약형 — 색으로 금지)
+   ========================================================================== */
+
+.wl-main {
+  width: var(--content);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 30px 0 72px;
+}
+
+/* 히어로 ---------------------------------------------------------------- */
+
+.wl-hero {
+  padding: 14px 0 6px;
+}
+
+/* 큰 옐로 D-스티커 '준비 중' */
+.wl-sticker {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 10px 24px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--hard);
+  color: var(--ink-fix);
+  font-family: var(--font-fun);
+  font-weight: 400;
+  font-size: 1.12rem;
+  letter-spacing: 0.02em;
+  transform: rotate(-2.5deg);
+}
+
+.wl-hero h1 {
+  margin-bottom: 12px;
+  font-size: clamp(30px, 6vw, 46px);
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+.wl-lead {
+  max-width: 560px;
+  margin: 0;
+  color: var(--secondary);
+  font-size: 15.5px;
+  line-height: 1.7;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 섹션 공통 -------------------------------------------------------------- */
+
+.wl-balance,
+.wl-methods,
+.wl-steps,
+.wl-faq {
+  margin-top: 40px;
+}
+
+.wl-h2-sub {
+  color: var(--muted);
+  font-size: 0.72em;
+}
+
+/* 배지(작은 스티커) ------------------------------------------------------- */
+
+.wl-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 3px 12px;
+  border: var(--bw-sm) solid var(--edge);
+  border-radius: 999px;
+  font-family: var(--font-fun);
+  font-weight: 400;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.wl-badge.soon {
+  background: var(--yellow-soft);
+  color: var(--ink-fix);
+}
+
+.wl-badge.now {
+  background: var(--mint);
+  color: var(--ink-fix);
+}
+
+/* 잔액 카드(디자인 완성 · 비활성) ------------------------------------------ */
+
+.wl-balance-card {
+  min-width: 0;
+  padding: 22px 20px 24px;
+  border: var(--border-sm);
+  border-radius: var(--radius-big);
+  background: var(--surface);
+  box-shadow: 6px 6px 0 var(--hard-soft);
+}
+
+.wl-balance-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.wl-balance-head h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+}
+
+.wl-balance-value {
+  margin: 0 0 14px;
+  font-family: var(--font-fun);
+  font-weight: 400;
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.wl-balance-suffix {
+  color: var(--muted);
+  font-size: 0.5em;
+}
+
+.wl-balance-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--gw-border);
+}
+
+.wl-balance-note p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 충전 수단 그리드 --------------------------------------------------------- */
+
+.wl-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .wl-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.wl-method {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 18px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.wl-method h3 {
+  margin: 0;
+}
+
+.wl-method p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.wl-method-now {
+  background: var(--surface-2);
+}
+
+.wl-method-cta {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+/* 오픈 후 이용 흐름(예정) --------------------------------------------------- */
+
+.wl-step-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .wl-step-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.wl-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 16px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.wl-step-num {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 2px 2px 0 var(--hard);
+  color: var(--on-blue);
+  font-family: var(--font-fun);
+  font-size: 1.05rem;
+}
+
+.wl-step-body {
+  min-width: 0;
+}
+
+.wl-step-body h3 {
+  margin: 4px 0 4px;
+  font-size: 1.12rem;
+}
+
+.wl-step-body p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.wl-steps-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: keep-all;
+}
+
+/* FAQ (네이티브 details/summary) ------------------------------------------ */
+
+.wl-faq details {
+  margin-bottom: 12px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.wl-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px; /* 터치 타깃 44px+ */
+  padding: 13px 18px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1.45;
+  list-style: none;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.wl-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.wl-faq summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* +/− 아이콘 */
+.wl-faq-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.wl-faq-icon::before,
+.wl-faq-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--blue);
+  transform: translate(-50%, -50%);
+}
+
+.wl-faq-icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  transition: transform 0.15s ease;
+}
+
+.wl-faq details[open] .wl-faq-icon::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.wl-faq-body {
+  padding: 0 18px 16px;
+}
+
+.wl-faq-body p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.7;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.wl-faq-body a {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+/* 푸터 ------------------------------------------------------------------- */
+
+.wl-footer {
+  width: var(--content);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  margin: 0 auto;
+  padding: 14px 0 36px;
+  border-top: 1px solid var(--line);
+}
+
+.wl-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 44px+ */
+  padding: 10px 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.wl-footer a:hover {
+  color: var(--primary);
+}
+
+/* 모션 최소화 ------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-faq-icon::after {
+    transition: none;
+  }
+}

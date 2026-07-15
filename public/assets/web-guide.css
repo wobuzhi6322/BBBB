@@ -1,0 +1,626 @@
+/* ==========================================================================
+   /guide 시청자 이용 가이드 — D 리스킨(스티커/쿠폰) 문법
+   site.css 토큰만 사용, 새 원천 토큰 발명 금지.
+   경계 색은 var(--gw-border)(web-tokens.css), 스티커 보더는 var(--border-sm) 축약형.
+   모바일 우선(최소 360px), 가로 오버플로 금지, 한국어 클리핑 금지(keep-all).
+   페이지 JS 없음 — 아코디언은 네이티브 details/summary.
+   ========================================================================== */
+
+.gd-main {
+  width: var(--content);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 30px 0 72px;
+}
+
+.gd-main section + section {
+  margin-top: clamp(44px, 7vw, 72px);
+}
+
+/* 히어로 ---------------------------------------------------------------- */
+
+.gd-hero {
+  padding: 14px 0 0;
+}
+
+.gd-hero .eyebrow {
+  background: var(--mint);
+  color: var(--ink-fix);
+}
+
+.gd-hero h1 {
+  max-width: none;
+  margin-bottom: 12px;
+  font-size: clamp(30px, 5.4vw, 46px);
+  line-height: 1.12;
+}
+
+.gd-lead {
+  max-width: 620px;
+  margin-bottom: 0;
+  color: var(--secondary);
+  font-size: 16px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 섹션 머리 ------------------------------------------------------------- */
+
+.gd-section-head {
+  margin-bottom: 22px;
+}
+
+.gd-section-head h2 {
+  margin-bottom: 8px;
+}
+
+.gd-section-head p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--secondary);
+  font-size: 15px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-how .eyebrow {
+  background: var(--yellow);
+  color: var(--ink-fix);
+}
+
+.gd-tips .eyebrow {
+  background: var(--pink);
+  color: var(--ink-fix);
+}
+
+.gd-faq .eyebrow {
+  background: var(--lav);
+  color: var(--ink-fix);
+}
+
+.gd-streamer .eyebrow {
+  background: var(--yellow-soft);
+  color: var(--ink-fix);
+}
+
+.gd-signature .eyebrow {
+  background: var(--mint);
+  color: var(--ink-fix);
+}
+
+.gd-channels .eyebrow {
+  background: var(--lav);
+  color: var(--ink-fix);
+}
+
+.gd-streamer-guide .eyebrow {
+  background: var(--yellow-soft);
+  color: var(--ink-fix);
+}
+
+/* 목차(앵커 내비) — 히어로 아래 점프 링크 칩 --------------------------- */
+
+.gd-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  min-width: 0;
+}
+
+.gd-toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 44px+ */
+  padding: 8px 18px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  word-break: keep-all;
+  box-shadow: 2px 2px 0 var(--hard-soft);
+}
+
+.gd-toc a:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--hard-soft);
+}
+
+.gd-toc a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* 앵커 점프 시 고정 헤더에 가리지 않도록 */
+.gd-main section[id] {
+  scroll-margin-top: 84px;
+}
+
+/* 후원 4단계 카드 -------------------------------------------------------- */
+
+.gd-steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 620px) {
+  .gd-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1000px) {
+  .gd-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* 스트리머 스텝은 내용이 길어 넓은 화면에서도 2단으로 캡 */
+  .gd-steps.gd-steps--duo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.gd-step {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 18px 22px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.gd-step-no {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-family: var(--font-fun);
+  font-size: 1.05rem;
+}
+
+.gd-step h3 {
+  margin: 2px 0 0;
+  font-size: 1.16rem;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-step p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-step a {
+  color: var(--blue-deep);
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+/* 입금자명 강조 콜아웃(쿠폰 스티커) --------------------------------------- */
+
+.gd-key-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--yellow);
+  color: var(--ink-fix);
+  box-shadow: 4px 4px 0 var(--hard);
+}
+
+.gd-key-callout .gd-key-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.gd-key-callout .gd-key-body {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.gd-key-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-fun);
+  font-weight: 400;
+  font-size: 1.1rem;
+  word-break: keep-all;
+}
+
+.gd-key-callout p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 콜아웃은 라이트/다크 공통 옐로 배경 — 예시 코드도 테마 무관 고정색 */
+.gd-key-callout code {
+  border: 2px solid var(--ink-fix);
+  background: #fffdf7;
+  color: var(--ink-fix);
+}
+
+/* 설명 패널(시그니처·채널 안내) ----------------------------------------- */
+
+.gd-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+  min-width: 0;
+  padding: 20px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.gd-panel-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gd-panel-body {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.gd-panel p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-panel a {
+  color: var(--blue-deep);
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+/* 흐름 칩(시그니처 A → B → C) */
+.gd-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  min-width: 0;
+}
+
+.gd-flow .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+  word-break: keep-all;
+}
+
+.gd-flow .arrow {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+/* 한 줄 안내 노트(스트리머 공유 등) ------------------------------------- */
+
+.gd-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 14px 18px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-note span {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+/* 알아두면 좋아요 -------------------------------------------------------- */
+
+.gd-tip-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (min-width: 620px) {
+  .gd-tip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.gd-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 18px;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.gd-tip-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gd-tip h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-tip p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* FAQ — 네이티브 details/summary ---------------------------------------- */
+
+.gd-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 860px;
+}
+
+.gd-faq-item {
+  overflow: hidden;
+  border: var(--border-sm);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.gd-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 56px; /* 터치 타깃 44px+ */
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 800;
+  font-size: 15.5px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  user-select: none;
+}
+
+.gd-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.gd-faq-item summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: var(--border-sm);
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-family: var(--font-fun);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.gd-faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gd-faq-item summary::after {
+    transition: none;
+  }
+}
+
+.gd-faq-item summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.gd-faq-item[open] summary {
+  border-bottom: 1px solid var(--gw-border);
+}
+
+.gd-faq-body {
+  padding: 14px 18px 18px;
+}
+
+.gd-faq-body p {
+  margin: 0 0 8px;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-faq-body p:last-child {
+  margin-bottom: 0;
+}
+
+.gd-faq-body ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.gd-faq-body li {
+  margin-bottom: 4px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-faq-body a {
+  color: var(--blue-deep);
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+/* 본문 속 CTA 칩(터치 타깃 44px+) */
+.gd-inline-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: var(--border-sm);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--hard);
+}
+
+.gd-inline-cta:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--hard);
+}
+
+/* 스트리머라면 ----------------------------------------------------------- */
+
+.gd-streamer-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 26px;
+  padding: clamp(22px, 4vw, 34px);
+  border: var(--border-sm);
+  border-radius: var(--radius-big);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-md);
+}
+
+.gd-streamer-copy {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.gd-streamer-copy h2 {
+  margin-bottom: 8px;
+}
+
+.gd-streamer-copy p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.gd-streamer-copy a {
+  color: var(--blue-deep);
+  font-weight: 800;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.gd-streamer-actions {
+  flex: 0 0 auto;
+}
+
+/* 푸터 ------------------------------------------------------------------ */
+
+.gd-footer {
+  width: var(--content);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 18px;
+  margin: 0 auto;
+  padding: 16px 0 34px;
+  border-top: 1px solid var(--line);
+}
+
+.gd-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* 터치 타깃 44px+ */
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.gd-footer a:hover {
+  color: var(--primary);
+}

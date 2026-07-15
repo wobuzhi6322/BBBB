@@ -1,0 +1,110 @@
+{
+  "headers": [
+    {
+      "source": "/assets/site.css",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/site.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(site\\.css|site\\.js)",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "continue": true
+    },
+    {
+      "src": "/admin/?",
+      "dest": "/api/admin"
+    },
+    {
+      "src": "/admin/index\\.html",
+      "dest": "/api/admin"
+    },
+    {
+      "src": "/admin/(admin\\.(js|css))",
+      "dest": "/api/admin-asset?file=$1"
+    },
+    {
+      "src": "/@([^/]+)/d/([^/]+)",
+      "dest": "/api/channel-page?handle=$1&messageId=$2"
+    },
+    {
+      "src": "/@([^/]+)",
+      "dest": "/api/channel-page?handle=$1"
+    },
+    {
+      "src": "/me(/.*)?",
+      "dest": "/me.html"
+    },
+    {
+      "src": "/studio(/.*)?",
+      "dest": "/studio.html"
+    },
+    {
+      "src": "/channels/?",
+      "dest": "/channels.html"
+    },
+    {
+      "src": "/login/?",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/signup/?",
+      "dest": "/signup.html"
+    },
+    {
+      "src": "/wallet/?",
+      "dest": "/wallet.html"
+    },
+    {
+      "src": "/guide/?",
+      "dest": "/guide.html"
+    },
+    {
+      "src": "/notices/?",
+      "dest": "/notices.html"
+    },
+    {
+      "src": "/streamer/?",
+      "dest": "/streamer.html"
+    }
+  ],
+  "functions": {
+    "api/channel-page.ts": {
+      "includeFiles": "public/channel.html"
+    },
+    "api/admin.ts": {
+      "includeFiles": "admin-private/index.html"
+    },
+    "api/admin-asset.ts": {
+      "includeFiles": "admin-private/**"
+    },
+    "api/shared-profile.ts": {
+      "maxDuration": 60
+    },
+    "api/releases.ts": {
+      "maxDuration": 15
+    },
+    "api/mobile-release.ts": {
+      "maxDuration": 15
+    },
+    "api/download-events.ts": {
+      "maxDuration": 15
+    }
+  }
+}

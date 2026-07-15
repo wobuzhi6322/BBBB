@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="계이득 지갑·충전 — 충전형 크레딧 결제는 준비 중입니다. 지금은 계좌이체 후원을 수수료 0%로 그대로 이용할 수 있어요."
+    />
+    <title>지갑 · 충전 - 계이득</title>
+    <link rel="icon" type="image/png" href="/assets/gyeideuk-logo.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="계이득" />
+    <meta property="og:title" content="지갑 · 충전 - 계이득" />
+    <meta
+      property="og:description"
+      content="충전형 크레딧 결제는 준비 중이에요. 지금은 계좌이체 후원을 수수료 0%로 그대로 이용할 수 있습니다."
+    />
+    <meta property="og:url" content="https://www.gaeideuk.com/wallet" />
+    <meta property="og:image" content="https://www.gaeideuk.com/assets/gyeideuk-logo.png" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="지갑 · 충전 - 계이득" />
+    <meta
+      name="twitter:description"
+      content="충전형 크레딧 결제는 준비 중이에요. 지금은 계좌이체 후원을 수수료 0%로 그대로 이용할 수 있습니다."
+    />
+    <meta name="twitter:image" content="https://www.gaeideuk.com/assets/gyeideuk-logo.png" />
+
+    <script>
+      (() => {
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/web-tokens.css" />
+    <link rel="stylesheet" href="/assets/web-wallet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="/assets/web-common.js"></script>
+    <script defer src="/assets/web-viewer-nav.js"></script>
+    <script defer src="/assets/web-wallet.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="계이득 홈">
+        <img class="brand-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/channels">채널 탐색</a>
+        <a href="/guide">이용 가이드</a>
+        <a href="/notices">공지</a>
+      </nav>
+      <div class="header-actions">
+        <button
+          id="theme-toggle"
+          data-vn-theme
+          class="theme-toggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="다크 모드로 전환"
+          title="다크 모드로 전환"
+        >
+          <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
+          </svg>
+        </button>
+        <a id="account-button" class="header-account" href="/login?next=%2Fwallet">로그인</a>
+      </div>
+    </header>
+
+    <main class="wl-main">
+      <!-- 히어로 -->
+      <section class="wl-hero">
+        <span class="wl-sticker">준비 중</span>
+        <h1>지갑 · 충전</h1>
+        <p class="wl-lead">
+          충전형 크레딧 결제는 준비 중이며, 지금은 계좌이체 후원을 그대로 이용할 수 있어요.
+        </p>
+      </section>
+
+      <!-- 잔액 카드 (디자인 완성 · 비활성 상태) -->
+      <section class="wl-balance" aria-labelledby="wl-balance-title">
+        <div class="wl-balance-card">
+          <div class="wl-balance-head">
+            <h2 id="wl-balance-title">내 크레딧</h2>
+            <span class="wl-badge soon">충전 오픈 전</span>
+          </div>
+          <p class="wl-balance-value" aria-live="polite">
+            <span id="wallet-balance-amount">—</span>
+            <span id="wallet-balance-suffix" class="wl-balance-suffix" hidden>(충전 오픈 전)</span>
+          </p>
+          <div id="wallet-note-out" class="wl-balance-note">
+            <p>로그인하면 내 지갑이 여기에 표시됩니다</p>
+            <a class="button secondary" href="/login?next=%2Fwallet">로그인</a>
+          </div>
+          <div id="wallet-note-in" class="wl-balance-note" hidden>
+            <p>충전 기능이 열리면 이 카드에서 크레딧을 충전하고 사용할 수 있어요.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 충전 수단 (예정) -->
+      <section class="wl-methods" aria-labelledby="wl-methods-title">
+        <h2 id="wl-methods-title">충전 수단 <span class="wl-h2-sub">(예정)</span></h2>
+        <div class="wl-grid">
+          <article class="wl-method">
+            <span class="wl-badge soon">준비 중</span>
+            <h3>카드 결제</h3>
+            <p>신용·체크카드로 크레딧을 바로 충전할 수 있도록 준비하고 있어요.</p>
+          </article>
+          <article class="wl-method">
+            <span class="wl-badge soon">준비 중</span>
+            <h3>간편결제</h3>
+            <p>자주 쓰는 간편결제로 몇 번의 탭 만에 충전할 수 있도록 연동을 준비 중이에요.</p>
+          </article>
+          <article class="wl-method wl-method-now">
+            <span class="wl-badge now">지금 사용 가능</span>
+            <h3>계좌이체 자동 매칭</h3>
+            <p>안내된 입금자명으로 이체하면 후원이 자동으로 매칭돼요. 충전 없이 지금 바로 쓸 수 있어요.</p>
+            <a class="button secondary wl-method-cta" href="/channels">지금 바로 후원하기</a>
+          </article>
+        </div>
+      </section>
+
+      <!-- 오픈 후 이용 흐름 (예정) -->
+      <section class="wl-steps" aria-labelledby="wl-steps-title">
+        <h2 id="wl-steps-title">이렇게 열릴 예정이에요</h2>
+        <ol class="wl-step-list">
+          <li class="wl-step">
+            <span class="wl-step-num" aria-hidden="true">1</span>
+            <div class="wl-step-body">
+              <h3>충전</h3>
+              <p>원하는 만큼 크레딧을 충전해 지갑에 담아 둬요.</p>
+            </div>
+          </li>
+          <li class="wl-step">
+            <span class="wl-step-num" aria-hidden="true">2</span>
+            <div class="wl-step-body">
+              <h3>채널에서 크레딧 후원</h3>
+              <p>좋아하는 채널에서 크레딧으로 바로 후원 메시지를 보내요.</p>
+            </div>
+          </li>
+          <li class="wl-step">
+            <span class="wl-step-num" aria-hidden="true">3</span>
+            <div class="wl-step-body">
+              <h3>정산</h3>
+              <p>후원받은 크레딧은 스트리머에게 투명하게 정산돼요.</p>
+            </div>
+          </li>
+        </ol>
+        <p class="wl-steps-note">위 흐름은 예정된 내용으로, 오픈 시점에 일부 달라질 수 있어요.</p>
+      </section>
+
+      <!-- FAQ -->
+      <section class="wl-faq" aria-labelledby="wl-faq-title">
+        <h2 id="wl-faq-title">자주 묻는 질문</h2>
+        <details>
+          <summary>
+            충전은 언제 열리나요?
+            <span class="wl-faq-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="wl-faq-body">
+            <p>충전형 크레딧은 순차 오픈 예정이에요. 준비가 되는 대로 공지로 안내해 드릴게요.</p>
+          </div>
+        </details>
+        <details>
+          <summary>
+            지금 후원하려면 어떻게 하나요?
+            <span class="wl-faq-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="wl-faq-body">
+            <p>
+              지금은 계좌이체 후원을 그대로 이용할 수 있어요. 자세한 방법은
+              <a href="/guide">이용 가이드</a>에서 확인해 주세요.
+            </p>
+          </div>
+        </details>
+        <details>
+          <summary>
+            수수료는 얼마인가요?
+            <span class="wl-faq-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="wl-faq-body">
+            <p>계좌이체 후원 수수료는 0%예요. 충전 수단별 수수료는 오픈 시 함께 안내해 드릴게요.</p>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <footer class="wl-footer">
+      <a href="/guide">이용 가이드</a>
+      <a href="/notices">공지사항</a>
+      <a href="/terms.html">이용약관</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/streamer">스트리머이신가요?</a>
+    </footer>
+  </body>
+</html>

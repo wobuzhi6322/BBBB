@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="계이득의 금액별 시그니처, 랭킹 리액션, 누적 후원 알림 기능을 소개합니다."
+    />
+    <title>금액별 시그니처 리액션 - 계이득</title>
+    <script>
+      (() => {
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("bbbb-site-theme");
+          if (savedTheme !== "light" && savedTheme !== "dark") {
+            savedTheme = "light";
+            localStorage.setItem("bbbb-site-theme", "light");
+          }
+        } catch {
+          savedTheme = "light";
+        }
+        document.documentElement.dataset.theme = savedTheme;
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/site.css?v=20260706-design-d1" />
+    <script type="module" src="/assets/site.js?v=20260712-viewer-profile-nav"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/streamer" aria-label="계이득 스트리머 홈">
+        <img class="brand-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/features.html">기능</a>
+        <a href="/signature.html" class="active">시그니처</a>
+        <a href="/wallpaper.html">벽지</a>
+        <a href="/streamer#features">제품</a>
+        <a href="/streamer#flow">작동</a>
+        <a href="/streamer#pricing">요금</a>
+        <a href="/streamer#download">다운로드</a>
+        <a href="/login.html">계정</a>
+      </nav>
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="화이트 모드로 전환" title="화이트 모드로 전환">
+          <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M20.99 14.31A8.5 8.5 0 0 1 9.69 3.01 9 9 0 1 0 20.99 14.31Z"></path>
+          </svg>
+        </button>
+        <a href="/login.html" class="header-account" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">로그인</a>
+        <a class="header-download" href="/streamer#download">다운로드</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="signature-title">
+        <div class="hero-shell">
+          <p class="eyebrow">Signature Overlay</p>
+          <h1 id="signature-title">금액별 시그니처 리액션</h1>
+          <p class="hero-lead">
+            <span>시청자의 입금 금액 규칙을 감지하고</span>
+            <span>그에 맞는 영상, 사운드 효과 및 랭킹 이펙트를</span>
+            <span>실시간으로 OBS 방송 화면에 노출합니다.</span>
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="/streamer#download">계이득으로 시작하기</a>
+            <a class="button secondary" href="/docs/gyeideuk-signature-guide.pdf" target="_blank" rel="noopener">시그니처 사용법 PDF</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="program-showcase-section" aria-labelledby="signature-showcase-title" data-program-showcase>
+        <div class="section-heading centered-heading">
+          <p class="eyebrow">Signature Workflow</p>
+          <h2 id="signature-showcase-title">시그니처는 규칙, 미디어, 테스트 순서로 세팅합니다</h2>
+          <p>최신 EXE 화면을 기준으로 실제 어디에서 설정하는지 확인할 수 있게 정리했습니다.</p>
+        </div>
+        <div class="program-showcase-layout">
+          <div class="program-showcase-tabs" role="tablist" aria-label="시그니처 화면 선택">
+            <button class="program-showcase-tab is-active" type="button" role="tab" aria-selected="true" data-showcase-target="rules">
+              <span>Step 01</span>
+              <strong>시그니처 규칙 등록</strong>
+            </button>
+            <button class="program-showcase-tab" type="button" role="tab" aria-selected="false" data-showcase-target="media">
+              <span>Step 02</span>
+              <strong>미디어 연결</strong>
+            </button>
+            <button class="program-showcase-tab" type="button" role="tab" aria-selected="false" data-showcase-target="test">
+              <span>Step 03</span>
+              <strong>방송 중 테스트</strong>
+            </button>
+          </div>
+          <div class="program-showcase-panels">
+            <article class="program-showcase-panel" data-showcase-panel="rules">
+              <figure class="program-shot-frame">
+                <img src="/assets/landing/program-signatures.png" alt="최신 EXE 시그니처 규칙 등록 화면" loading="lazy" />
+              </figure>
+              <div class="program-showcase-copy">
+                <span class="program-showcase-kicker">금액별 조건</span>
+                <h3>후원 금액과 조건에 맞는 시그니처 칸을 만듭니다</h3>
+                <p>기본 후원, 고액 후원, 오늘 최고 후원처럼 방송 문화에 맞는 조건을 먼저 잡고 세부 설정은 편집 패널에서 조정합니다.</p>
+                <ul class="program-showcase-list">
+                  <li>정확한 금액, 범위, 누적 금액 기준으로 리액션을 나눕니다.</li>
+                  <li>금연/흡연 전용 시그니처는 별도 영역에서 관리합니다.</li>
+                  <li>저장 전에 사이트 미리보기로 화면 구성을 확인합니다.</li>
+                </ul>
+              </div>
+            </article>
+            <article class="program-showcase-panel" data-showcase-panel="media" hidden>
+              <figure class="program-shot-frame">
+                <img src="/assets/landing/program-media.png" alt="최신 EXE 미디어 라이브러리 화면" loading="lazy" />
+              </figure>
+              <div class="program-showcase-copy">
+                <span class="program-showcase-kicker">이미지/GIF/영상/음악</span>
+                <h3>시그니처에 쓸 파일을 미디어 라이브러리에 모읍니다</h3>
+                <p>후원 리액션에 들어가는 영상, 사운드, 이미지 파일을 업로드하고 시그니처 편집에서 선택합니다.</p>
+                <ul class="program-showcase-list">
+                  <li>파일 종류별로 정리해 시그니처 편집 시간을 줄입니다.</li>
+                  <li>영상은 OBS 재생 부담을 낮추도록 최적화된 파일로 사용합니다.</li>
+                  <li>사용량을 확인해 요금제 한도를 넘기지 않게 관리합니다.</li>
+                </ul>
+              </div>
+            </article>
+            <article class="program-showcase-panel" data-showcase-panel="test" hidden>
+              <figure class="program-shot-frame">
+                <img src="/assets/landing/program-main-controller.png" alt="최신 EXE 메인 컨트롤러 시그니처 테스트 화면" loading="lazy" />
+              </figure>
+              <div class="program-showcase-copy">
+                <span class="program-showcase-kicker">OBS 전송 전 확인</span>
+                <h3>이름과 금액을 넣고 시그 띄우기로 즉시 테스트합니다</h3>
+                <p>방송 전에 실제 후원처럼 큐에 넣어 재생 순서, 소리, 벽지 자동 등록까지 한 번에 확인할 수 있습니다.</p>
+                <ul class="program-showcase-list">
+                  <li>후원자 이름과 금액으로 규칙 매칭 결과를 확인합니다.</li>
+                  <li>시그니처만 띄우거나 벽지까지 같이 띄울 수 있습니다.</li>
+                  <li>문제가 있으면 바로 시그니처 탭으로 돌아가 수정합니다.</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section">
+        <div class="section-heading centered-heading">
+          <h2>다양한 조건부 후원 알림 매칭</h2>
+          <p>단순 입금 알림이 아닙니다. 스트리머가 설계한 세부 조건에 따라 개성 있는 연출이 가능합니다.</p>
+        </div>
+
+        <div class="feature-matrix" aria-label="시그니처 상세 기능">
+          <div>
+            <span>Trigger 01</span>
+            <strong>정확한 금액 매칭</strong>
+            <p>10,000원, 50,000원 등 정확히 지정된 후원 금액에 맞춤 리액션 비디오와 효과음을 출력합니다.</p>
+          </div>
+          <div>
+            <span>Trigger 02</span>
+            <strong>범위/구간 후원 매칭</strong>
+            <p>1,000원부터 9,999원 사이 등 특정 구간을 설정하여 해당 영역 후원 시 기본 리액션을 지정합니다.</p>
+          </div>
+          <div>
+            <span>Trigger 03</span>
+            <strong>누적 후원 도달 알림</strong>
+            <p>특정 시청자가 방송 도중 누적하여 입금한 금액이 사전에 설정한 목표에 도달하면 특수 시그니처를 실행합니다.</p>
+          </div>
+          <div>
+            <span>Trigger 04</span>
+            <strong>당일 후원 랭킹 리액션</strong>
+            <p>방송 중 최고 후원 금액을 경신하여 당일 후원 1위(최다 후원)에 올라설 때 특별 시그니처 축하 효과를 보냅니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section" style="max-width: 960px; margin: 0 auto 80px;">
+        <div class="section-heading">
+          <h2>시그니처 생성 및 활용 예시</h2>
+          <p>계이득을 통해 시청자들의 적극적인 참여와 리액션을 유도해 보세요.</p>
+        </div>
+        <ol class="process-line" style="grid-template-columns: repeat(3, 1fr);" aria-label="시그니처 사용 흐름">
+          <li>
+            <span>1</span>
+            <strong>10,000 KRW 설정</strong>
+            <p>'폭죽 영상'과 '신나는 배경음'을 맵핑하여 활기찬 리액션을 준비합니다.</p>
+          </li>
+          <li>
+            <span>2</span>
+            <strong>50,000 KRW 설정</strong>
+            <p>'스트리머 댄스 영상'을 맵핑하여 큰 금액에 대한 독점 리액션을 재생합니다.</p>
+          </li>
+          <li>
+            <span>3</span>
+            <strong>누적 10만 원 리액션</strong>
+            <p>시청자가 누적으로 후원을 쌓아 10만 원을 넘길 시 명예의 전당 팝업을 연출합니다.</p>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <div class="contact-stack" aria-label="문의 링크">
+      <a
+        class="contact-float contact-float-discord"
+        href="https://discord.gg/5QZw7pu45E"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="계이득 디스코드 열기"
+        title="디스코드"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M7.5 8.5c2.7-1 6.3-1 9 0M8.2 16.5c2.5 1.3 5.1 1.3 7.6 0" />
+          <path d="M7.2 5.5C5.6 6.4 4.5 9.6 4.2 16.3c1.9 1.4 3.7 2.1 5.5 2.3l.8-1.4M16.8 5.5c1.6.9 2.7 4.1 3 10.8-1.9 1.4-3.7 2.1-5.5 2.3l-.8-1.4" />
+          <path d="M9 12.2h.1M15 12.2h.1" />
+        </svg>
+        <span>디스코드</span>
+      </a>
+      <a
+        class="contact-float"
+        href="https://open.kakao.com/o/suFCxiwi"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="카카오 오픈채팅 문의하기"
+        title="문의하기"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M21 11.5a8.4 8.4 0 0 1-8.7 8.2 9.8 9.8 0 0 1-3.1-.5L4 21l1.6-4.2A7.8 7.8 0 0 1 3 11.5a8.4 8.4 0 0 1 8.7-8.2A8.4 8.4 0 0 1 21 11.5Z" />
+          <path d="M8 10h8M8 14h5" />
+        </svg>
+        <span>문의하기</span>
+      </a>
+    </div>
+
+    <footer class="site-footer">
+      <div>
+        <img class="footer-logo" src="/assets/gyeideuk-logo.png" alt="계이득" />
+        <p><span>계좌 후원 알림을 방송용 OBS 오버레이로</span> <span>변환 출력하는 Windows 유틸리티.</span></p>
+      </div>
+      <nav class="footer-links" aria-label="법적 고지">
+        <a href="/privacy.html">개인정보처리방침</a>
+        <a href="/terms.html">이용약관</a>
+        <a href="/ads.html">광고 및 쿠키 안내</a>
+      </nav>
+    </footer>
+  </body>
+</html>

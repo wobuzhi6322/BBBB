@@ -1,0 +1,106 @@
+/* =============================================================================
+   웹 시청자 내비 드롭다운 — web-viewer-nav.js 가 스스로 주입하는 스타일.
+   모든 클래스는 vn-* 네임스페이스. D 언어(스티커/쿠폰): 2px 잉크 보더,
+   하드섀도, --radius 토큰, --surface 배경.
+   ⚠️ index.html 은 web-tokens.css 를 로드하지 않으므로 --gw-border 가 없을 수
+   있다 → site.css 테마 토큰(--border-subtle)으로 폴백한다. site.css 원천 토큰은
+   절대 재정의하지 않는다(순환 참조 금지).
+   ============================================================================= */
+
+.vn-account {
+  position: relative;
+  display: inline-flex;
+}
+
+/* site.css .header-account 스티커 알약 위에 이름 말줄임 + 카렛만 더한다 */
+.vn-account-button {
+  max-width: min(52vw, 240px);
+  gap: 6px;
+}
+
+.vn-account-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vn-caret {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s ease;
+}
+
+.vn-account-button[aria-expanded="true"] .vn-caret {
+  transform: rotate(180deg);
+}
+
+.vn-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 70;
+  min-width: 224px;
+  max-width: calc(100vw - 24px);
+  padding: 8px;
+  border: var(--bw-sm, 2px) solid var(--edge, #17265c);
+  border-radius: var(--radius, 16px);
+  background: var(--surface, #fffdf7);
+  box-shadow: var(--shadow-md, 5px 5px 0 rgb(23 38 92 / 16%));
+}
+
+.vn-item {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: calc(var(--radius, 16px) - 6px);
+  background: none;
+  color: var(--ink, #17265c);
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.vn-item:hover {
+  background: var(--surface-2, #fff1d9);
+}
+
+.vn-item:focus-visible {
+  outline: 2px solid var(--focus, #2e53ff);
+  outline-offset: 2px;
+}
+
+.vn-divider {
+  margin: 6px 4px;
+  border: 0;
+  border-top: 1px solid var(--gw-border, var(--border-subtle, rgb(23 38 92 / 16%)));
+}
+
+/* "준비 중" — 옐로 스티커 배지 (옐로 위 텍스트는 테마 무관 잉크 --ink-fix) */
+.vn-soon {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: var(--bw-sm, 2px) solid var(--ink-fix, #17265c);
+  border-radius: 999px;
+  background: var(--yellow, #ffce31);
+  color: var(--ink-fix, #17265c);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+}
