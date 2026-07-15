@@ -237,6 +237,30 @@ export function normalizeTeamCode(input: unknown): string | null {
   return code;
 }
 
+// ---------------------------------------------------------------------------
+// 시그니처 카드 제목
+// 프로그램(donation-system)의 rule.title은 항목 이름이 아니라 오버레이 재생
+// "표시 문구" 템플릿이다(기본값 "{sender}님 {amount}원 후원 감사합니다!",
+// donationRules.ts renderRuleTitle이 재생 시점에 플레이스홀더를 치환).
+// 사람이 붙인 이름은 rule.key("시그니처 이름")이고, 릴레이 경로의
+// local_signature_id가 곧 rule.key다.
+// ---------------------------------------------------------------------------
+
+/** 오버레이 표시 문구 템플릿 판정 — renderRuleTitle이 치환하는 플레이스홀더 */
+export const SIGNATURE_TITLE_PLACEHOLDER = /\{(sender|amount|message|totalAmount)\}/i;
+
+/**
+ * 시청자 카드/스튜디오 목록 제목 결정: title이 비었거나 표시 문구 템플릿이면
+ * fallback(릴레이 행은 local_signature_id = rule.key)을 쓴다. fallback마저
+ * 비면 원래 title을 그대로 돌려준다(빈 제목보다는 낫다).
+ */
+export function signatureDisplayTitle(title: string | null | undefined, fallback: string | null | undefined): string {
+  const value = typeof title === "string" ? title.trim() : "";
+  if (value && !SIGNATURE_TITLE_PLACEHOLDER.test(value)) return value;
+  const alt = typeof fallback === "string" ? fallback.trim() : "";
+  return alt || value;
+}
+
 /** bbbb_shared_profile_versions.bundle.rules 항목(프로그램 DonationRule) 중 웹이 쓰는 필드 */
 export type SharedBundleRule = {
   key?: unknown;
@@ -283,10 +307,12 @@ function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
     if (amount <= 0) continue;
     const key = bundleString(raw.key);
     if (!key) continue;
-    const title = typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : key;
+    // 카드 제목 = rule.key(프로그램 "시그니처 이름"). rule.title은 오버레이 재생
+    // "표시 문구" 템플릿("{sender}님 {amount}원 후원 감사합니다!")이라 시청자
+    // 메뉴 제목이 아니다 — 실측(SIG-001 v21): 37개 룰 전부 title이 동일 템플릿.
     eligible.push({
       key,
-      title,
+      title: key,
       amount,
       image: bundleString(raw.image),
       video: bundleString(raw.video),

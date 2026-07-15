@@ -604,6 +604,7 @@
           S.page = data;
           renderPageForm();
           renderPageLink();
+          renderSigTeamcodeNote(); // 팀코드 변경이 시그니처 탭 안내에도 반영되도록
           toast("저장했어요.", "ok");
           $("#ps-save-note").textContent = fmtTime(new Date().toISOString()) + " 저장됨";
           refreshTeamCodeResult(body.teamCode);
@@ -639,6 +640,7 @@
           return;
         }
         $("#sig-editor").hidden = false;
+        renderSigTeamcodeNote();
         renderSigRows();
       })
       .catch(function () {
@@ -646,6 +648,23 @@
         $("#sig-skeleton").hidden = true;
         $("#sig-error").hidden = false;
       });
+  }
+
+  // 팀코드가 설정된 페이지의 공개 메뉴는 팀 번들이 통째로 대체한다 — 이 탭의
+  // 공개 토글이 시청자 페이지에 반영되지 않는다는 사실을 명시(오해 방지).
+  function renderSigTeamcodeNote() {
+    var note = $("#sig-teamcode-note");
+    if (!note) return;
+    var teamCode = S.page && S.page.teamCode;
+    if (teamCode) {
+      note.hidden = false;
+      note.textContent =
+        "팀코드(" + teamCode + ")가 설정되어 있어 후원 페이지 메뉴는 팀 공유 시그니처가 그대로 표시돼요. " +
+        "아래 목록과 공개 설정은 팀코드를 해제했을 때만 적용됩니다.";
+    } else {
+      note.hidden = true;
+      note.textContent = "";
+    }
   }
 
   function renderSigRows() {
@@ -730,33 +749,58 @@
     });
 
     $("#sig-save").addEventListener("click", function () {
-      var items = S.sigEdit.map(function (row, idx) {
-        return {
-          id: row.id,
-          published: row.published,
-          pinned: row.pinned,
-          webTitle: row.webTitle || null,
-          sort: idx * 10
-        };
-      });
-      var button = $("#sig-save");
-      button.disabled = true;
-      call("/api/studio/signatures", { method: "PATCH", body: { items: items } })
-        .then(function (data) {
-          S.sigEdit = data.signatures.map(function (row) {
-            return Object.assign({}, row);
-          });
-          renderSigRows();
-          toast("메뉴판을 저장했어요.", "ok");
-          $("#sig-save-note").textContent = fmtTime(new Date().toISOString()) + " 저장됨";
-        })
-        .catch(function (err) {
-          toast(err.message || "저장에 실패했어요.", "err");
-        })
-        .then(function () {
-          button.disabled = false;
-        });
+      saveSignatures();
     });
+
+    // 일괄 공개/비공개 — 상태를 바꾼 즉시 저장까지 수행한다(클릭 1번).
+    $("#sig-publish-all").addEventListener("click", function () {
+      setAllPublished(true);
+    });
+    $("#sig-unpublish-all").addEventListener("click", function () {
+      setAllPublished(false);
+    });
+  }
+
+  function setAllPublished(published) {
+    if (!S.sigEdit || !S.sigEdit.length) return;
+    for (var i = 0; i < S.sigEdit.length; i += 1) {
+      S.sigEdit[i].published = published;
+    }
+    renderSigRows();
+    saveSignatures();
+  }
+
+  function saveSignatures() {
+    var items = S.sigEdit.map(function (row, idx) {
+      return {
+        id: row.id,
+        published: row.published,
+        pinned: row.pinned,
+        webTitle: row.webTitle || null,
+        sort: idx * 10
+      };
+    });
+    var buttons = [$("#sig-save"), $("#sig-publish-all"), $("#sig-unpublish-all")];
+    buttons.forEach(function (button) {
+      if (button) button.disabled = true;
+    });
+    call("/api/studio/signatures", { method: "PATCH", body: { items: items } })
+      .then(function (data) {
+        S.sigEdit = data.signatures.map(function (row) {
+          return Object.assign({}, row);
+        });
+        renderSigRows();
+        toast("메뉴판을 저장했어요.", "ok");
+        $("#sig-save-note").textContent = fmtTime(new Date().toISOString()) + " 저장됨";
+      })
+      .catch(function (err) {
+        toast(err.message || "저장에 실패했어요.", "err");
+      })
+      .then(function () {
+        buttons.forEach(function (button) {
+          if (button) button.disabled = false;
+        });
+      });
   }
 
   // ---------------------------------------------------------------------------

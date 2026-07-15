@@ -5,7 +5,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { EnterpriseBadge, PublicPageView, PublicSignatureCard } from "../_webShared.js";
-import { enterpriseBadgeFromRow, normalizeTeamCode, sharedBundleToSignatureCards, teamCodeThumbPaths } from "../_webShared.js";
+import {
+  enterpriseBadgeFromRow,
+  normalizeTeamCode,
+  sharedBundleToSignatureCards,
+  signatureDisplayTitle,
+  teamCodeThumbPaths
+} from "../_webShared.js";
 import {
   TABLES,
   applyCors,
@@ -45,6 +51,8 @@ type PageRow = {
 
 type SignatureRow = {
   id: string;
+  /** 프로그램 rule.key("시그니처 이름") — 템플릿 title의 제목 폴백 */
+  local_signature_id: string;
   title: string;
   web_title: string | null;
   amount: number;
@@ -85,7 +93,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       supabase.from(TABLES.profiles).select("nickname").eq("user_id", page.owner_user_id).maybeSingle(),
       supabase
         .from(TABLES.signatures)
-        .select("id,title,web_title,amount,media_type,thumb_url,pinned")
+        .select("id,local_signature_id,title,web_title,amount,media_type,thumb_url,pinned")
         .eq("page_id", page.id)
         .eq("published", true)
         .order("pinned", { ascending: false })
@@ -109,7 +117,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     let signatures: PublicSignatureCard[] = ((signaturesResult.data ?? []) as SignatureRow[]).map((row) => ({
       id: row.id,
-      title: row.web_title ?? row.title,
+      // 웹 제목(스튜디오 지정)이 우선. 없으면 프로그램 title을 쓰되, 그것이
+      // 오버레이 "표시 문구" 템플릿이면 rule.key(local_signature_id)로 폴백.
+      title: row.web_title ?? signatureDisplayTitle(row.title, row.local_signature_id),
       amount: row.amount,
       mediaType: row.media_type,
       thumbUrl: row.thumb_url,

@@ -103,8 +103,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       if (!verdict.ok) throw new ApiError(verdict.status, verdict.message, verdict.code);
     }
 
-    // 팀코드는 그 공유 코드의 멤버(owner/editor)만 붙일 수 있다 — 남의 팀 코드를
-    // 자기 공개 페이지에 설정해 비공개 미디어(서명 URL)를 유출하는 것을 막는다.
+    // 팀코드는 그 공유 코드의 멤버만 붙일 수 있다 — 코드 문자열만 아는 외부인이
+    // 남의 팀 미디어(서명 URL)를 자기 공개 페이지로 유출하는 것을 막는다.
+    // role은 묻지 않는다(viewer 포함): 프로그램에서 팀 코드를 연동한 계정은 전부
+    // 멤버이고, 팀원의 후원 페이지가 팀 메뉴를 쓰는 것이 이 기능의 목적이다.
+    // (TEAM_ENTER_PLAN §6 결정 1 → 1-A 완화, 2026-07-15. 이전 owner/editor 제한은
+    // "재연결해도 viewer" 규칙과 겹쳐 403 무한 루프를 만들었다 —
+    // docs/TEAM_CODE_WEB_403_HANDOFF.md)
     // (해제·미변경은 검사 불필요)
     if (typeof patch.team_code === "string" && patch.team_code) {
       const membership = await supabase
@@ -114,9 +119,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .eq("code", patch.team_code)
         .maybeSingle();
       if (membership.error) throw new Error(membership.error.message);
-      const role = (membership.data as { role?: string } | null)?.role;
-      if (role !== "owner" && role !== "editor") {
-        throw new ApiError(403, "이 팀 코드에 연결할 권한이 없습니다. 먼저 프로그램에서 팀 코드를 연동하세요.", "forbidden");
+      if (!membership.data) {
+        throw new ApiError(
+          403,
+          "이 계정은 해당 팀 코드의 멤버가 아닙니다. 프로그램(/admin 고급)에서 지금 로그인한 계정으로 이 팀 코드를 연동한 뒤 다시 저장하세요.",
+          "forbidden"
+        );
       }
     }
 

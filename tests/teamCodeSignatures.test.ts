@@ -9,6 +9,7 @@ import {
   TEAM_CODE_PATTERN,
   normalizeTeamCode,
   sharedBundleToSignatureCards,
+  signatureDisplayTitle,
   teamCodeThumbPaths
 } from "../api/_webShared.js";
 
@@ -160,7 +161,7 @@ describe("sharedBundleToSignatureCards", () => {
     expect(cards[0]?.thumbUrl).toBeNull();
   });
 
-  it("카드 계약 형태 유지: id는 tc- 접두, pinned는 항상 false, 제목 폴백=key", () => {
+  it("카드 계약 형태 유지: id는 tc- 접두, pinned는 항상 false, 제목=key", () => {
     const bundle = { rules: [{ key: "sig1", title: "  ", minAmount: 1000, enabled: true }] };
     const [card] = sharedBundleToSignatureCards(bundle, [], {});
     expect(card).toEqual({
@@ -175,12 +176,54 @@ describe("sharedBundleToSignatureCards", () => {
     });
   });
 
+  it("카드 제목은 항상 rule.key — rule.title은 오버레이 표시 문구 템플릿이라 노출 금지 (SIG-001 실측)", () => {
+    // 실번들: 37개 룰 전부 title="{sender}님 {amount}원 후원 감사합니다!", 이름은 key
+    const bundle = {
+      rules: [
+        { key: "소중한후원", title: "{sender}님 {amount}원 후원 감사합니다!", minAmount: 10000, enabled: true },
+        { key: "나가!", title: "퇴장 문구", minAmount: 100000, enabled: true }
+      ]
+    };
+    const cards = sharedBundleToSignatureCards(bundle, [], {});
+    expect(cards.map((card) => card.title)).toEqual(["소중한후원", "나가!"]);
+  });
+
   it("rules 배열 없음·번들 비객체·key 없는 규칙은 안전하게 []/스킵", () => {
     expect(sharedBundleToSignatureCards({}, [], {})).toEqual([]);
     expect(sharedBundleToSignatureCards(null, [], {})).toEqual([]);
     expect(sharedBundleToSignatureCards("bundle", [], {})).toEqual([]);
     expect(sharedBundleToSignatureCards({ rules: "x" }, [], {})).toEqual([]);
     expect(sharedBundleToSignatureCards({ rules: [{ title: "키없음", minAmount: 100, enabled: true }] }, [], {})).toEqual([]);
+  });
+});
+
+describe("signatureDisplayTitle", () => {
+  it("일반 제목은 그대로", () => {
+    expect(signatureDisplayTitle("환영 인사", "sig-1")).toBe("환영 인사");
+  });
+
+  it("오버레이 문구 템플릿({sender}·{amount}·{message}·{totalAmount})은 폴백으로 대체", () => {
+    expect(signatureDisplayTitle("{sender}님 {amount}원 후원 감사합니다!", "소중한후원")).toBe("소중한후원");
+    expect(signatureDisplayTitle("{SENDER}님 감사!", "대문자")).toBe("대문자");
+    expect(signatureDisplayTitle("{message} 읽어드려요", "읽기")).toBe("읽기");
+    expect(signatureDisplayTitle("누적 {totalAmount}원", "누적")).toBe("누적");
+  });
+
+  it("빈 제목·공백 제목은 폴백", () => {
+    expect(signatureDisplayTitle("", "폴백")).toBe("폴백");
+    expect(signatureDisplayTitle("   ", "폴백")).toBe("폴백");
+    expect(signatureDisplayTitle(null, "폴백")).toBe("폴백");
+    expect(signatureDisplayTitle(undefined, "폴백")).toBe("폴백");
+  });
+
+  it("폴백마저 비면 원래 제목을 그대로 반환(빈 제목보다 낫다)", () => {
+    expect(signatureDisplayTitle("{sender}님 감사", "")).toBe("{sender}님 감사");
+    expect(signatureDisplayTitle("{sender}님 감사", null)).toBe("{sender}님 감사");
+    expect(signatureDisplayTitle("", "")).toBe("");
+  });
+
+  it("플레이스홀더가 아닌 중괄호 문구는 제목으로 인정", () => {
+    expect(signatureDisplayTitle("{두근두근} 이벤트", "폴백")).toBe("{두근두근} 이벤트");
   });
 });
 

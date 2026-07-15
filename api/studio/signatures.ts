@@ -8,7 +8,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { LIMITS, type StudioSignatureRow, type WebErrorCode } from "../_webShared.js";
+import { LIMITS, signatureDisplayTitle, type StudioSignatureRow, type WebErrorCode } from "../_webShared.js";
 
 const pagesTable = "bbbb_streamer_pages";
 const signaturesTable = "bbbb_page_signatures";
@@ -156,7 +156,9 @@ function toResponse(rows: SignatureDbRow[]): StudioSignaturesResponse {
     if (!lastSyncedAt || row.synced_at > lastSyncedAt) lastSyncedAt = row.synced_at;
     return {
       id: row.id,
-      title: row.title,
+      // 프로그램 title이 오버레이 "표시 문구" 템플릿이면 rule.key(local_signature_id)로
+      // 폴백 — 스튜디오 목록도 시청자 페이지와 같은 이름으로 보여야 관리가 된다.
+      title: signatureDisplayTitle(row.title, row.local_signature_id),
       amount: row.amount,
       mediaType: row.media_type,
       thumbUrl: row.thumb_url,

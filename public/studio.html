@@ -274,7 +274,8 @@
             <button type="button" class="btn btn-ghost" id="sig-retry">다시 시도</button>
           </div>
           <div id="sig-editor" hidden>
-            <p class="field-hint">공개를 켠 시그니처만 후원 페이지 메뉴판에 나타나요. 추천 고정은 최대 3개, 웹 제목을 비우면 프로그램 제목을 그대로 씁니다.</p>
+            <p class="field-hint" id="sig-teamcode-note" hidden></p>
+            <p class="field-hint">새로 동기화된 시그니처는 기본 공개예요. 공개를 끈 시그니처는 후원 페이지 메뉴판에서 숨겨집니다. 추천 고정은 최대 3개, 웹 제목을 비우면 프로그램 제목을 그대로 씁니다.</p>
             <div class="table-scroll panel">
               <table class="sig-table">
                 <thead>
@@ -292,6 +293,8 @@
             </div>
             <div class="form-actions">
               <button type="button" class="btn btn-primary" id="sig-save">변경사항 저장</button>
+              <button type="button" class="btn btn-ghost" id="sig-publish-all">전체 공개</button>
+              <button type="button" class="btn btn-ghost" id="sig-unpublish-all">전체 비공개</button>
               <span class="field-hint" id="sig-save-note"></span>
             </div>
           </div>
