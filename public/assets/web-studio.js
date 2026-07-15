@@ -395,9 +395,17 @@
         // 확인 중에 코드를 또 바꿨으면 낡은 결과는 버린다
         if ($("#ps-teamcode").value.trim().toUpperCase() !== teamCode) return;
         var count = data && Array.isArray(data.signatures) ? data.signatures.length : 0;
-        if (count > 0) {
+        // signaturesSource가 relay면 팀 번들이 아직 없어 자기 동기화 목록으로
+        // 폴백 중 — 개수만 보고 성공(초록)으로 오인하지 않는다.
+        var fromBundle = Boolean(data) && data.signaturesSource === "team_bundle";
+        if (count > 0 && fromBundle) {
           row.classList.add("ok");
-          row.textContent = "시그니처 " + count.toLocaleString("ko-KR") + "개가 메뉴에 표시됩니다";
+          row.textContent = "팀 시그니처 " + count.toLocaleString("ko-KR") + "개가 메뉴에 표시됩니다";
+        } else if (count > 0) {
+          row.textContent =
+            "팀코드는 저장됐지만 아직 이 코드의 확정된 팀 공유 시그니처가 없어요 — 지금은 내 동기화 목록(" +
+            count.toLocaleString("ko-KR") +
+            "개)이 표시됩니다. 프로그램에서 [팀 설정 업로드]를 실행하면 팀 메뉴로 전환돼요.";
         } else {
           row.textContent = "아직 이 코드로 확정된 시그니처가 없어요 — 프로그램에서 공유 코드 동기화를 한 번 실행해 주세요.";
         }
@@ -635,12 +643,14 @@
         S.lastSyncedAt = data.lastSyncedAt;
         $("#sig-skeleton").hidden = true;
         $("#sig-synced-at").textContent = "마지막 동기화 " + (S.lastSyncedAt ? fmtDateTime(S.lastSyncedAt) : "—");
+        // 팀코드 안내는 목록이 비어 있어도 표시 — 특히 자기 동기화 행이 0개인
+        // 팀 크루가 "페이지엔 팀 메뉴가 있는데 여긴 비었다"는 혼란을 막는다.
+        renderSigTeamcodeNote();
         if (!S.sigEdit.length) {
           $("#sig-empty").hidden = false;
           return;
         }
         $("#sig-editor").hidden = false;
-        renderSigTeamcodeNote();
         renderSigRows();
       })
       .catch(function () {
@@ -650,8 +660,9 @@
       });
   }
 
-  // 팀코드가 설정된 페이지의 공개 메뉴는 팀 번들이 통째로 대체한다 — 이 탭의
-  // 공개 토글이 시청자 페이지에 반영되지 않는다는 사실을 명시(오해 방지).
+  // 팀코드가 설정된 페이지의 공개 메뉴는 (확정 번들이 있으면) 팀 번들이 통째로
+  // 대체한다 — 이 탭의 공개 토글이 시청자 페이지에 반영되지 않을 수 있다는
+  // 사실을 명시(오해 방지). 번들 미확정이면 이 목록이 그대로 공개 메뉴다.
   function renderSigTeamcodeNote() {
     var note = $("#sig-teamcode-note");
     if (!note) return;
@@ -659,8 +670,8 @@
     if (teamCode) {
       note.hidden = false;
       note.textContent =
-        "팀코드(" + teamCode + ")가 설정되어 있어 후원 페이지 메뉴는 팀 공유 시그니처가 그대로 표시돼요. " +
-        "아래 목록과 공개 설정은 팀코드를 해제했을 때만 적용됩니다.";
+        "팀코드(" + teamCode + ")가 설정되어 있어요. 팀의 확정된 공유 시그니처가 있으면 후원 페이지 메뉴는 " +
+        "그 목록으로 표시되고, 아래 목록과 공개 설정은 팀코드를 해제했거나 팀 공유 번들이 없을 때 적용됩니다.";
     } else {
       note.hidden = true;
       note.textContent = "";
@@ -763,6 +774,14 @@
 
   function setAllPublished(published) {
     if (!S.sigEdit || !S.sigEdit.length) return;
+    // 즉시 서버 저장까지 가는 일괄 조작이라 오클릭 방지 확인을 한 번 거친다
+    // (핸들 변경 confirm과 동일한 관례).
+    var sure = window.confirm(
+      published
+        ? "시그니처 " + S.sigEdit.length + "개를 모두 공개할까요? 후원 페이지 메뉴판에 바로 표시됩니다."
+        : "시그니처 " + S.sigEdit.length + "개를 모두 비공개할까요? 후원 페이지 메뉴판에서 바로 사라집니다."
+    );
+    if (!sure) return;
     for (var i = 0; i < S.sigEdit.length; i += 1) {
       S.sigEdit[i].published = published;
     }

@@ -94,7 +94,8 @@ describe("relay signature sync", () => {
             published: true
           })
         ],
-        { onConflict: "page_id,local_signature_id" }
+        // ignoreDuplicates: 동시 동기화 경쟁 시 형제 요청의 행을 덮어쓰지 않음
+        { onConflict: "page_id,local_signature_id", ignoreDuplicates: true }
       );
     } finally {
       await new Promise<void>((resolve, reject) => {

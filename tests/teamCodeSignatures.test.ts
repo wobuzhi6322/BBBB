@@ -209,6 +209,15 @@ describe("signatureDisplayTitle", () => {
     expect(signatureDisplayTitle("누적 {totalAmount}원", "누적")).toBe("누적");
   });
 
+  it("renderRuleTitle의 나머지 플레이스홀더(미션·집계·랭크)도 전부 템플릿으로 판정", () => {
+    expect(signatureDisplayTitle("{missionLabel} 도전 성공!", "미션")).toBe("미션");
+    expect(signatureDisplayTitle("{missionText} 진행 중", "미션")).toBe("미션");
+    expect(signatureDisplayTitle("오늘 {todayCount}번째 후원!", "오늘")).toBe("오늘");
+    expect(signatureDisplayTitle("{allTimeRank}위 등극!", "랭크")).toBe("랭크");
+    expect(signatureDisplayTitle("{monthAmount} 돌파!", "이달")).toBe("이달");
+    expect(signatureDisplayTitle("최고 {highestAmount}", "최고")).toBe("최고");
+  });
+
   it("빈 제목·공백 제목은 폴백", () => {
     expect(signatureDisplayTitle("", "폴백")).toBe("폴백");
     expect(signatureDisplayTitle("   ", "폴백")).toBe("폴백");

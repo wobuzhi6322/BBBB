@@ -214,6 +214,11 @@ export type PublicPageView = {
   tickerPublic: boolean;
   online: boolean;
   signatures: PublicSignatureCard[];
+  /**
+   * signatures의 출처(additive): 팀코드 번들이 실제로 쓰였는지 여부.
+   * 스튜디오 팀코드 확인 행이 "번들 없음 폴백"을 성공으로 오인하지 않게 한다.
+   */
+  signaturesSource?: "team_bundle" | "relay";
   transferLinks: TransferLink[];
   /** account_display='full'일 때만 채워짐 */
   accountInfo: { bank: string; number: string; holder: string } | null;
@@ -246,8 +251,9 @@ export function normalizeTeamCode(input: unknown): string | null {
 // local_signature_id가 곧 rule.key다.
 // ---------------------------------------------------------------------------
 
-/** 오버레이 표시 문구 템플릿 판정 — renderRuleTitle이 치환하는 플레이스홀더 */
-export const SIGNATURE_TITLE_PLACEHOLDER = /\{(sender|amount|message|totalAmount)\}/i;
+/** 오버레이 표시 문구 템플릿 판정 — renderRuleTitle(donationRules.ts:413-435)이 치환하는 19개 전부 */
+export const SIGNATURE_TITLE_PLACEHOLDER =
+  /\{(sender|amount|message|missionType|missionCount|missionLabel|missionText|missionUnitAmount|missionAmount|totalAmount|totalCount|todayAmount|todayCount|monthAmount|monthCount|allTimeRank|todayRank|monthRank|highestAmount)\}/i;
 
 /**
  * 시청자 카드/스튜디오 목록 제목 결정: title이 비었거나 표시 문구 템플릿이면

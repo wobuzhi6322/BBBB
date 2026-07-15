@@ -130,10 +130,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     // 팀코드가 설정된 페이지는 프로그램 공유 번들(최신 finalized)이 메뉴의 진실 —
     // 성공 시 bbbb_page_signatures를 대체(병합 아님), 실패·미발행 시 기존 경로 유지.
+    let signaturesSource: "team_bundle" | "relay" = "relay";
     if (page.team_code) {
       const teamSignatures = await teamCodeSignatures(supabase, page.team_code);
       if (teamSignatures) {
         signatures = teamSignatures;
+        signaturesSource = "team_bundle";
       }
     }
 
@@ -149,6 +151,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       tickerPublic: page.ticker_public,
       online,
       signatures,
+      signaturesSource,
       transferLinks: sanitizeTransferLinks(page.transfer_links),
       accountInfo: publicAccountInfo(page.account_display, page.account_info),
       enterprise

@@ -97,9 +97,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       }
     }
     if (newItems.length > 0) {
+      // ignoreDuplicates(ON CONFLICT DO NOTHING): 동시 동기화가 겹쳐 형제 요청이
+      // 먼저 삽입한 경우, 그 사이 스튜디오가 바꾼 published를 덮어쓰지 않는다.
       const insertResult = await supabase.from(TABLES.signatures).upsert(
         newItems.map((item) => ({ ...basePayload(item), published: true })),
-        { onConflict: "page_id,local_signature_id" }
+        { onConflict: "page_id,local_signature_id", ignoreDuplicates: true }
       );
       if (insertResult.error) {
         throw new Error(insertResult.error.message);
