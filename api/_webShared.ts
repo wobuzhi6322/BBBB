@@ -256,15 +256,27 @@ export const SIGNATURE_TITLE_PLACEHOLDER =
   /\{(sender|amount|message|missionType|missionCount|missionLabel|missionText|missionUnitAmount|missionAmount|totalAmount|totalCount|todayAmount|todayCount|monthAmount|monthCount|allTimeRank|todayRank|monthRank|highestAmount)\}/i;
 
 /**
+ * 프로그램이 자동 생성한 룰 키(사람이 이름을 안 붙인 룰) — 실측 @signal:
+ * "signature_10000"(기본 금액 룰), "custom_1784029286619"(새 규칙 기본 키).
+ * 시청자에게 무의미한 디버그 문자열이라 일반 라벨로 대체한다.
+ */
+const AUTO_RULE_KEY = /^(signature|custom)_\d+$/i;
+const GENERIC_SIGNATURE_TITLE = "시그니처";
+
+/**
  * 시청자 카드/스튜디오 목록 제목 결정: title이 비었거나 표시 문구 템플릿이면
  * fallback(릴레이 행은 local_signature_id = rule.key)을 쓴다. fallback마저
- * 비면 원래 title을 그대로 돌려준다(빈 제목보다는 낫다).
+ * 비면 원래 title을 그대로 돌려준다(빈 제목보다는 낫다). 자동 생성 키
+ * (signature_N·custom_N)는 "시그니처"로 다듬는다 — 금액은 카드에 따로 표시된다.
  */
 export function signatureDisplayTitle(title: string | null | undefined, fallback: string | null | undefined): string {
   const value = typeof title === "string" ? title.trim() : "";
-  if (value && !SIGNATURE_TITLE_PLACEHOLDER.test(value)) return value;
+  if (value && !SIGNATURE_TITLE_PLACEHOLDER.test(value)) {
+    return AUTO_RULE_KEY.test(value) ? GENERIC_SIGNATURE_TITLE : value;
+  }
   const alt = typeof fallback === "string" ? fallback.trim() : "";
-  return alt || value;
+  if (alt) return AUTO_RULE_KEY.test(alt) ? GENERIC_SIGNATURE_TITLE : alt;
+  return value;
 }
 
 /** bbbb_shared_profile_versions.bundle.rules 항목(프로그램 DonationRule) 중 웹이 쓰는 필드 */
@@ -316,9 +328,10 @@ function eligibleBundleRules(bundle: unknown): EligibleBundleRule[] {
     // 카드 제목 = rule.key(프로그램 "시그니처 이름"). rule.title은 오버레이 재생
     // "표시 문구" 템플릿("{sender}님 {amount}원 후원 감사합니다!")이라 시청자
     // 메뉴 제목이 아니다 — 실측(SIG-001 v21): 37개 룰 전부 title이 동일 템플릿.
+    // 자동 생성 키는 signatureDisplayTitle이 "시그니처"로 다듬는다.
     eligible.push({
       key,
-      title: key,
+      title: signatureDisplayTitle(null, key),
       amount,
       image: bundleString(raw.image),
       video: bundleString(raw.video),

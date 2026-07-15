@@ -234,6 +234,15 @@ describe("signatureDisplayTitle", () => {
   it("플레이스홀더가 아닌 중괄호 문구는 제목으로 인정", () => {
     expect(signatureDisplayTitle("{두근두근} 이벤트", "폴백")).toBe("{두근두근} 이벤트");
   });
+
+  it("자동 생성 키(signature_N·custom_N)는 '시그니처'로 다듬는다 (@signal 실측)", () => {
+    expect(signatureDisplayTitle("{sender}님 {amount}원 후원 감사합니다!", "signature_10000")).toBe("시그니처");
+    expect(signatureDisplayTitle("", "custom_1784029286619")).toBe("시그니처");
+    expect(signatureDisplayTitle("signature_10000", "무시됨")).toBe("시그니처");
+    // 사람이 붙인 이름은 그대로
+    expect(signatureDisplayTitle("", "소중한후원")).toBe("소중한후원");
+    expect(signatureDisplayTitle("", "custom작명")).toBe("custom작명");
+  });
 });
 
 describe("teamCodeThumbPaths", () => {
