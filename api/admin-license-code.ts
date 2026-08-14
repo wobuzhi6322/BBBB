@@ -10,6 +10,11 @@ import {
   type FeatureFlags
 } from "./_feature-flags.js";
 import { isOwnerEmail } from "./_owner.js";
+import {
+  licenseCodeSharedSyncFromNotes,
+  notesWithLicenseCodeSharedSync,
+  stripLicenseCodeSharedSyncFromNotes
+} from "./_license-code-options.js";
 import { isMissingFeatureFlagsColumn, withoutFeatureFlags } from "./_schema-fallback.js";
 
 type AdminCodeBody = {
@@ -21,6 +26,7 @@ type AdminCodeBody = {
   validUntil?: unknown;
   notes?: unknown;
   featureFlags?: unknown;
+  sharedSyncEnabled?: unknown;
 };
 
 type CodeMode = "account" | "guest";
@@ -126,10 +132,14 @@ async function createCode(
   const code = createPlainCode(plan, mode);
   const codePrefix = code.split("-").slice(0, 4).join("-");
   const now = new Date().toISOString();
-  const limits = planLimits[plan];
+  const sharedSyncEnabled = booleanValue(body.sharedSyncEnabled, "공유 코드 동기화") ?? planLimits[plan].sharedSyncEnabled;
+  const limits = { ...planLimits[plan], sharedSyncEnabled };
   const featureFlags: FeatureFlags = normalizeFeatureFlags(body.featureFlags);
   const notes = stringValue(body.notes)?.slice(0, 1000);
-  const notesPayload = notesWithFeatureFlags([`mode:${mode}`, notes].filter(Boolean).join(" | ") || null, featureFlags);
+  const notesPayload = notesWithLicenseCodeSharedSync(
+    notesWithFeatureFlags([`mode:${mode}`, notes].filter(Boolean).join(" | ") || null, featureFlags),
+    sharedSyncEnabled
+  );
 
   const payload = {
       code_hash: hashCode(code),
@@ -178,8 +188,9 @@ function normalizeCodeRow(input: unknown): Record<string, unknown> {
   const row = isRecord(input) ? input : {};
   return {
     ...row,
+    shared_sync_enabled: licenseCodeSharedSyncFromNotes(row.notes),
     feature_flags: normalizeFeatureFlagsWithNotes(row.feature_flags, row.notes),
-    notes: stripFeatureFlagsFromNotes(row.notes)
+    notes: stripLicenseCodeSharedSyncFromNotes(stripFeatureFlagsFromNotes(row.notes))
   };
 }
 
@@ -309,6 +320,22 @@ async function readJson(req: IncomingMessage): Promise<AdminCodeBody> {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function booleanValue(value: unknown, label: string): boolean | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  throw new Error(`${label} 값은 true 또는 false여야 합니다.`);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

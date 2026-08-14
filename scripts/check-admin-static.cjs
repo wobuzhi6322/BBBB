@@ -201,7 +201,7 @@ if (!adminHtml.includes('<meta charset="utf-8"')) {
   failures.push("admin-private/index.html: utf-8 charset missing");
 }
 
-if (!adminHtml.includes("/admin/admin.js?v=20260614-admin-capslock1")) {
+if (!adminHtml.includes("/admin/admin.js?v=20260814-admin-license-persist1")) {
   failures.push("admin-private/index.html: versioned admin.js missing");
 }
 if (!adminHtml.includes("/admin/admin.css?v=20260614-admin-capslock1")) {

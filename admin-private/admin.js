@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 계이득 (Gyeideuk) Admin Dashboard Controller.
  * Supabase Auth guard, real-time validations, API requests wrapping, and dynamic binding.
  */
@@ -1366,6 +1366,7 @@
       expiresAt,
       notes,
       featureFlags,
+      sharedSyncEnabled,
       profileName: els.formProfileName ? els.formProfileName.value.trim() : "",
       profileCategory: els.formProfileCategory ? els.formProfileCategory.value.trim() : "",
       profileNotes: els.formProfileNotes ? els.formProfileNotes.value.trim() : "",
@@ -1444,7 +1445,8 @@
       maxRedemptions,
       validUntil,
       notes,
-      featureFlags
+      featureFlags,
+      sharedSyncEnabled
     };
 
     try {

@@ -23,6 +23,7 @@ type AdminLicenseBody = {
   expiresAt?: unknown;
   notes?: unknown;
   featureFlags?: unknown;
+  sharedSyncEnabled?: unknown;
   maxSignatures?: unknown;
   maxMediaMb?: unknown;
   addSignatures?: unknown;
@@ -498,7 +499,8 @@ function resolveUpdateLimits(target: LicenseRow, plan: string, body: AdminLicens
     {
       ...planDefaults,
       maxSignatures: planChanged ? planDefaults.maxSignatures : target.max_signatures,
-      maxMediaMb: planChanged ? planDefaults.maxMediaMb : target.max_media_mb
+      maxMediaMb: planChanged ? planDefaults.maxMediaMb : target.max_media_mb,
+      sharedSyncEnabled: planChanged ? planDefaults.sharedSyncEnabled : target.shared_sync_enabled
     },
     body
   );
@@ -507,13 +509,15 @@ function resolveUpdateLimits(target: LicenseRow, plan: string, body: AdminLicens
 function applyManualLimitInput(base: PlanLimits, body: AdminLicenseBody): PlanLimits {
   const absoluteSignatures = nonNegativeIntegerValue(body.maxSignatures, "시그니처 제한");
   const absoluteMediaMb = nonNegativeIntegerValue(body.maxMediaMb, "미디어 용량");
+  const sharedSyncEnabled = booleanValue(body.sharedSyncEnabled, "공유 코드 동기화");
   const addSignatures = nonNegativeIntegerValue(body.addSignatures ?? body.addMaxSignatures, "추가 시그니처 수") || 0;
   const addMediaMb = nonNegativeIntegerValue(body.addMediaMb ?? body.addMaxMediaMb, "추가 미디어 MB") || 0;
 
   return {
     ...base,
     maxSignatures: addLimit(absoluteSignatures ?? base.maxSignatures, addSignatures, "시그니처 제한"),
-    maxMediaMb: addLimit(absoluteMediaMb ?? base.maxMediaMb, addMediaMb, "미디어 용량")
+    maxMediaMb: addLimit(absoluteMediaMb ?? base.maxMediaMb, addMediaMb, "미디어 용량"),
+    sharedSyncEnabled: sharedSyncEnabled ?? base.sharedSyncEnabled
   };
 }
 
@@ -534,6 +538,22 @@ function nonNegativeIntegerValue(value: unknown, label: string): number | undefi
     throw new Error(`${label}은 0 이상 ${maxManualLimit.toLocaleString("ko-KR")} 이하의 정수여야 합니다.`);
   }
   return number;
+}
+
+function booleanValue(value: unknown, label: string): boolean | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  throw new Error(`${label} 값은 true 또는 false여야 합니다.`);
 }
 
 function createLicenseCode(): string {

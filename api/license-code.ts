@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { normalizeFeatureFlags, normalizeFeatureFlagsWithNotes, notesWithFeatureFlags, type FeatureFlags } from "./_feature-flags.js";
+import { resolveLicenseCodeSharedSync } from "./_license-code-options.js";
 import { isMissingFeatureFlagsColumn, withoutFeatureFlags } from "./_schema-fallback.js";
 
 type RedeemBody = {
@@ -44,10 +45,12 @@ const profilesTable = "bbbb_site_profiles";
 const licenseCodesTable = "bbbb_license_codes";
 const redemptionsTable = "bbbb_license_code_redemptions";
 const licensesTable = "bbbb_account_licenses";
-const codeSelect = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,feature_flags";
+const codeSelect = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,feature_flags,notes";
 const codeSelectWithoutFeatures = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,notes";
-const licenseSelect = "id,license_code,plan,status,expires_at,activated_at,feature_flags";
-const licenseSelectWithoutFeatures = "id,license_code,plan,status,expires_at,activated_at,notes";
+const licenseSelect =
+  "id,license_code,plan,status,max_signatures,max_media_mb,max_devices,shared_sync_enabled,expires_at,activated_at,feature_flags,notes";
+const licenseSelectWithoutFeatures =
+  "id,license_code,plan,status,max_signatures,max_media_mb,max_devices,shared_sync_enabled,expires_at,activated_at,notes";
 
 const planLimits: Record<string, PlanLimits> = {
   starter: {
@@ -184,6 +187,7 @@ async function applyLicenseCode(userId: string, code: LicenseCodeRow, supabase: 
   const existing = await getExistingActiveLicense(userId, supabase);
 
   const limits = planLimits[code.plan];
+  const sharedSyncEnabled = resolveLicenseCodeSharedSync(limits.sharedSyncEnabled, code.notes);
   const featureFlags = normalizeFeatureFlags(code.feature_flags);
   const now = new Date();
   const expiresAt =
@@ -198,7 +202,7 @@ async function applyLicenseCode(userId: string, code: LicenseCodeRow, supabase: 
         max_signatures: limits.maxSignatures,
         max_media_mb: limits.maxMediaMb,
         max_devices: limits.maxDevices,
-        shared_sync_enabled: limits.sharedSyncEnabled,
+        shared_sync_enabled: sharedSyncEnabled,
         feature_flags: featureFlags,
         notes: notesWithFeatureFlags(existing.data.notes, featureFlags),
         expires_at: expiresAt,
@@ -217,7 +221,7 @@ async function applyLicenseCode(userId: string, code: LicenseCodeRow, supabase: 
       max_signatures: limits.maxSignatures,
       max_media_mb: limits.maxMediaMb,
       max_devices: limits.maxDevices,
-      shared_sync_enabled: limits.sharedSyncEnabled,
+      shared_sync_enabled: sharedSyncEnabled,
       feature_flags: featureFlags,
       notes: notesWithFeatureFlags(`redeemed ${code.code_prefix}`, featureFlags),
       activated_at: now.toISOString(),

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { normalizeFeatureFlags, normalizeFeatureFlagsWithNotes, type FeatureFlags } from "./_feature-flags.js";
+import { resolveLicenseCodeSharedSync } from "./_license-code-options.js";
 import { isMissingFeatureFlagsColumn } from "./_schema-fallback.js";
 
 type GuestRedeemBody = {
@@ -34,7 +35,7 @@ type PlanLimits = {
 };
 
 const licenseCodesTable = "bbbb_license_codes";
-const codeSelect = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,feature_flags";
+const codeSelect = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,feature_flags,notes";
 const codeSelectWithoutFeatures = "id,code_prefix,plan,duration_hours,max_redemptions,redeemed_count,valid_until,is_active,notes";
 
 const planLimits: Record<string, PlanLimits> = {
@@ -86,6 +87,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const expiresAt = calculateExpiresAt(licenseCode.duration_hours, activatedAt);
     const status = expiresAt && new Date(expiresAt).getTime() < now.getTime() ? "expired" : "active";
     const limits = planLimits[licenseCode.plan];
+    const sharedSyncEnabled = resolveLicenseCodeSharedSync(limits.sharedSyncEnabled, licenseCode.notes);
     const featureFlags = normalizeFeatureFlags(licenseCode.feature_flags);
 
     if (!redeemedAt) {
@@ -115,7 +117,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           max_signatures: limits.maxSignatures,
           max_media_mb: limits.maxMediaMb,
           max_devices: limits.maxDevices,
-          shared_sync_enabled: limits.sharedSyncEnabled,
+          shared_sync_enabled: sharedSyncEnabled,
           feature_flags: featureFlags,
           device_name: stringValue(body.deviceName),
           device_fingerprint: stringValue(body.deviceFingerprint),
