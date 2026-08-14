@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit && node scripts/check-admin-static.cjs && node scripts/check-web-static.cjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "vercel-build": "node scripts/block-direct-vercel-build.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.0"
