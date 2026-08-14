@@ -4,14 +4,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 
 import { isOwnerEmail } from "./_owner.js";
+import {
+  createSignedDownloadTargets,
+  createSignedUploadTargets,
+  type SharedMediaFile
+} from "./_shared-profile-signing.js";
 
-type MediaFile = {
-  kind: string;
-  filename: string;
-  size: number;
-  updatedAt: string;
-  storagePath: string;
-};
+type MediaFile = SharedMediaFile;
 
 type ApiBody = {
   action?: string;
@@ -97,18 +96,10 @@ async function handlePrepareUpload(body: ApiBody, res: ServerResponse): Promise<
     throw new Error(insert.error.message);
   }
 
-  const uploadTargets = [];
-  for (const file of mediaFiles) {
-    const { data, error } = await supabase.storage.from(storageBucket).createSignedUploadUrl(file.storagePath, { upsert: true });
-    if (error || !data) {
-      throw new Error(error?.message || `failed to create signed upload url for ${file.filename}`);
-    }
-    uploadTargets.push({
-      ...file,
-      signedUrl: data.signedUrl,
-      token: data.token
-    });
-  }
+  const uploadTargets = await createSignedUploadTargets(
+    supabase.storage.from(storageBucket),
+    mediaFiles
+  );
 
   sendOk(res, {
     code,
@@ -185,17 +176,11 @@ async function handleGet(req: IncomingMessage, res: ServerResponse): Promise<voi
   }
 
   const mediaFiles = normalizeMediaFiles(row.media_files);
-  const downloadTargets = [];
-  for (const file of mediaFiles) {
-    const { data, error } = await supabase.storage.from(storageBucket).createSignedUrl(file.storagePath, 60 * 60);
-    if (error || !data) {
-      throw new Error(error?.message || `failed to create signed download url for ${file.filename}`);
-    }
-    downloadTargets.push({
-      ...file,
-      signedUrl: data.signedUrl
-    });
-  }
+  const downloadTargets = await createSignedDownloadTargets(
+    supabase.storage.from(storageBucket),
+    mediaFiles,
+    60 * 60
+  );
 
   sendOk(res, {
     code: row.code,
