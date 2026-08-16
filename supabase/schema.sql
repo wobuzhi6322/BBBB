@@ -292,7 +292,7 @@ returns table (
   audit_event_id uuid
 )
 language plpgsql
-security invoker
+security definer
 set search_path = pg_catalog, public
 as $$
 declare
@@ -388,9 +388,12 @@ begin
 end;
 $$;
 
-revoke execute on function public.bbbb_owner_change_admin_role(
+alter function public.bbbb_owner_change_admin_role(
   uuid, uuid, text, bigint, text, text, text
-) from public, anon, authenticated;
+) owner to postgres;
+revoke all privileges on function public.bbbb_owner_change_admin_role(
+  uuid, uuid, text, bigint, text, text, text
+) from public, anon, authenticated, service_role;
 grant execute on function public.bbbb_owner_change_admin_role(
   uuid, uuid, text, bigint, text, text, text
 ) to service_role;

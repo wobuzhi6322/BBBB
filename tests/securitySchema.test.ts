@@ -61,8 +61,8 @@ describe("database privilege boundary", () => {
       expect(normalized).toContain("create or replace function public.bbbb_owner_change_admin_role");
       expect(normalized).toContain("for update");
       expect(normalized).toContain("insert into public.bbbb_admin_role_audit");
-      expect(normalized).toContain(
-        "revoke execute on function public.bbbb_owner_change_admin_role"
+      expect(normalized).toMatch(
+        /revoke (?:all privileges on|execute on) function public\.bbbb_owner_change_admin_role/
       );
       expect(normalized).toContain(
         "grant execute on function public.bbbb_owner_change_admin_role"
@@ -102,6 +102,36 @@ describe("database privilege boundary", () => {
       );
       expect(normalized).toContain(
         "grant select on table public.bbbb_admin_owners to service_role"
+      );
+    }
+  });
+
+  it("runs owner-lock role changes through a restricted postgres-owned definer", () => {
+    const sqlFiles = [
+      readFileSync(join(root, "supabase", "schema.sql"), "utf8"),
+      readFileSync(
+        join(root, "supabase", "security-hardening-admin-role-rpc-20260816.sql"),
+        "utf8"
+      )
+    ];
+
+    for (const sql of sqlFiles) {
+      const normalized = sql.replace(/\s+/g, " ").toLowerCase();
+
+      expect(normalized).toContain("security definer");
+      expect(normalized).toContain(
+        "alter function public.bbbb_owner_change_admin_role( uuid, uuid, text, bigint, text, text, text ) owner to postgres"
+      );
+      expect(normalized).toMatch(/set search_path (?:=|to) pg_catalog, public/);
+      expect(normalized).toContain(
+        "revoke all privileges on function public.bbbb_owner_change_admin_role"
+      );
+      expect(normalized).toContain(
+        "grant execute on function public.bbbb_owner_change_admin_role"
+      );
+      expect(normalized).toContain("to service_role");
+      expect(normalized).not.toContain(
+        "grant update on table public.bbbb_admin_owners to service_role"
       );
     }
   });
