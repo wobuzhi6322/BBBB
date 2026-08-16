@@ -1,16 +1,20 @@
 import { defaultFeatureFlags } from "./_feature-flags.js";
 
-const defaultOwnerEmails = ["wobuzhi6322@gmail.com", "wlsdyd0323@gmail.com"];
+const defaultOwnerUserIds = [
+  "49ba6b61-f491-47a5-a687-97dcf4c14b61",
+  "fec25c39-3108-4715-a10a-62b41d6df24d"
+];
+const authUserIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const ownerEmails = new Set(
-  (process.env.BBBB_OWNER_EMAILS || defaultOwnerEmails.join(","))
+const ownerUserIds = new Set(
+  (process.env.BBBB_OWNER_USER_IDS || defaultOwnerUserIds.join(","))
     .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
+    .map((userId) => userId.trim().toLowerCase())
+    .filter((userId) => authUserIdPattern.test(userId))
 );
 
-export function isOwnerEmail(value: string | null | undefined): boolean {
-  return Boolean(value && ownerEmails.has(value.trim().toLowerCase()));
+export function isOwnerUserId(value: string | null | undefined): boolean {
+  return Boolean(value && ownerUserIds.has(value.trim().toLowerCase()));
 }
 
 export function ownerLicense(userId: string, now = new Date().toISOString()) {

@@ -28,15 +28,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const email = requiredString(body.email, "이메일을 입력해 주세요.");
     const password = requiredString(body.password, "비밀번호를 입력해 주세요.");
     const channel = profilePatchFromBody(body);
-    const supabase = serviceClient();
-    const result = await supabase.auth.admin.createUser({
+    const signup = signupClient();
+    const result = await signup.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: {
-        channel_platform: channel.channel_platform,
-        channel_name: channel.channel_name,
-        channel_url: channel.channel_url
+      options: {
+        data: {
+          channel_platform: channel.channel_platform,
+          channel_name: channel.channel_name,
+          channel_url: channel.channel_url
+        }
       }
     });
     if (result.error) {
@@ -46,10 +47,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!user?.id) {
       throw new Error("회원가입 사용자를 생성할 수 없습니다.");
     }
+
+    const supabase = serviceClient();
     await ensureProfile(user.id, email, channel, supabase);
-    sendJson(res, 200, {
+    sendJson(res, 202, {
       ok: true,
       data: {
+        emailConfirmationRequired: true,
         user: {
           id: user.id,
           email: user.email
@@ -78,6 +82,20 @@ async function ensureProfile(
   if (result.error) {
     throw new Error(result.error.message);
   }
+}
+
+function signupClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY are required");
+  }
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
 }
 
 function serviceClient() {

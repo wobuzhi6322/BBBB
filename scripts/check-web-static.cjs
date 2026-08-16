@@ -104,13 +104,26 @@ function checkVercelJson() {
       );
     }
 
-    const adminAsset = findRoute((r) => r.src.includes("admin\\.(js|css)"));
+    const adminAsset = findRoute(
+      (r) => r.src.includes("admin-role-state") && r.src.includes("admin\\.css")
+    );
     if (!adminAsset) {
-      fail('vercel.json: "/admin/(admin\\.(js|css))" 에셋 라우트가 없습니다');
+      fail("vercel.json: 보호된 admin JS/CSS 에셋 라우트가 없습니다");
     } else if (!destStartsWith(adminAsset.route, "/api/admin-asset")) {
       fail(
         `vercel.json: admin 에셋 라우트 dest가 /api/admin-asset이 아닙니다 (현재: ${JSON.stringify(adminAsset.route.dest)})`
       );
+    } else {
+      const routePattern = new RegExp(`^${adminAsset.route.src}$`);
+      for (const assetPath of [
+        "/admin/admin.js",
+        "/admin/admin.css",
+        "/admin/admin-role-state.js"
+      ]) {
+        if (!routePattern.test(assetPath)) {
+          fail(`vercel.json: admin 에셋 라우트가 ${assetPath}를 처리하지 못합니다`);
+        }
+      }
     }
 
     // --- /@handle/d/:messageId → /api/channel-page (상세 라우트가 먼저) ---

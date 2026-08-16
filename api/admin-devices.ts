@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail } from "./_owner.js";
+import { AdminRequestError, requireAdmin } from "./_admin-auth.js";
+import { isOwnerUserId } from "./_owner.js";
+import { readJsonObject, RequestBodyError } from "./_request-body.js";
 
 type AdminDeviceBody = {
   deviceId?: unknown;
@@ -45,7 +47,6 @@ const licenseSelect = "id,license_code,plan,status,max_devices,expires_at";
 const deviceSelect = "id,license_id,user_id,device_fingerprint,device_name,app_version,last_seen_at,created_at";
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  setCors(res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -59,7 +60,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const supabase = serviceClient();
-    await assertAdmin(req, supabase);
+    await requireAdmin(req, supabase);
 
     if (req.method === "GET") {
       await listUserDevices(req, res, supabase);
@@ -68,6 +69,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     await deleteDevices(res, await readJson(req), supabase);
   } catch (error) {
+    if (error instanceof AdminRequestError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof RequestBodyError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
     sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "admin-device-request-failed" });
   }
 }
@@ -84,7 +93,7 @@ async function listUserDevices(req: IncomingMessage, res: ServerResponse, supaba
   assertNoError(licensesResult.error);
   assertNoError(devicesResult.error);
 
-  const ownerAccount = isOwnerEmail(profile.email);
+  const ownerAccount = isOwnerUserId(profile.user_id);
   const licenses = ((licensesResult.data || []) as LicenseRow[]).map((license) =>
     ownerAccount ? { ...license, max_devices: 999999 } : normalizeLicenseDeviceLimit(license)
   );
@@ -154,34 +163,6 @@ async function resolveProfile(body: { email?: unknown; userId?: unknown }, supab
   return profile.data as SiteProfileRow;
 }
 
-async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof serviceClient>): Promise<void> {
-  const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
-  const received = req.headers["x-bbbb-admin-token"];
-  const token = Array.isArray(received) ? received[0] : received;
-  if (expected && token === expected) {
-    return;
-  }
-
-  const sessionToken = bearerToken(req);
-  if (!sessionToken) {
-    throw new Error("관리자 권한이 필요합니다.");
-  }
-
-  const userResult = await supabase.auth.getUser(sessionToken);
-  const user = userResult.data.user;
-  if (userResult.error || !user) {
-    throw new Error("로그인 세션을 확인할 수 없습니다.");
-  }
-  if (isOwnerEmail(user.email || null)) {
-    return;
-  }
-
-  const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();
-  if (profile.error || profile.data?.role !== "admin") {
-    throw new Error("관리자 계정만 PC 등록을 해제할 수 있습니다.");
-  }
-}
-
 function publicDevice(device: DeviceRow) {
   return {
     id: device.id,
@@ -212,25 +193,8 @@ function serviceClient() {
   });
 }
 
-function bearerToken(req: IncomingMessage): string | undefined {
-  const value = headerValue(req.headers.authorization);
-  const match = value?.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
-function headerValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 async function readJson(req: IncomingMessage): Promise<AdminDeviceBody> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (!chunks.length) {
-    return {};
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as AdminDeviceBody;
+  return readJsonObject(req);
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -246,16 +210,7 @@ function assertNoError(error: { message: string } | null | undefined): void {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
-}
-
-function setCors(res: ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,DELETE,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

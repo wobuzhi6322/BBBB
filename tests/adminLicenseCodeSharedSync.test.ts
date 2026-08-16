@@ -57,7 +57,7 @@ vi.mock("@supabase/supabase-js", () => ({
 }));
 
 vi.mock("../api/_owner.js", () => ({
-  isOwnerEmail: () => true
+  isOwnerUserId: () => true
 }));
 
 import adminLicenseCodeHandler from "../api/admin-license-code.js";

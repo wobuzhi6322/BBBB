@@ -6,15 +6,23 @@
 (function () {
   'use strict';
 
+  const adminRoleState = window.BBBBAdminRoleState;
+  if (!adminRoleState) {
+    throw new Error("관리자 역할 상태 런타임을 불러오지 못했습니다.");
+  }
+
   // Global State
   const state = {
     supabase: null,
     session: null,
     authenticatedUserId: "",
     adminVerifiedUserId: "",
-    ownerEmails: ["wobuzhi6322@gmail.com", "wlsdyd0323@gmail.com"],
     currentSearchQuery: "",
     currentDeviceTargetEmail: "",
+    memberLookupRequestId: 0,
+    selectedAdminProfile: null,
+    canManageAdminRoles: false,
+    roleChangeBusy: false,
     collapsedFolderCategories: new Set(),
     selectedFolderEmail: "",
     folderLoadRequestId: 0,
@@ -51,6 +59,8 @@
 
     // Profile Fields
     profileRole: document.getElementById("detail-profile-role"),
+    adminRoleAction: document.getElementById("admin-role-action"),
+    adminRoleFeedback: document.getElementById("admin-role-feedback"),
     profileName: document.getElementById("detail-profile-name"),
     profileEmail: document.getElementById("detail-profile-email"),
     profileChannel: document.getElementById("detail-profile-channel"),
@@ -236,30 +246,8 @@
   // Verify if the logged-in user is a genuine admin or owner
   async function verifyAdminUser(user, options = {}) {
     try {
-      // Owner emails are automatically approved
-      const isOwner = state.ownerEmails.includes(user.email?.trim().toLowerCase());
-
-      if (isOwner) {
-        state.adminVerifiedUserId = user.id;
-        transitionToAuthenticated(user, options);
-        return;
-      }
-
-      // Else check bbbb_site_profiles role field
-      const { data: profile, error } = await state.supabase
-        .from("bbbb_site_profiles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error || profile?.role !== "admin") {
-        alert("접근 권한이 없습니다. 이 계정은 관리자로 승인되지 않았습니다.");
-        await fetch("/api/admin-session", { method: "DELETE" }).catch(() => {});
-        await state.supabase.auth.signOut();
-        transitionToUnauthenticated();
-        return;
-      }
-
+      const result = await callApi("/api/admin-session");
+      state.canManageAdminRoles = result.data?.canManageAdminRoles === true;
       state.adminVerifiedUserId = user.id;
       transitionToAuthenticated(user, options);
     } catch (err) {
@@ -313,6 +301,11 @@
     // Reset login form fields
     if (els.loginEmail) els.loginEmail.value = "";
     if (els.loginPassword) els.loginPassword.value = "";
+    state.selectedAdminProfile = null;
+    state.canManageAdminRoles = false;
+    state.roleChangeBusy = false;
+    state.memberLookupRequestId += 1;
+    if (els.adminRoleAction) els.adminRoleAction.hidden = true;
     clearFeedback(els.loginError);
   }
 
@@ -410,6 +403,8 @@
       state.currentSearchQuery = query;
       await performLicenseLookup(query);
     });
+
+    els.adminRoleAction?.addEventListener("click", updateAdminRole);
 
     // E. Quick addition buttons (+3, +10, +50, +50M, etc)
     document.querySelectorAll(".btn-adder").forEach((button) => {
@@ -606,7 +601,9 @@
 
   // Fetch Member Details and License History
   async function performLicenseLookup(query) {
+    const requestId = ++state.memberLookupRequestId;
     clearFeedback(els.searchFeedback);
+    clearFeedback(els.adminRoleFeedback);
     els.userDetailsContainer.style.display = "none";
 
     try {
@@ -619,14 +616,19 @@
       }
 
       const result = await callApi(`/api/admin-license?${params.toString()}`);
+      if (requestId !== state.memberLookupRequestId) return false;
 
       if (result.ok && result.data) {
         renderUserDetails(result.data);
+        return true;
       } else {
         showFeedback(els.searchFeedback, "?ъ슜?먮? 寃?됲븯吏 紐삵뻽?듬땲??", "error");
+        return false;
       }
     } catch (err) {
+      if (requestId !== state.memberLookupRequestId) return false;
       showFeedback(els.searchFeedback, err.message, "error");
+      return false;
     }
   }
 
@@ -635,6 +637,8 @@
     const profile = data.profile;
     const activeLicense = data.activeLicense;
     const history = data.licenses || [];
+    state.selectedAdminProfile = profile;
+    state.canManageAdminRoles = data.permissions?.canManageAdminRoles === true;
 
     els.userDetailsContainer.style.display = "grid";
     state.currentDeviceTargetEmail = profile.email || "";
@@ -677,7 +681,7 @@
       els.profileChannelUrl.href = channelUrl || "#";
     }
     els.profileId.textContent = profile.user_id;
-    els.profileRole.textContent = profile.role || "USER";
+    els.profileRole.textContent = profile.isOwner ? "OWNER" : (profile.role || "user").toUpperCase();
     if (els.detailProfileCategory) els.detailProfileCategory.textContent = profileCategory || "미지정";
     if (els.detailProfileNotes) els.detailProfileNotes.textContent = profileNotes || "메모 없음";
 
@@ -688,11 +692,12 @@
     if (els.formChannelName) els.formChannelName.value = channelName;
     if (els.formChannelUrl) els.formChannelUrl.value = channelUrl;
 
-    if (profile.role === "admin" || state.ownerEmails.includes(profile.email?.trim().toLowerCase())) {
+    if (profile.role === "admin" || profile.isOwner === true) {
       els.profileRole.classList.add("is-admin");
     } else {
       els.profileRole.classList.remove("is-admin");
     }
+    renderAdminRoleAction(profile);
 
     // Sync Hidden user-id to form
     els.formUserId.value = profile.user_id;
@@ -776,6 +781,99 @@
 
     // Render History Table
     renderHistoryTable(history);
+  }
+
+  function renderAdminRoleAction(profile) {
+    if (!els.adminRoleAction) return;
+
+    const roleVersion = Number(profile.role_version);
+    const canChangeRole =
+      state.canManageAdminRoles &&
+      profile.isOwner !== true &&
+      (profile.role === "admin" || profile.role === "user") &&
+      Number.isSafeInteger(roleVersion) &&
+      roleVersion >= 0;
+
+    els.adminRoleAction.hidden = !canChangeRole;
+    els.adminRoleAction.disabled = state.roleChangeBusy || !canChangeRole;
+    els.adminRoleAction.setAttribute("aria-busy", state.roleChangeBusy ? "true" : "false");
+    els.adminRoleAction.classList.toggle("danger-action", profile.role === "admin");
+    els.adminRoleAction.textContent = state.roleChangeBusy
+      ? "처리 중..."
+      : profile.role === "admin"
+        ? "관리자 권한 해제"
+        : "관리자 권한 부여";
+  }
+
+  async function updateAdminRole() {
+    const profile = state.selectedAdminProfile;
+    if (!profile || state.roleChangeBusy || !state.canManageAdminRoles || profile.isOwner === true) {
+      return;
+    }
+
+    const expectedRole = profile.role;
+    const expectedRoleVersion = Number(profile.role_version);
+    const lookupRequestId = state.memberLookupRequestId;
+    let restoreRoleActionFocus = false;
+    const shouldRefreshRoleTarget = () => adminRoleState.shouldRefreshTarget({
+      targetUserId: profile.user_id,
+      selectedUserId: state.selectedAdminProfile?.user_id || "",
+      startedLookupRequestId: lookupRequestId,
+      currentLookupRequestId: state.memberLookupRequestId
+    });
+    if (
+      (expectedRole !== "admin" && expectedRole !== "user") ||
+      !Number.isSafeInteger(expectedRoleVersion) ||
+      expectedRoleVersion < 0
+    ) {
+      showFeedback(els.adminRoleFeedback, "회원 권한 정보를 새로고침한 후 다시 시도해 주세요.", "error");
+      return;
+    }
+
+    const role = expectedRole === "admin" ? "user" : "admin";
+    const targetLabel = profile.email || profile.user_id;
+    const actionLabel = role === "admin" ? "부여" : "해제";
+    if (!window.confirm(`${targetLabel} 계정의 관리자 권한을 ${actionLabel}할까요?`)) {
+      return;
+    }
+
+    state.roleChangeBusy = true;
+    renderAdminRoleAction(profile);
+    showFeedback(els.adminRoleFeedback, "관리자 권한을 변경하는 중입니다.", "info");
+
+    try {
+      await callApi("/api/admin-role", "PATCH", {
+        userId: profile.user_id,
+        role,
+        expectedRole,
+        expectedRoleVersion
+      });
+      await loadFolderStructure();
+      if (shouldRefreshRoleTarget()) {
+        const rendered = await performLicenseLookup(profile.user_id);
+        if (rendered && state.selectedAdminProfile?.user_id === profile.user_id) {
+          showFeedback(els.adminRoleFeedback, "관리자 권한이 변경되었습니다.", "success");
+          restoreRoleActionFocus = true;
+        }
+      }
+    } catch (err) {
+      await loadFolderStructure();
+      if (shouldRefreshRoleTarget()) {
+        const rendered = await performLicenseLookup(profile.user_id);
+        if (rendered && state.selectedAdminProfile?.user_id === profile.user_id) {
+          showFeedback(els.adminRoleFeedback, err.message, "error");
+          restoreRoleActionFocus = true;
+        }
+      }
+    } finally {
+      state.roleChangeBusy = false;
+      if (state.selectedAdminProfile) {
+        renderAdminRoleAction(state.selectedAdminProfile);
+      }
+      if (restoreRoleActionFocus && state.selectedAdminProfile?.user_id === profile.user_id) {
+        els.adminRoleAction?.focus();
+      }
+    }
   }
 
   // Populate history log table
@@ -1634,6 +1732,9 @@
       name: meta.name,
       category: meta.category,
       notes: meta.notes,
+      role: profile.role === "admin" ? "admin" : "user",
+      role_version: Number(profile.role_version),
+      isOwner: profile.isOwner === true,
       channelName: profile.channel_name || "",
       channelPlatform: profile.channel_platform || "youtube"
     };
@@ -1805,6 +1906,7 @@
       const fragment = document.createDocumentFragment();
 
       if (result.ok && result.data?.profiles) {
+        state.canManageAdminRoles = result.data.permissions?.canManageAdminRoles === true;
         const profiles = result.data.profiles.map(normalizeFolderProfile);
         state.folderProfiles = profiles;
         const currentUserIds = new Set(profiles.map((profile) => profile.user_id));
@@ -1952,6 +2054,7 @@
     } catch (err) {
       if (requestId !== state.folderLoadRequestId) return;
       console.error(err);
+      state.canManageAdminRoles = false;
       state.folderProfiles = [];
       els.foldersContainer.replaceChildren();
       els.foldersLoadingMsg.textContent = "회원 목록 로드 오류: " + err.message;

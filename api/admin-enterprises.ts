@@ -1,8 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail } from "./_owner.js";
-import { ENTERPRISE_NAME_MAX, constantTimeEqual, normalizeEnterpriseSlug } from "./_webShared.js";
+import { AdminRequestError, requireAdmin } from "./_admin-auth.js";
+import { readJsonObject, RequestBodyError } from "./_request-body.js";
+import { ENTERPRISE_NAME_MAX, normalizeEnterpriseSlug } from "./_webShared.js";
 
 // =============================================================================
 // /api/admin-enterprises — 엔터(소속 엔터테인먼트) 관리 (관리자 전용)
@@ -36,7 +37,6 @@ const enterpriseSelect = "id,slug,name";
 const PAGE_COUNT_SCAN_LIMIT = 5000;
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  setCors(res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -50,7 +50,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const supabase = serviceClient();
-    await assertAdmin(req, supabase);
+    await requireAdmin(req, supabase);
 
     if (req.method === "GET") {
       await listEnterprises(res, supabase);
@@ -68,6 +68,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
     await renameEnterprise(res, body, supabase);
   } catch (error) {
+    if (error instanceof AdminRequestError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof RequestBodyError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
     if (error instanceof ApiError) {
       sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
       return;
@@ -237,34 +245,6 @@ class ApiError extends Error {
   }
 }
 
-async function assertAdmin(req: IncomingMessage, supabase: Supa): Promise<void> {
-  const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
-  const received = req.headers["x-bbbb-admin-token"];
-  const token = Array.isArray(received) ? received[0] : received;
-  if (expected && constantTimeEqual(token, expected)) {
-    return;
-  }
-
-  const sessionToken = bearerToken(req);
-  if (!sessionToken) {
-    throw new ApiError(401, "auth-required", "관리자 권한이 필요합니다.");
-  }
-
-  const userResult = await supabase.auth.getUser(sessionToken);
-  const user = userResult.data.user;
-  if (userResult.error || !user) {
-    throw new ApiError(401, "auth-required", "로그인 세션을 확인할 수 없습니다.");
-  }
-  if (isOwnerEmail(user.email || null)) {
-    return;
-  }
-
-  const profile = await supabase.from(siteProfilesTable).select("role").eq("user_id", user.id).single();
-  if (profile.error || profile.data?.role !== "admin") {
-    throw new ApiError(403, "forbidden", "관리자 계정만 엔터를 관리할 수 있습니다.");
-  }
-}
-
 function serviceClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -279,53 +259,14 @@ function serviceClient() {
   });
 }
 
-function bearerToken(req: IncomingMessage): string | undefined {
-  const value = headerValue(req.headers.authorization);
-  const match = value?.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
-function headerValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 async function readJson(req: IncomingMessage): Promise<AdminEnterprisesBody> {
-  // vercel dev는 바디를 req.body로만 제공 — 우선 사용 후 스트림 폴백
-  const pre = (req as IncomingMessage & { body?: unknown }).body;
-  if (pre !== undefined) {
-    if (typeof pre === "string") {
-      try {
-        const parsed = JSON.parse(pre) as unknown;
-        return (parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}) as AdminEnterprisesBody;
-      } catch {
-        return {} as AdminEnterprisesBody;
-      }
-    }
-    return (pre && typeof pre === "object" && !Array.isArray(pre) ? pre : {}) as AdminEnterprisesBody;
-  }
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (!chunks.length) {
-    return {};
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as AdminEnterprisesBody;
+  return readJsonObject(req);
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
-}
-
-function setCors(res: ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,POST,PATCH,DELETE,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

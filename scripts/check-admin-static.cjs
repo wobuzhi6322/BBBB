@@ -4,6 +4,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const files = [
   "admin-private/index.html",
+  "admin-private/admin-role-state.js",
   "admin-private/admin.js",
   "admin-private/admin.css",
   "api/auth-signup.ts",
@@ -29,6 +30,8 @@ const requiredAdminIds = [
   "search-feedback",
   "user-details-container",
   "detail-profile-role",
+  "admin-role-action",
+  "admin-role-feedback",
   "detail-profile-name",
   "detail-profile-email",
   "detail-profile-channel",
@@ -161,6 +164,7 @@ for (const file of files) {
 
 const adminHtml = fs.readFileSync(path.join(root, "admin-private/index.html"), "utf8");
 const adminCss = fs.readFileSync(path.join(root, "admin-private/admin.css"), "utf8");
+const adminRoleStateJs = fs.readFileSync(path.join(root, "admin-private/admin-role-state.js"), "utf8");
 const adminJs = fs.readFileSync(path.join(root, "admin-private/admin.js"), "utf8");
 const signupApi = fs.readFileSync(path.join(root, "api/auth-signup.ts"), "utf8");
 // 투네이션 재구성(2026-07-11): 프로그램 랜딩(가격표 포함)이 / → /streamer 로 이설됨.
@@ -201,10 +205,13 @@ if (!adminHtml.includes('<meta charset="utf-8"')) {
   failures.push("admin-private/index.html: utf-8 charset missing");
 }
 
-if (!adminHtml.includes("/admin/admin.js?v=20260814-admin-license-persist1")) {
+if (!adminHtml.includes("/admin/admin-role-state.js?v=20260816-admin-role4")) {
+  failures.push("admin-private/index.html: versioned admin role state runtime missing");
+}
+if (!adminHtml.includes("/admin/admin.js?v=20260816-admin-role4")) {
   failures.push("admin-private/index.html: versioned admin.js missing");
 }
-if (!adminHtml.includes("/admin/admin.css?v=20260614-admin-capslock1")) {
+if (!adminHtml.includes("/admin/admin.css?v=20260816-admin-role2")) {
   failures.push("admin-private/index.html: versioned admin.css missing");
 }
 
@@ -212,16 +219,24 @@ if (!adminJs.includes("alreadyVerified") || !adminJs.includes("refreshAuthentica
   failures.push("admin-private/admin.js: auth refresh state-preservation guard missing");
 }
 
-if (!signupApi.includes("auth.admin.createUser") || !signupApi.includes("email_confirm: true")) {
-  failures.push("api/auth-signup.ts: signup must create a password login-ready Supabase user");
+if (
+  !signupApi.includes(".auth.signUp(")
+  || signupApi.includes("auth.admin.createUser")
+  || signupApi.includes("email_confirm: true")
+) {
+  failures.push("api/auth-signup.ts: public signup must require Supabase email confirmation");
 }
 
-if (signupApi.includes(".auth.signUp(")) {
-  failures.push("api/auth-signup.ts: signup API must not create email-confirmation-pending users");
-}
-
-if (!siteJs.includes('apiJson("/api/auth-signup"') || siteJs.includes("state.supabase.auth.signUp({")) {
-  failures.push("public/assets/site.js: signup must go through /api/auth-signup before browser sign-in");
+const signupFlow = siteJs.slice(
+  siteJs.indexOf("async function signUp()"),
+  siteJs.indexOf("async function sendPasswordResetEmail()")
+);
+if (
+  !signupFlow.includes('apiJson("/api/auth-signup"')
+  || !signupFlow.includes("emailConfirmationRequired")
+  || signupFlow.includes("signInWithPassword")
+) {
+  failures.push("public/assets/site.js: signup must stop for mailbox confirmation before login");
 }
 
 if (!siteLoginHtml.includes('id="caps-lock-warning"')) {
@@ -242,6 +257,12 @@ if (!adminJs.includes("collapsedFolderCategories") || !adminJs.includes("setActi
 
 if (!adminJs.includes("selectedFolderUserIds") || !adminJs.includes("/api/admin-license-bulk") || !adminJs.includes("moveSelectedFolderUsers")) {
   failures.push("admin-private/admin.js: folder bulk selection helpers missing");
+}
+if (!adminJs.includes("/api/admin-role") || !adminJs.includes("expectedRoleVersion") || !adminJs.includes("canManageAdminRoles")) {
+  failures.push("admin-private/admin.js: owner-only admin role management helpers missing");
+}
+if (!adminRoleStateJs.includes("shouldRefreshTarget") || !adminJs.includes("adminRoleState.shouldRefreshTarget")) {
+  failures.push("admin-private: member selection race guard missing");
 }
 
 if (!adminCss.includes("max-height: none") || !adminCss.includes("overflow-wrap: anywhere")) {
@@ -299,7 +320,11 @@ for (const removedFragment of ["Starter", "70,000원", "프리미엄 테마 제�
 
 const vercelConfig = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
 const routes = JSON.stringify(vercelConfig.routes || []);
-for (const route of ["/admin/?", "/admin/index\\\\.html", "/admin/(admin\\\\.(js|css))"]) {
+for (const route of [
+  "/admin/?",
+  "/admin/index\\\\.html",
+  "/admin/(admin\\\\.js|admin\\\\.css|admin-role-state\\\\.js)"
+]) {
   if (!routes.includes(route)) {
     failures.push(`vercel.json: admin route missing: ${route}`);
   }

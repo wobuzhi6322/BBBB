@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 
-import { isOwnerEmail } from "./_owner.js";
+import { isOwnerUserId } from "./_owner.js";
 import {
   createSignedDownloadTargets,
   createSignedUploadTargets,
@@ -239,7 +239,7 @@ async function assertCanRead(req: IncomingMessage, code: string): Promise<void> 
   const supabase = client();
   const user = await requireUser(req, supabase);
   await ensureSiteProfile(user.id, user.email || null, supabase);
-  if (isOwnerEmail(user.email || null)) {
+  if (isOwnerUserId(user.id)) {
     return;
   }
   await getActiveLicense(user.id, supabase);
@@ -253,7 +253,7 @@ async function assertCanWrite(req: IncomingMessage, code: string): Promise<void>
   const supabase = client();
   const user = await requireUser(req, supabase);
   await ensureSiteProfile(user.id, user.email || null, supabase);
-  if (isOwnerEmail(user.email || null)) {
+  if (isOwnerUserId(user.id)) {
     return;
   }
   await getActiveLicense(user.id, supabase);
@@ -287,7 +287,7 @@ async function ensureSiteProfile(userId: string, email: string | null, supabase:
     {
       user_id: userId,
       email,
-      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
+      ...(isOwnerUserId(userId) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }

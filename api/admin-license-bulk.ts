@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail } from "./_owner.js";
+import { AdminRequestError, requireAdmin } from "./_admin-auth.js";
+import { readJsonObject, RequestBodyError } from "./_request-body.js";
 
 type BulkAction = "move-folder" | "update-licenses";
 
@@ -82,7 +83,6 @@ const planLimits: Record<string, PlanLimits> = {
 };
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  setCors(res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -96,7 +96,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const supabase = serviceClient();
-    await assertAdmin(req, supabase);
+    await requireAdmin(req, supabase);
 
     const body = await readJson(req);
     const action = normalizeAction(body.action);
@@ -109,6 +109,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     await updateFolderLicenses(res, supabase, userIds, body.license || {});
   } catch (error) {
+    if (error instanceof AdminRequestError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof RequestBodyError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
     sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "admin-license-bulk-failed" });
   }
 }
@@ -381,44 +389,6 @@ function booleanValue(value: unknown): boolean {
   throw new Error("공유 동기화 값은 true 또는 false여야 합니다.");
 }
 
-async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof serviceClient>): Promise<void> {
-  const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
-  const received = req.headers["x-bbbb-admin-token"];
-  const token = Array.isArray(received) ? received[0] : received;
-  if (expected && token === expected) {
-    return;
-  }
-
-  const sessionToken = bearerToken(req);
-  if (!sessionToken) {
-    throw new Error("관리자 권한이 필요합니다.");
-  }
-
-  const userResult = await supabase.auth.getUser(sessionToken);
-  const user = userResult.data.user;
-  if (userResult.error || !user) {
-    throw new Error("로그인 세션을 확인할 수 없습니다.");
-  }
-  if (isOwnerEmail(user.email || null)) {
-    return;
-  }
-
-  const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();
-  if (profile.error || profile.data?.role !== "admin") {
-    throw new Error("관리자 계정만 사용할 수 있습니다.");
-  }
-}
-
-function bearerToken(req: IncomingMessage): string | undefined {
-  const value = headerValue(req.headers.authorization);
-  const match = value?.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
-function headerValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 function serviceClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -434,14 +404,7 @@ function serviceClient() {
 }
 
 async function readJson(req: IncomingMessage): Promise<BulkBody> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (!chunks.length) {
-    return {};
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as BulkBody;
+  return readJsonObject(req);
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -451,16 +414,7 @@ function stringValue(value: unknown): string | undefined {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "POST,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
-}
-
-function setCors(res: ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "POST,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

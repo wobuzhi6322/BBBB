@@ -1,4 +1,4 @@
-﻿const state = {
+const state = {
   config: null,
   release: null,
   mobileRelease: null,
@@ -815,8 +815,9 @@ async function signUp() {
   setText(els.authMessage, "회원가입 중입니다.");
   const channel = readChannelInput("signup");
   const email = els.email.value.trim();
+  let signupResult;
   try {
-    await apiJson("/api/auth-signup", {
+    signupResult = await apiJson("/api/auth-signup", {
       email,
       password,
       channelPlatform: channel.channelPlatform,
@@ -828,22 +829,12 @@ async function signUp() {
     return;
   }
 
-  const { data, error } = await state.supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  if (error) {
-    setText(els.authMessage, authErrorMessage(error));
+  if (signupResult?.data?.emailConfirmationRequired !== true) {
+    setText(els.authMessage, "회원가입 상태를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.");
     return;
   }
-  if (data.session) {
-    saveLastLoginRole("streamer");
-    state.session = data.session;
-    state.authReady = true;
-    renderSession();
-  }
   setAuthMode("login");
-  setText(els.authMessage, "회원가입과 로그인이 완료되었습니다. 프로그램 첫 로그인 시 2일 무료 체험이 자동으로 시작됩니다.");
+  setText(els.authMessage, "확인 메일을 보냈습니다. 메일의 링크로 인증한 뒤 로그인해 주세요.");
 }
 
 async function sendPasswordResetEmail() {

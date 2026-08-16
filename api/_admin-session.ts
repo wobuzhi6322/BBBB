@@ -6,17 +6,18 @@ const adminSessionMaxAgeSeconds = 15 * 60;
 
 export type AdminSessionPayload = {
   sub: string;
-  email: string | null;
   role: "admin";
+  iat: number;
   exp: number;
 };
 
-export function issueAdminSessionCookie(req: IncomingMessage, user: { id: string; email?: string | null }, now = Date.now()): string {
+export function issueAdminSessionCookie(req: IncomingMessage, user: { id: string }, now = Date.now()): string {
+  const issuedAt = Math.floor(now / 1000);
   const payload: AdminSessionPayload = {
     sub: user.id,
-    email: user.email || null,
     role: "admin",
-    exp: Math.floor((now + adminSessionMaxAgeSeconds * 1000) / 1000)
+    iat: issuedAt,
+    exp: issuedAt + adminSessionMaxAgeSeconds
   };
   const body = base64UrlEncode(JSON.stringify(payload));
   return serializeCookie(req, `${body}.${sign(body)}`, adminSessionMaxAgeSeconds);
@@ -43,8 +44,9 @@ export function verifyAdminSession(req: IncomingMessage, now = Date.now()): Admi
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as AdminSessionPayload;
-    if (payload.role !== "admin" || !payload.sub || payload.exp * 1000 <= now) {
+    const value: unknown = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    const payload = adminSessionPayload(value);
+    if (!payload || payload.exp * 1000 <= now) {
       return null;
     }
     return payload;
@@ -56,7 +58,8 @@ export function verifyAdminSession(req: IncomingMessage, now = Date.now()): Admi
 export function sendNotFound(res: ServerResponse): void {
   res.writeHead(404, {
     "content-type": "text/plain; charset=utf-8",
-    "cache-control": "no-store"
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff"
   });
   res.end("not-found");
 }
@@ -64,10 +67,7 @@ export function sendNotFound(res: ServerResponse): void {
 export function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "POST,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
 }
@@ -77,11 +77,36 @@ function sign(value: string): string {
 }
 
 function signingSecret(): string {
-  const secret = process.env.BBBB_SHARED_ADMIN_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) {
-    throw new Error("BBBB_SHARED_ADMIN_TOKEN or SUPABASE_SERVICE_ROLE_KEY is required");
+  const secret = process.env.BBBB_ADMIN_SESSION_SECRET;
+  if (!secret || Buffer.byteLength(secret, "utf8") < 32) {
+    throw new Error("BBBB_ADMIN_SESSION_SECRET must be at least 32 bytes");
   }
   return secret;
+}
+
+function adminSessionPayload(value: unknown): AdminSessionPayload | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const sub: unknown = Reflect.get(value, "sub");
+  const role: unknown = Reflect.get(value, "role");
+  const issuedAt: unknown = Reflect.get(value, "iat");
+  const expiresAt: unknown = Reflect.get(value, "exp");
+  if (
+    typeof sub !== "string" ||
+    !sub ||
+    role !== "admin" ||
+    typeof issuedAt !== "number" ||
+    !Number.isInteger(issuedAt) ||
+    typeof expiresAt !== "number" ||
+    !Number.isInteger(expiresAt) ||
+    expiresAt <= issuedAt ||
+    expiresAt - issuedAt > adminSessionMaxAgeSeconds
+  ) {
+    return null;
+  }
+  return { sub, role, iat: issuedAt, exp: expiresAt };
 }
 
 function safeEqual(left: string, right: string): boolean {

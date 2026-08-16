@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail, ownerLicense } from "../_owner.js";
+import { isOwnerUserId, ownerLicense } from "../_owner.js";
 
 type RegisterDeviceBody = {
   deviceFingerprint?: unknown;
@@ -59,7 +59,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const deviceName = stringValue(body.deviceName)?.slice(0, 120) || null;
     const appVersion = stringValue(body.appVersion)?.slice(0, 40) || null;
     const now = new Date().toISOString();
-    if (isOwnerEmail(user.email || null)) {
+    if (isOwnerUserId(user.id)) {
       sendJson(res, 200, {
         ok: true,
         data: {
@@ -202,7 +202,7 @@ async function ensureProfile(userId: string, email: string | null, supabase: Ret
     {
       user_id: userId,
       email,
-      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
+      ...(isOwnerUserId(userId) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }

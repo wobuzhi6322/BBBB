@@ -9,7 +9,8 @@ import {
   stripFeatureFlagsFromNotes,
   type FeatureFlags
 } from "./_feature-flags.js";
-import { isOwnerEmail } from "./_owner.js";
+import { AdminRequestError, requireAdminUser } from "./_admin-auth.js";
+import { readJsonObject, RequestBodyError } from "./_request-body.js";
 import {
   licenseCodeSharedSyncFromNotes,
   notesWithLicenseCodeSharedSync,
@@ -68,7 +69,6 @@ const planLimits: Record<string, PlanLimits> = {
 };
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  setCors(res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -82,13 +82,21 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const supabase = serviceClient();
-    const adminUserId = await assertAdmin(req, supabase);
+    const adminUserId = (await requireAdminUser(req, supabase)).userId;
     if (req.method === "GET") {
       await listCodes(res, supabase);
       return;
     }
     await createCode(res, await readJson(req), adminUserId, supabase);
   } catch (error) {
+    if (error instanceof AdminRequestError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof RequestBodyError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
     sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "license-code-request-failed" });
   }
 }
@@ -261,28 +269,6 @@ function dateValue(value: unknown): string | null {
   return date.toISOString();
 }
 
-async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof serviceClient>): Promise<string> {
-  const sessionToken = bearerToken(req);
-  if (!sessionToken) {
-    throw new Error("관리자 권한이 필요합니다.");
-  }
-
-  const userResult = await supabase.auth.getUser(sessionToken);
-  const user = userResult.data.user;
-  if (userResult.error || !user) {
-    throw new Error("로그인 세션을 확인할 수 없습니다.");
-  }
-  if (isOwnerEmail(user.email || null)) {
-    return user.id;
-  }
-
-  const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();
-  if (profile.error || profile.data?.role !== "admin") {
-    throw new Error("관리자 계정만 이용권 코드를 발급할 수 있습니다.");
-  }
-  return user.id;
-}
-
 function serviceClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -297,25 +283,8 @@ function serviceClient() {
   });
 }
 
-function bearerToken(req: IncomingMessage): string | undefined {
-  const value = headerValue(req.headers.authorization);
-  const match = value?.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
-function headerValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 async function readJson(req: IncomingMessage): Promise<AdminCodeBody> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (!chunks.length) {
-    return {};
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as AdminCodeBody;
+  return readJsonObject(req);
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -345,16 +314,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
-}
-
-function setCors(res: ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type");
 }

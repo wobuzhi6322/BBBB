@@ -1,4 +1,4 @@
-﻿/*
+/*
  * 계이득 (Gyeideuk) Admin Dashboard Stylesheet - Obsidian Dark Theme
  * Custom glassmorphism, responsive dashboard layout, modern inputs, glowing status indicators.
  */
@@ -602,6 +602,22 @@
   background-color: rgba(224, 72, 72, 0.12);
   border: 1px solid rgba(224, 72, 72, 0.25);
   color: var(--danger);
+}
+
+#detail-profile-role.user-role-badge {
+  color: var(--blue-deep);
+}
+
+#detail-profile-role.user-role-badge.is-admin {
+  color: #9c1f1f;
+}
+
+#admin-role-action {
+  min-height: 40px;
+}
+
+#admin-role-feedback.feedback-msg {
+  color: var(--ink);
 }
 
 /* Status badging */
@@ -1704,6 +1720,10 @@
   .admin-device-actions .button,
   .admin-device-row .button {
     width: 100%;
+  }
+
+  #admin-role-action {
+    min-height: 44px;
   }
 
   .admin-device-row {

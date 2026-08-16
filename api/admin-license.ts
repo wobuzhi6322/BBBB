@@ -9,8 +9,10 @@ import {
   stripFeatureFlagsFromNotes,
   type FeatureFlags
 } from "./_feature-flags.js";
-import { isOwnerEmail } from "./_owner.js";
+import { AdminRequestError, requireAdmin, type AdminPrincipal } from "./_admin-auth.js";
+import { isOwnerUserId } from "./_owner.js";
 import { profilePatchFromBody, profileSelect } from "./_profile.js";
+import { readJsonObject, RequestBodyError } from "./_request-body.js";
 import { isMissingFeatureFlagsColumn, withoutFeatureFlags } from "./_schema-fallback.js";
 
 type AdminLicenseBody = {
@@ -50,11 +52,27 @@ type SiteProfileRow = {
   email: string | null;
   display_name: string | null;
   role: string;
+  role_version: number;
   channel_platform?: string | null;
   channel_name?: string | null;
   channel_url?: string | null;
   trial_started_at?: string | null;
   trial_license_id?: string | null;
+};
+
+type AdminProfileRow = SiteProfileRow & {
+  readonly isOwner: boolean;
+};
+
+type AdminPermissions = {
+  readonly canManageAdminRoles: boolean;
+};
+
+type AdminLookupContext = {
+  readonly req: IncomingMessage;
+  readonly res: ServerResponse;
+  readonly supabase: ReturnType<typeof serviceClient>;
+  readonly permissions: AdminPermissions;
 };
 
 type LicenseRow = {
@@ -76,6 +94,7 @@ type LicenseRow = {
 
 const profilesTable = "bbbb_site_profiles";
 const licensesTable = "bbbb_account_licenses";
+const adminProfileSelect = `${profileSelect},role_version`;
 const licenseSelect =
   "id,user_id,license_code,plan,status,max_signatures,max_media_mb,max_devices,shared_sync_enabled,feature_flags,issued_at,activated_at,expires_at,notes";
 const licenseSelectWithoutFeatures =
@@ -106,7 +125,6 @@ const planLimits: Record<string, PlanLimits> = {
 const maxManualLimit = 1_000_000;
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  setCors(res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -120,10 +138,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const supabase = serviceClient();
-    await assertAdmin(req, supabase);
+    const principal = await requireAdmin(req, supabase);
 
     if (req.method === "GET") {
-      await handleLookup(req, res, supabase);
+      await handleLookup({
+        req,
+        res,
+        supabase,
+        permissions: permissionsFor(principal)
+      });
       return;
     }
 
@@ -136,18 +159,33 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     await handleCreate(res, body, supabase);
   } catch (error) {
+    if (error instanceof AdminRequestError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof RequestBodyError) {
+      sendJson(res, error.status, { ok: false, error: error.message, code: error.code });
+      return;
+    }
     sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "license-request-failed" });
   }
 }
 
-async function handleLookup(req: IncomingMessage, res: ServerResponse, supabase: ReturnType<typeof serviceClient>): Promise<void> {
+async function handleLookup(context: AdminLookupContext): Promise<void> {
+  const { req, res, supabase, permissions } = context;
   const url = new URL(req.url || "/api/admin-license", "https://bbbb.local");
   const email = url.searchParams.get("email") || undefined;
   const userId = url.searchParams.get("userId") || undefined;
 
   if (!email && !userId) {
     const profiles = await fetchAllProfiles(supabase);
-    sendJson(res, 200, { ok: true, data: { profiles } });
+    sendJson(res, 200, {
+      ok: true,
+      data: {
+        profiles: profiles.map(profileForAdmin),
+        permissions
+      }
+    });
     return;
   }
 
@@ -156,9 +194,10 @@ async function handleLookup(req: IncomingMessage, res: ServerResponse, supabase:
   sendJson(res, 200, {
     ok: true,
     data: {
-      profile,
+      profile: profileForAdmin(profile),
       activeLicense: licenses.find((license) => license.status === "active") || licenses[0] || null,
-      licenses
+      licenses,
+      permissions
     }
   });
 }
@@ -171,7 +210,7 @@ async function fetchAllProfiles(supabase: ReturnType<typeof serviceClient>): Pro
     const to = from + profileListPageSize - 1;
     const { data, error } = await supabase
       .from(profilesTable)
-      .select(profileSelect)
+      .select(adminProfileSelect)
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -190,6 +229,19 @@ async function fetchAllProfiles(supabase: ReturnType<typeof serviceClient>): Pro
   }
 
   return profiles;
+}
+
+function permissionsFor(principal: AdminPrincipal): AdminPermissions {
+  return {
+    canManageAdminRoles: principal.kind === "user" && isOwnerUserId(principal.userId)
+  };
+}
+
+function profileForAdmin(profile: SiteProfileRow): AdminProfileRow {
+  return {
+    ...profile,
+    isOwner: isOwnerUserId(profile.user_id)
+  };
 }
 
 async function handleCreate(res: ServerResponse, body: AdminLicenseBody, supabase: ReturnType<typeof serviceClient>): Promise<void> {
@@ -453,7 +505,7 @@ function normalizeLicenseDeviceLimit(license: LicenseRow): LicenseRow {
 async function resolveProfile(body: Pick<AdminLicenseBody, "email" | "userId">, supabase: ReturnType<typeof serviceClient>): Promise<SiteProfileRow> {
   const userId = stringValue(body.userId);
   if (userId) {
-    const profile = await supabase.from(profilesTable).select(profileSelect).eq("user_id", userId).single();
+    const profile = await supabase.from(profilesTable).select(adminProfileSelect).eq("user_id", userId).single();
     if (profile.error || !profile.data?.user_id) {
       throw new Error("해당 사용자 계정을 찾을 수 없습니다.");
     }
@@ -465,7 +517,7 @@ async function resolveProfile(body: Pick<AdminLicenseBody, "email" | "userId">, 
     throw new Error("email 또는 userId가 필요합니다.");
   }
 
-  const profile = await supabase.from(profilesTable).select(profileSelect).ilike("email", email).single();
+  const profile = await supabase.from(profilesTable).select(adminProfileSelect).ilike("email", email).single();
   if (profile.error || !profile.data?.user_id) {
     throw new Error("해당 이메일의 가입 계정을 찾을 수 없습니다. 사용자가 먼저 회원가입해야 합니다.");
   }
@@ -573,44 +625,6 @@ function dateValue(value: unknown): string | null {
   return date.toISOString();
 }
 
-async function assertAdmin(req: IncomingMessage, supabase: ReturnType<typeof serviceClient>): Promise<void> {
-  const expected = process.env.BBBB_SHARED_ADMIN_TOKEN;
-  const received = req.headers["x-bbbb-admin-token"];
-  const token = Array.isArray(received) ? received[0] : received;
-  if (expected && token === expected) {
-    return;
-  }
-
-  const sessionToken = bearerToken(req);
-  if (!sessionToken) {
-    throw new Error("관리자 권한이 필요합니다.");
-  }
-
-  const userResult = await supabase.auth.getUser(sessionToken);
-  const user = userResult.data.user;
-  if (userResult.error || !user) {
-    throw new Error("로그인 세션을 확인할 수 없습니다.");
-  }
-  if (isOwnerEmail(user.email || null)) {
-    return;
-  }
-
-  const profile = await supabase.from(profilesTable).select("role").eq("user_id", user.id).single();
-  if (profile.error || profile.data?.role !== "admin") {
-    throw new Error("관리자 계정만 라이선스를 발급할 수 있습니다.");
-  }
-}
-
-function bearerToken(req: IncomingMessage): string | undefined {
-  const value = headerValue(req.headers.authorization);
-  const match = value?.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
-function headerValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 function serviceClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -626,14 +640,7 @@ function serviceClient() {
 }
 
 async function readJson(req: IncomingMessage): Promise<AdminLicenseBody> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (!chunks.length) {
-    return {};
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as AdminLicenseBody;
+  return readJsonObject(req);
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -643,16 +650,7 @@ function stringValue(value: unknown): string | undefined {
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-bbbb-admin-token"
+    "cache-control": "no-store"
   });
   res.end(status === 204 ? undefined : JSON.stringify(body));
-}
-
-function setCors(res: ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type,x-bbbb-admin-token");
 }

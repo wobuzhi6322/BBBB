@@ -1,6 +1,23 @@
 {
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        }
+      ]
+    },
+    {
       "source": "/assets/site.css",
       "headers": [
         {
@@ -36,7 +53,7 @@
       "dest": "/api/admin"
     },
     {
-      "src": "/admin/(admin\\.(js|css))",
+      "src": "/admin/(admin\\.js|admin\\.css|admin-role-state\\.js)",
       "dest": "/api/admin-asset?file=$1"
     },
     {

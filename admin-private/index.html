@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4/dist/umd/supabase.js" integrity="sha384-7SfFUrg31wOnGWBLLniKFCNmCSguYA5wI1WPDOt7kP/mom4R9/0pwghVEnv0uwYP" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/assets/site.css?v=20260608-prod-cache-v1" />
-    <link rel="stylesheet" href="/admin/admin.css?v=20260614-admin-capslock1" />
+    <link rel="stylesheet" href="/admin/admin.css?v=20260816-admin-role2" />
   </head>
   <body class="admin-body">
     <div id="admin-splash" class="admin-splash">
@@ -159,9 +159,17 @@
               <article class="admin-card">
                 <div class="card-heading">
                   <h3>회원 정보</h3>
-                  <span id="detail-profile-role" class="license-status-badge">USER</span>
+                  <span id="detail-profile-role" class="user-role-badge">USER</span>
                   <span id="detail-license-status" class="license-status-badge inactive">라이선스 없음</span>
+                  <button
+                    id="admin-role-action"
+                    class="button secondary compact-btn"
+                    type="button"
+                    aria-describedby="admin-role-feedback"
+                    hidden
+                  >관리자 권한 변경</button>
                 </div>
+                <div id="admin-role-feedback" class="feedback-msg" aria-live="polite" style="display: none;"></div>
                 <dl class="info-list">
                   <div><dt>이름</dt><dd id="detail-profile-name">-</dd></div>
                   <div><dt>이메일</dt><dd id="detail-profile-email">-</dd></div>
@@ -508,6 +516,7 @@
       </div>
     </div>
 
-    <script src="/admin/admin.js?v=20260814-admin-license-persist1"></script>
+    <script src="/admin/admin-role-state.js?v=20260816-admin-role4"></script>
+    <script src="/admin/admin.js?v=20260816-admin-role4"></script>
   </body>
 </html>

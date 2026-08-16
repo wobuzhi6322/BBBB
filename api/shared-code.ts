@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail, ownerLicense } from "./_owner.js";
+import { isOwnerUserId, ownerLicense } from "./_owner.js";
 
 type SharedCodeBody = {
   code?: unknown;
@@ -47,7 +47,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (req.method === "POST") {
       const body = await readJson(req);
       const code = normalizeCode(body.code);
-      const ownerAccount = isOwnerEmail(user.email || null);
+      const ownerAccount = isOwnerUserId(user.id);
       const license = ownerAccount ? (ownerLicense(user.id) as LicenseRow) : await getActiveLicense(user.id, supabase);
       const membership = await joinSharedCode(user.id, code, supabase);
       sendJson(res, 200, {
@@ -167,7 +167,7 @@ async function ensureProfile(userId: string, email: string | null, supabase: Ret
     {
       user_id: userId,
       email,
-      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
+      ...(isOwnerUserId(userId) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }

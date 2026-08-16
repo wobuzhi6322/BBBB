@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { normalizeFeatureFlags, normalizeFeatureFlagsWithNotes, stripFeatureFlagsFromNotes, type FeatureFlags } from "./_feature-flags.js";
-import { isOwnerEmail, ownerLicense } from "./_owner.js";
+import { isOwnerUserId, ownerLicense } from "./_owner.js";
 import { profilePatchFromBody, profileSelect, type ProfilePatchBody } from "./_profile.js";
 import { isMissingFeatureFlagsColumn } from "./_schema-fallback.js";
 
@@ -143,7 +143,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     assertNoError(downloadsResult.error);
 
     const profile = profileResult.data as SiteProfileRow;
-    const ownerAccount = isOwnerEmail(user.email || profile.email);
+    const ownerAccount = isOwnerUserId(user.id);
     const licenses = accountLicenses.map((license) => (ownerAccount ? normalizeLicenseFeatures(license) : normalizeLicenseDeviceLimit(license)));
     const ownerActiveLicense = ownerAccount ? (ownerLicense(user.id) as LicenseRow) : null;
     const activeLicense = ownerActiveLicense || licenses.find(isUsableLicense) || licenses[0] || null;
@@ -198,7 +198,7 @@ async function ensureProfile(userId: string, email: string | null, supabase: Ret
     {
       user_id: userId,
       email,
-      ...(isOwnerEmail(email) ? { role: "admin" } : {}),
+      ...(isOwnerUserId(userId) ? { role: "admin" } : {}),
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }

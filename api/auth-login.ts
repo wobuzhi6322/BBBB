@@ -1,7 +1,7 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { isOwnerEmail } from "./_owner.js";
+import { isOwnerUserId } from "./_owner.js";
 
 type AuthBody = {
   email?: unknown;
@@ -38,8 +38,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (result.error) {
       throw new Error(result.error.message);
     }
-    const userEmail = result.data.user?.email || email;
-    if (!isOwnerEmail(userEmail) && !(await hasUsableLicense(result.data.user?.id))) {
+    if (!isOwnerUserId(result.data.user?.id) && !(await hasUsableLicense(result.data.user?.id))) {
       sendJson(res, 403, { ok: false, error: noActiveLicenseMessage, code: "no-active-license" });
       return;
     }

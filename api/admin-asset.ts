@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 
-import { sendNotFound } from "./_admin-session.js";
+import { adminPageSecurityHeaders } from "./_admin-page-security.js";
+import { sendNotFound, verifyAdminSession } from "./_admin-session.js";
 
 const allowedFiles: Record<string, string> = {
   "admin.css": "text/css; charset=utf-8",
+  "admin-role-state.js": "application/javascript; charset=utf-8",
   "admin.js": "application/javascript; charset=utf-8"
 };
 
@@ -19,6 +21,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  if (!verifyAdminSession(req)) {
+    sendNotFound(res);
+    return;
+  }
+
   const url = new URL(req.url || "/api/admin-asset", "https://bbbb.local");
   const file = url.searchParams.get("file") || "";
   const contentType = allowedFiles[file];
@@ -29,8 +36,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const content = readFileSync(join(process.cwd(), "admin-private", file), "utf8");
   res.writeHead(200, {
-    "content-type": contentType,
-    "cache-control": "no-store"
+    ...adminPageSecurityHeaders(),
+    "content-type": contentType
   });
   res.end(req.method === "HEAD" ? undefined : content);
 }
