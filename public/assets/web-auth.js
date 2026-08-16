@@ -222,10 +222,30 @@
       }
     }
 
+    function setSignupSubmitState(state) {
+      if (!els.submit) {
+        return;
+      }
+      els.submit.dataset.state = state;
+      els.submit.disabled = state !== "idle";
+      setText(
+        els.submit,
+        state === "complete"
+          ? "메일 확인 대기 중"
+          : state === "submitting"
+            ? "가입 처리 중"
+            : "가입하기"
+      );
+    }
+
+    setSignupSubmitState("idle");
+
     function selectRole(role) {
       if (role !== "streamer" && role !== "viewer") {
         return;
       }
+      setSignupSubmitState("idle");
+      setText(els.message, "");
       state.role = role;
       setText(
         els.roleSummary,
@@ -264,6 +284,9 @@
 
     async function onSignupSubmit(event) {
       event.preventDefault();
+      if (els.submit && els.submit.dataset.state !== "idle") {
+        return;
+      }
       var emailValue = els.email.value.trim();
       var passwordValue = els.password.value;
       var nicknameValue = els.nickname.value.trim();
@@ -287,7 +310,7 @@
         return;
       }
 
-      if (els.submit) els.submit.disabled = true;
+      setSignupSubmitState("submitting");
       setText(els.message, "가입 처리 중입니다.");
       try {
         var supa = await GW.getClient();
@@ -306,6 +329,7 @@
           // 메일 인증이 필요한 프로젝트 설정: 로그인 후 이어서 진행
           savePending({ nickname: nicknameValue, role: state.role });
           setText(els.message, "확인 메일을 보냈어요. 메일 인증 후 로그인하면 설정이 이어집니다.");
+          setSignupSubmitState("complete");
           return;
         }
 
@@ -330,7 +354,9 @@
       } catch (err) {
         setText(els.message, err && err.message ? err.message : "가입에 실패했습니다.");
       } finally {
-        if (els.submit) els.submit.disabled = false;
+        if (!els.submit || els.submit.dataset.state !== "complete") {
+          setSignupSubmitState("idle");
+        }
       }
     }
 

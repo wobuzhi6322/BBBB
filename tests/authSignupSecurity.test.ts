@@ -119,4 +119,16 @@ describe("public signup email verification", () => {
     expect(signupBody).toContain("emailConfirmationRequired");
     expect(signupBody).not.toContain("signInWithPassword");
   });
+
+  it("locks the signup submit action after mailbox confirmation", () => {
+    const source = readFileSync(join(process.cwd(), "public", "assets", "web-auth.js"), "utf8");
+    const signupBody = source.slice(
+      source.indexOf("async function onSignupSubmit"),
+      source.indexOf("function onHandleInput")
+    );
+
+    expect(source).toContain('els.submit.dataset.state = state;');
+    expect(source).toContain('els.submit.disabled = state !== "idle";');
+    expect(signupBody).toContain('setSignupSubmitState("complete");');
+  });
 });
